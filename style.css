@@ -1,38 +1,29 @@
 :root {
-  /* Nuansa Netral Putih & Abu-abu Hangat */
-  --slate-50: #fcfafa;
-  --slate-100: #f6f2f3;
-  --slate-200: #eadfe2;
-  --slate-300: #d8c7cc;
-  --slate-400: #9f8a90;
-  --slate-500: #6e5a60;
-  --slate-600: #524146;
-  --slate-700: #3d2f33;
-  --slate-800: #291d21;
-  --slate-900: #4a0e19; /* Merah Maroon Tua untuk Sidebar & Elemen Kontras */
-
-  /* Palet Utama Merah Maroon (Menggantikan variabel Indigo agar kompatibel dengan JS) */
-  --indigo-50: #fdf2f4;
-  --indigo-100: #fce4e8;
-  --indigo-500: #9e1b32;
-  --indigo-600: #800020; /* Maroon Utama */
-  --indigo-700: #5c0619; /* Maroon Gelap (Hover) */
-
-  /* Status CLOSED (Hijau Emerald) */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
   --emerald-50: #ecfdf5;
   --emerald-100: #d1fae5;
   --emerald-500: #10b981;
   --emerald-600: #059669;
   --emerald-700: #047857;
-
-  /* Status OPEN & Peringatan (Merah Koral Terang) */
   --rose-50: #fff1f2;
   --rose-100: #ffe4e6;
-  --rose-500: #e11d48;
-  --rose-600: #be123c;
-  --rose-700: #9f1239;
-
-  /* Status Arsip / Amber */
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+  --rose-700: #be123c;
   --amber-50: #fffbeb;
   --amber-100: #fef3c7;
   --amber-500: #f59e0b;
@@ -65,12 +56,12 @@ body {
 .text-emerald { color: var(--emerald-600) !important; }
 .text-muted { color: var(--slate-400); }
 
-/* ================= OVERLAY LOADING ================= */
+/* ================= OVERLAY LOADING ================= -->
 .cloud-loading {
   position: fixed;
   inset: 0;
-  background: rgba(56, 8, 18, 0.55);
-  backdrop-filter: blur(3px);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
   z-index: 300;
   display: flex;
   align-items: center;
@@ -81,8 +72,8 @@ body {
 .cloud-loading-box {
   background: #ffffff;
   padding: 16px 20px;
-  border-radius: 14px;
-  box-shadow: 0 20px 25px -5px rgba(74, 14, 25, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -114,195 +105,52 @@ body {
 .icon-sm { width: 15px; height: 15px; flex-shrink: 0; stroke-width: 2; }
 .icon-lg { width: 22px; height: 22px; flex-shrink: 0; stroke-width: 1.8; }
 
-/* ================= LOGIN VIEW (DESAIN REFERENSI + KERETA ESTETIK) ================= */
+/* ================= LOGIN VIEW ================= */
 .login-wrapper {
-  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  /* Foto Kereta Api Estetik Resolusi Tinggi + Fallback UGL2.jpg */
-  background-image:
-    linear-gradient(180deg, rgba(255, 245, 246, 0.28) 0%, rgba(74, 14, 25, 0.58) 100%),
-    url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1920&q=85'),
-    url('UGL2.jpg');
+  padding: 16px;
+  background: linear-gradient(rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.72)), url('UGL2.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-/* Brand Pojok Kiri Atas seperti Referensi */
-.login-top-brand {
-  position: absolute;
-  top: 26px;
-  left: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  z-index: 5;
-}
-
-.login-top-brand-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--indigo-600);
-  color: #ffffff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 16px rgba(128, 0, 32, 0.45);
-}
-
-/* Kartu Login Putih Gradasi Halus (Model Referensi) */
 .login-card {
-  background: linear-gradient(180deg, rgba(253, 242, 244, 0.95) 0%, rgba(255, 255, 255, 0.98) 42%, #ffffff 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #ffffff;
   width: 100%;
-  max-width: 410px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 25px 50px -12px rgba(45, 8, 16, 0.42),
-    0 0 0 1px rgba(128, 0, 32, 0.06);
+  max-width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  padding: 36px 32px 34px;
 }
 
 .login-header {
-  background: transparent;
-  padding: 0 0 24px 0;
+  background: var(--slate-900);
+  padding: 28px 20px 24px;
   text-align: center;
 }
 
-/* Kotak Ikon Putih Mengambang di Tengah Atas Kartu */
+.login-title { color: #fff; font-size: 20px; font-weight: 800; }
+.login-subtitle { color: var(--slate-400); font-size: 13px; margin-top: 4px; }
+
 .brand-icon {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  background: #ffffff;
-  color: var(--indigo-600);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
-  box-shadow:
-    0 10px 25px -4px rgba(128, 0, 32, 0.16),
-    0 2px 6px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--indigo-100);
-}
-
-.login-title {
-  color: var(--slate-800);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.login-subtitle {
-  color: var(--slate-500);
-  font-size: 13.5px;
-  line-height: 1.5;
-  margin-top: 8px;
-}
-
-.login-body {
-  padding: 0;
-}
-
-/* Kolom Input Abu-abu Lembut dengan Ikon Kiri & Kanan */
-.login-input-group {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.login-field-icon {
-  position: absolute;
-  left: 14px;
-  color: var(--slate-400);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.login-input-group input {
-  width: 100%;
+  width: 46px;
   height: 46px;
-  padding: 0 42px 0 42px;
-  border-radius: 13px;
-  border: 1.5px solid transparent;
-  background: #f3eff0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--slate-800);
-  transition: all 0.2s ease;
-}
-
-.login-input-group input::placeholder {
-  color: var(--slate-400);
-  font-weight: 400;
-}
-
-.login-input-group input:focus {
-  background: #ffffff;
-  border-color: var(--indigo-600);
-  box-shadow: 0 0 0 4px rgba(128, 0, 32, 0.12);
-}
-
-.login-eye-btn {
-  position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  color: var(--slate-400);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
-.login-eye-btn:hover {
-  color: var(--indigo-600);
-}
+.login-body { padding: 24px 20px; }
 
-/* Tombol Submit Kapsul Maroon Gelap (Seperti "Get Started" di Referensi) */
-.btn-login-submit {
-  width: 100%;
-  height: 48px;
-  margin-top: 10px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #8b112b 0%, #580617 100%);
-  color: #ffffff;
-  font-size: 14.5px;
-  font-weight: 700;
-  border: none;
-  box-shadow: 0 10px 20px -5px rgba(128, 0, 32, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.btn-login-submit:hover {
-  background: linear-gradient(180deg, #9e1633 0%, #6b081d 100%);
-  box-shadow: 0 14px 24px -5px rgba(128, 0, 32, 0.55);
-  transform: translateY(-1px);
-}
-
-.btn-login-submit:active {
-  transform: translateY(0);
-}
-
-/* ================= LAYOUT & SIDEBAR (TEMA MAROON & PUTIH) ================= */
+/* ================= LAYOUT & SIDEBAR ================= */
 .admin-layout {
   display: flex;
   min-height: 100vh;
@@ -311,7 +159,7 @@ body {
 
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #5c0a1b 0%, #38040e 100%);
+  background: var(--slate-900);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -327,7 +175,7 @@ body {
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(56, 4, 14, 0.55);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(2px);
   z-index: 45;
   opacity: 0;
@@ -341,7 +189,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .sidebar-brand-left { display: flex; align-items: center; gap: 10px; }
@@ -350,8 +198,7 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: #ffffff;
-  color: var(--indigo-600);
+  background: var(--indigo-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,14 +206,14 @@ body {
   font-size: 13px;
 }
 
-.sidebar-brand-title { font-weight: 800; font-size: 15px; color: #ffffff; }
-.sidebar-brand-sub { font-size: 11px; color: rgba(255,255,255,0.65); }
+.sidebar-brand-title { font-weight: 800; font-size: 15px; }
+.sidebar-brand-sub { font-size: 11px; color: var(--slate-400); }
 
 .sidebar-close-mobile {
   display: none;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.08);
   border: none;
-  color: #ffffff;
+  color: var(--slate-300);
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -388,7 +235,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--slate-400);
   padding: 0 10px;
   margin-bottom: 4px;
 }
@@ -402,52 +249,41 @@ body {
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--slate-300);
   background: transparent;
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s ease;
 }
 
 .nav-item-left { display: flex; align-items: center; gap: 10px; }
-.nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.nav-item.active {
-  background: #ffffff;
-  color: var(--indigo-600);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-item.active { background: var(--indigo-600); color: #fff; }
 
 .nav-counter {
   font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.16);
   color: #fff;
-}
-
-.nav-item.active .nav-counter {
-  background: var(--indigo-600);
-  color: #ffffff;
 }
 
 .sidebar-footer {
   padding: 14px 16px;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.22);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.2);
 }
 
 .user-mini-info { display: flex; align-items: center; gap: 10px; }
 .sidebar-user-name { font-size: 13px; font-weight: 700; color: #fff; }
-.sidebar-user-role { font-size: 11px; color: rgba(255,255,255,0.65); }
+.sidebar-user-role { font-size: 11px; color: var(--slate-400); }
 
 .avatar-circle {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--indigo-500);
-  border: 1px solid rgba(255,255,255,0.25);
+  background: var(--slate-700);
   color: #fff;
   display: flex;
   align-items: center;
@@ -495,7 +331,7 @@ body {
 .topbar-title {
   font-size: 16.5px;
   font-weight: 800;
-  color: var(--indigo-700);
+  color: var(--slate-900);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -507,17 +343,12 @@ body {
   border-radius: 8px;
   border: 1px solid var(--slate-200);
   background: #fff;
-  color: var(--indigo-600);
+  color: var(--slate-700);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-}
-
-.hamburger-btn:hover {
-  background: var(--indigo-50);
-  border-color: var(--indigo-100);
 }
 
 .content-wrapper {
@@ -537,7 +368,7 @@ body {
   height: 60px;
   background: #ffffff;
   border-top: 1px solid var(--slate-200);
-  box-shadow: 0 -2px 10px rgba(74, 14, 25, 0.06);
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.05);
   z-index: 35;
   justify-content: space-around;
   align-items: center;
@@ -598,7 +429,6 @@ body {
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
-  box-shadow: 0 1px 3px rgba(128, 0, 32, 0.03);
 }
 
 .stat-text-wrap {
@@ -631,7 +461,7 @@ body {
 .stat-value {
   font-size: 22px;
   font-weight: 800;
-  color: var(--slate-800);
+  color: var(--slate-900);
   line-height: 1.2;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -654,7 +484,6 @@ body {
   border-radius: 12px;
   border: 1px solid var(--slate-200);
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(128, 0, 32, 0.03);
 }
 
 .panel-toolbar {
@@ -680,7 +509,7 @@ body {
 .panel-title {
   font-size: 15.5px;
   font-weight: 800;
-  color: var(--indigo-700);
+  color: var(--slate-900);
 }
 
 .panel-desc {
@@ -823,7 +652,7 @@ textarea {
 
 input:focus, select:focus, textarea:focus {
   border-color: var(--indigo-600);
-  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.14);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 .gdrive-input-stack {
@@ -890,10 +719,6 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--slate-300);
   color: var(--slate-700);
 }
-.btn-outline:hover {
-  border-color: var(--indigo-600);
-  color: var(--indigo-600);
-}
 
 .btn-rose-soft {
   background: var(--rose-50);
@@ -907,7 +732,7 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--amber-100);
 }
 
-/* ================= BADGES & PILLS ================= */
+/* ================= PERBAIKAN BADGE TUMPANG TINDIH ================= */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -934,7 +759,7 @@ input:focus, select:focus, textarea:focus {
 .badge-closed .dot { background: var(--emerald-500); }
 
 .badge-archived { background: var(--slate-100); color: var(--slate-600); border: 1px solid var(--slate-200); }
-.badge-indigo { background: var(--indigo-50); color: var(--indigo-600); border: 1px solid var(--indigo-100); }
+.badge-indigo { background: var(--indigo-50); color: var(--indigo-700); border: 1px solid var(--indigo-100); }
 
 .pill-group {
   display: inline-flex;
@@ -956,19 +781,19 @@ input:focus, select:focus, textarea:focus {
 }
 
 .pill-btn.active {
-  background: var(--indigo-600);
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(128, 0, 32, 0.25);
+  background: #fff;
+  color: var(--slate-900);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-/* ================= STATUS PER UNIT (SCROLLABLE CONTAINER) ================= */
+/* ================= PERBAIKAN STATUS PER UNIT NUMPUK KE BAWAH (SCROLLABLE CONTAINER) ================= */
 .history-unit-scroll-box {
-  max-height: 210px;
+  max-height: 210px; /* Ditinggikan sedikit agar 2 kartu tampil utuh dan pas */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 2px 4px 6px 2px;
+  gap: 8px;          /* Jarak antar kartu agar tidak berhimpitan */
+  padding: 2px 4px 6px 2px; /* Memberikan ruang napas di atas dan bawah */
 }
 
 .history-unit-list {
@@ -1005,7 +830,7 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--indigo-100);
   font-size: 11px;
   font-weight: 600;
-  color: var(--indigo-600);
+  color: var(--indigo-700);
   text-decoration: none;
   max-width: 100%;
 }
@@ -1016,7 +841,7 @@ input:focus, select:focus, textarea:focus {
   gap: 4px;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--indigo-600);
+  color: var(--indigo-700);
   background: var(--indigo-50);
   border: 1px solid var(--indigo-100);
   padding: 2px 8px;
@@ -1029,7 +854,7 @@ input:focus, select:focus, textarea:focus {
 .issue-title-text {
   font-size: 14px;
   font-weight: 700;
-  color: var(--slate-800);
+  color: var(--slate-900);
   margin-bottom: 3px;
   line-height: 1.35;
   word-break: break-word;
@@ -1066,13 +891,13 @@ table {
 }
 
 th {
-  background: var(--indigo-50);
+  background: var(--slate-50);
   padding: 12px 16px;
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--indigo-700);
-  border-bottom: 1px solid var(--indigo-100);
+  color: var(--slate-500);
+  border-bottom: 1px solid var(--slate-200);
 }
 
 td {
@@ -1085,7 +910,7 @@ td {
   overflow-wrap: anywhere;
 }
 
-tbody tr:hover td { background: #fdf8f9; }
+tbody tr:hover td { background: #f8fafc; }
 tbody tr:last-child td { border-bottom: none; }
 
 /* ================= UPLOAD & THUMBNAILS ================= */
@@ -1119,7 +944,7 @@ tbody tr:last-child td { border-bottom: none; }
 .android-upload-btn.gallery-btn {
   border-color: var(--indigo-500);
   background: var(--indigo-50);
-  color: var(--indigo-600);
+  color: var(--indigo-700);
 }
 
 .upload-btn-title { font-size: 12.5px; font-weight: 700; }
@@ -1155,7 +980,7 @@ tbody tr:last-child td { border-bottom: none; }
   height: 40px;
   border-radius: 6px;
   background: var(--indigo-50);
-  color: var(--indigo-600);
+  color: var(--indigo-700);
   border: 1px solid var(--indigo-100);
   font-size: 11px;
   font-weight: 800;
@@ -1187,7 +1012,7 @@ tbody tr:last-child td { border-bottom: none; }
   position: absolute;
   bottom: 3px;
   left: 3px;
-  background: rgba(74, 14, 25, 0.85);
+  background: rgba(15, 23, 42, 0.82);
   color: #fff;
   font-size: 9.5px;
   font-weight: 700;
@@ -1217,7 +1042,7 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(56, 4, 14, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1232,7 +1057,7 @@ tbody tr:last-child td { border-bottom: none; }
   width: 100%;
   max-height: 90vh;
   max-height: 90dvh;
-  box-shadow: 0 25px 50px -12px rgba(56, 4, 14, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
   border: 1px solid var(--slate-200);
   display: flex;
   flex-direction: column;
@@ -1264,7 +1089,7 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-title {
   font-size: 15.5px;
   font-weight: 800;
-  color: var(--indigo-700);
+  color: var(--slate-900);
   word-break: break-word;
 }
 
@@ -1302,7 +1127,7 @@ tbody tr:last-child td { border-bottom: none; }
   font-weight: 500;
   margin-top: 6px;
 }
-.checkbox-inline-label input { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--indigo-600); }
+.checkbox-inline-label input { width: 17px; height: 17px; flex-shrink: 0; }
 
 .checklist-header-row {
   display: flex;
@@ -1327,7 +1152,6 @@ tbody tr:last-child td { border-bottom: none; }
   font-weight: 700;
   cursor: pointer;
 }
-.link-action-btn:hover { text-decoration: underline; }
 
 .checklist-container {
   border: 1px solid var(--slate-200);
@@ -1348,13 +1172,11 @@ tbody tr:last-child td { border-bottom: none; }
   cursor: pointer;
   margin-bottom: 0;
 }
-.checklist-row:hover { background: var(--indigo-50); }
-.checklist-row input[type="checkbox"] { accent-color: var(--indigo-600); }
 
 /* ================= LIGHTBOX ================= */
 .lightbox-stage {
   position: relative;
-  background: #23060c;
+  background: var(--slate-900);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -1391,8 +1213,8 @@ tbody tr:last-child td { border-bottom: none; }
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--indigo-700);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--slate-900);
   border: none;
   cursor: pointer;
   display: flex;
@@ -1441,16 +1263,6 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* ================= RESPONSIF MOBILE ================= */
 @media (max-width: 768px) {
-  .login-top-brand {
-    top: 18px;
-    left: 20px;
-    font-size: 16px;
-  }
-  .login-card {
-    padding: 28px 22px 26px;
-    border-radius: 24px;
-  }
-
   .sidebar {
     position: fixed;
     top: 0;
@@ -1483,10 +1295,6 @@ tbody tr:last-child td { border-bottom: none; }
     padding: 9px 11px;
   }
 
-  .login-input-group input {
-    padding: 0 42px 0 42px !important;
-  }
-
   .search-input-wrap input { padding-left: 36px !important; }
 
   .panel-toolbar { padding: 12px; gap: 10px; }
@@ -1513,7 +1321,7 @@ tbody tr:last-child td { border-bottom: none; }
     border-radius: 10px;
     margin-bottom: 10px;
     padding: 12px;
-    box-shadow: 0 1px 3px rgba(74, 14, 25, 0.05);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     overflow: hidden;
   }
 
