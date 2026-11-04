@@ -373,8 +373,16 @@ document.getElementById('btn-add-ncr').addEventListener('click', openAddNcrModal
 document.getElementById('btn-open-add-user').addEventListener('click', function() {
   toggleModal('modal-add-user', true);
 });
-document.getElementById('btn-select-active').addEventListener('click', selectAllActiveProducts);
-document.getElementById('btn-unselect-all').addEventListener('click', unselectAllProducts);
+
+// Tombol Pilih Semua / Pilih Aktif / Reset pada Modal Tambah NCR
+document.getElementById('btn-select-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ALL'));
+document.getElementById('btn-select-active').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ACTIVE'));
+document.getElementById('btn-unselect-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'NONE'));
+
+// Tombol Pilih Semua / Pilih Aktif / Reset pada Modal Edit NCR
+document.getElementById('btn-edit-select-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ALL'));
+document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'));
+document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
 
 function enterApp(role, username) {
   currentRole = role;
@@ -1120,17 +1128,18 @@ function openAddNcrModal() {
   toggleModal('modal-add-ncr', true);
 }
 
-function selectAllActiveProducts() {
-  const checkboxes = document.querySelectorAll('input[name="ncr-target-prod"]');
+function setProductChecklist(inputName, mode) {
+  const checkboxes = document.querySelectorAll(`input[name="${inputName}"]`);
   checkboxes.forEach(cb => {
-    const prodObj = products.find(p => p.name === cb.value);
-    cb.checked = Boolean(prodObj && prodObj.status === 'active');
+    if (mode === 'ALL') {
+      cb.checked = true;
+    } else if (mode === 'ACTIVE') {
+      const prodObj = products.find(p => p.name === cb.value);
+      cb.checked = Boolean(prodObj && prodObj.status === 'active');
+    } else {
+      cb.checked = false;
+    }
   });
-}
-
-function unselectAllProducts() {
-  const checkboxes = document.querySelectorAll('input[name="ncr-target-prod"]');
-  checkboxes.forEach(cb => { cb.checked = false; });
 }
 
 function readDocFileAsDataUrl(file) {
