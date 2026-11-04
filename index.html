@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <!-- Meta Tags Khusus Chrome Android (Tampilan seperti Aplikasi Native saat Add to Home Screen) -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>QC Admin Portal — Sistem Monitoring & Indeks History NCR</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- OVERLAY LOADING SAAT SINKRONISASI KE GOOGLE SHEETS / GDRIVE -->
+  <div id="cloud-loading" class="cloud-loading hidden">
+    <div class="cloud-loading-box">
+      <div class="spinner"></div>
+      <div id="cloud-loading-text" class="cloud-loading-text">Menyimpan ke Google Drive & Sheets...</div>
+    </div>
+  </div>
+
+  <!-- ================= 1. HALAMAN LOGIN ================= -->
+  <div id="login-view" class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="brand-icon">
+          <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+          </svg>
+        </div>
+        <h1 class="login-title">NCR Control Center</h1>
+        <p class="login-subtitle">Sistem Monitoring & Indeks History NCR Multi-Produk</p>
+      </div>
+
+      <div class="login-body">
+        <form id="form-login">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" required autocomplete="username" placeholder="Masukkan username (admin / inspector1)">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" required autocomplete="current-password" placeholder="Ketik: 123">
+          </div>
+          <button type="submit" class="btn btn-indigo btn-full">
+            <span>Masuk ke Dashboard</span>
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
+          </button>
+        </form>
+
+        <div class="quick-demo-box">
+          <p class="quick-demo-label">Demo Akses Instan (Sentuh Langsung)</p>
+          <div class="quick-demo-grid">
+            <button type="button" id="btn-quick-admin" class="btn btn-slate">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+              </svg>
+              <span>Admin QC</span>
+            </button>
+            <button type="button" id="btn-quick-inspector" class="btn btn-emerald">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+              </svg>
+              <span>Inspector</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 2. HALAMAN DASHBOARD UTAMA ================= -->
+  <div id="app-view" class="admin-layout hidden">
+
+    <!-- BACKDROP OVERLAY UNTUK MOBILE HAMBURGER MENU -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- SIDEBAR KIRI -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-left">
+          <div class="sidebar-brand-logo">QC</div>
+          <div>
+            <div class="sidebar-brand-title">NCR Portal</div>
+            <div class="sidebar-brand-sub">Quality Assurance</div>
+          </div>
+        </div>
+        <button type="button" id="btn-close-sidebar-mobile" class="sidebar-close-mobile" title="Tutup Menu">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Menu Utama</div>
+
+        <!-- 1. INDEKS HISTORY NCR (PALING ATAS) -->
+        <button type="button" id="nav-history" class="nav-item active">
+          <div class="nav-item-left">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+            <span>Indeks History NCR</span>
+          </div>
+          <span id="nav-history-badge" class="nav-counter">0</span>
+        </button>
+
+        <!-- 2. MONITORING PER UNIT -->
+        <button type="button" id="nav-ncr" class="nav-item">
+          <div class="nav-item-left">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+            </svg>
+            <span>Monitoring per Unit</span>
+          </div>
+        </button>
+
+        <!-- 3. MANAJEMEN USER (KHUSUS ADMIN) -->
+        <button type="button" id="nav-users" class="nav-item hidden">
+          <div class="nav-item-left">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+            <span>Manajemen User</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-mini-card">
+          <div class="user-mini-info">
+            <div id="sidebar-avatar" class="avatar-circle">AD</div>
+            <div>
+              <div id="sidebar-username" class="sidebar-user-name">admin</div>
+              <div id="sidebar-role-text" class="sidebar-user-role">Administrator</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- AREA KONTEN KANAN -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" id="btn-hamburger" class="hamburger-btn" title="Buka / Tutup Menu">
+            <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+
+          <div class="topbar-title-group">
+            <h2 id="page-title" class="topbar-title">Indeks & History NCR</h2>
+            <span id="role-badge" class="badge"></span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <span id="storage-mode-badge" class="badge badge-archived hide-on-small-mobile" title="Status koneksi database">Lokal</span>
+          <button type="button" id="btn-refresh-cloud" class="btn btn-outline btn-sm hidden" title="Muat ulang data dari Google Sheets">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span class="hide-on-small-mobile">Sync</span>
+          </button>
+          <button type="button" id="btn-logout" class="btn btn-rose-soft btn-sm">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+            </svg>
+            <span class="hide-on-small-mobile">Keluar</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+
+        <!-- ================= VIEW 1 (PALING ATAS): INDEKS HISTORY KESELURUHAN NCR (MODE VIEW SAJA) ================= -->
+        <div id="section-history">
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Master NCR</div>
+                <div id="hist-stat-master" class="stat-value">0</div>
+                <div class="stat-sub">Terindeks</div>
+              </div>
+              <div class="stat-icon icon-box-indigo">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Titik Cek</div>
+                <div id="hist-stat-instances" class="stat-value">0</div>
+                <div class="stat-sub">Semua Unit</div>
+              </div>
+              <div class="stat-icon icon-box-slate">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Total OPEN</div>
+                <div id="hist-stat-open" class="stat-value text-rose">0</div>
+                <div class="stat-sub">Belum Foto</div>
+              </div>
+              <div class="stat-icon icon-box-rose">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Total CLOSED</div>
+                <div id="hist-stat-closed" class="stat-value text-emerald">0</div>
+                <div id="hist-stat-rate" class="stat-sub">0% Selesai</div>
+              </div>
+              <div class="stat-icon icon-box-emerald">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-toolbar">
+              <div>
+                <div class="toolbar-heading-row">
+                  <h3 class="panel-title">Indeks & Riwayat Status Lengkap NCR</h3>
+                  <span class="badge badge-indigo">
+                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    <span>Mode Tampilan (View-Only)</span>
+                  </span>
+                </div>
+                <p class="panel-desc">
+                  Menampilkan riwayat lengkap NCR, catatan Inspector, dan galeri multi-foto di setiap unit. Kelola data atau upload bukti melalui menu <b>Monitoring per Unit</b>.
+                </p>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <div class="filter-group">
+                <span class="filter-label">Filter Status:</span>
+                <div class="pill-group" id="history-filter-pills">
+                  <button type="button" class="pill-btn active" data-hfilter="ALL">Semua</button>
+                  <button type="button" class="pill-btn" data-hfilter="INCOMPLETE">Ada OPEN</button>
+                  <button type="button" class="pill-btn" data-hfilter="COMPLETE">100% CLOSED</button>
+                </div>
+              </div>
+
+              <div class="search-input-wrap search-history-wrap">
+                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input type="text" id="search-history" placeholder="Cari No. NCR, part, catatan, atau unit...">
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="mobile-card-table">
+                <thead>
+                  <tr>
+                    <th>Indeks & Informasi NCR</th>
+                    <th>Area / Komponen & Deskripsi Temuan</th>
+                    <th>Progress Penyelesaian Global</th>
+                    <th>Rincian Status, Catatan & Galeri Bukti Foto di Setiap Unit</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= VIEW 2: MONITORING NCR PER UNIT (PUSAT TAMBAH & UBAH DATA) ================= -->
+        <div id="section-ncr" class="hidden">
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Unit Dipilih</div>
+                <div id="stat-product-name" class="stat-value stat-value-unit">-</div>
+                <div id="stat-product-state" class="stat-sub">Status Unit</div>
+              </div>
+              <div class="stat-icon icon-box-indigo">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Total NCR</div>
+                <div id="stat-total-ncr" class="stat-value">0</div>
+                <div class="stat-sub">Di Unit Ini</div>
+              </div>
+              <div class="stat-icon icon-box-slate">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Status OPEN</div>
+                <div id="stat-open-ncr" class="stat-value text-rose">0</div>
+                <div class="stat-sub">Belum Dicek</div>
+              </div>
+              <div class="stat-icon icon-box-rose">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-label">Status CLOSED</div>
+                <div id="stat-closed-ncr" class="stat-value text-emerald">0</div>
+                <div id="stat-progress-pct" class="stat-sub">0% Selesai</div>
+              </div>
+              <div class="stat-icon icon-box-emerald">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-toolbar">
+              <div class="unit-selector-group">
+                <span class="unit-selector-label">Pilih & Kelola Produk / Nomor Unit:</span>
+                <div class="unit-selector-controls">
+                  <select id="product-select" class="product-select-input"></select>
+                  <button type="button" id="btn-toggle-archive" class="btn btn-amber-soft btn-sm hidden"></button>
+                  <button type="button" id="btn-add-product" class="btn btn-outline btn-sm hidden">
+                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span>Tambah Unit</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="toolbar-action-wrap">
+                <button type="button" id="btn-add-ncr" class="btn btn-indigo btn-mobile-full hidden">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span>Tambah Master NCR Baru</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <div class="filter-group">
+                <span class="filter-label">Filter Status:</span>
+                <div class="pill-group" id="unit-filter-pills">
+                  <button type="button" class="pill-btn active" data-filter="ALL">Semua</button>
+                  <button type="button" class="pill-btn" data-filter="OPEN">OPEN</button>
+                  <button type="button" class="pill-btn" data-filter="CLOSED">CLOSED</button>
+                </div>
+              </div>
+
+              <div class="search-input-wrap search-unit-wrap">
+                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input type="text" id="search-ncr" placeholder="Cari No. NCR, part, atau temuan...">
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="mobile-card-table">
+                <thead>
+                  <tr>
+                    <th>No. NCR & Tanggal</th>
+                    <th>Area / Komponen Part</th>
+                    <th>Deskripsi Ketidaksesuaian</th>
+                    <th>Cakupan Unit</th>
+                    <th>Status Unit Ini</th>
+                    <th>Galeri Bukti Foto & Catatan</th>
+                    <th class="text-right">Aksi Kelola / Status Verifikasi</th>
+                  </tr>
+                </thead>
+                <tbody id="ncr-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= VIEW 3: MANAJEMEN USER (ADMIN) ================= -->
+        <div id="section-users" class="hidden">
+          <div class="panel-card">
+            <div class="panel-toolbar">
+              <div>
+                <h3 class="panel-title">Daftar Akun Pengguna</h3>
+                <p class="panel-desc">Kelola kredensial login untuk Admin QC dan Inspector lapangan</p>
+              </div>
+              <button type="button" id="btn-open-add-user" class="btn btn-indigo btn-mobile-full">
+                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                </svg>
+                <span>Tambah User Baru</span>
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="mobile-card-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Hak Akses (Role)</th>
+                    <th class="text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="user-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ================= BOTTOM NAVIGATION BAR KHUSUS ANDROID / MOBILE ================= -->
+      <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+        <button type="button" id="bnav-history" class="bnav-item active">
+          <div class="bnav-icon-wrap">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+            <span id="bnav-history-badge" class="bnav-badge">0</span>
+          </div>
+          <span>Indeks History</span>
+        </button>
+
+        <button type="button" id="bnav-ncr" class="bnav-item">
+          <div class="bnav-icon-wrap">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+            </svg>
+          </div>
+          <span>Monitoring Unit</span>
+        </button>
+
+        <button type="button" id="bnav-users" class="bnav-item hidden">
+          <div class="bnav-icon-wrap">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+          </div>
+          <span>Akun User</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 1: TAMBAH PRODUK BARU ================= -->
+  <div id="modal-add-product" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Produk / Nomor Unit Baru</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-product', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="form-add-product">
+        <div class="modal-body">
+          <p class="modal-helper-text">
+            Unit baru dapat otomatis mewarisi daftar NCR dari unit aktif sebelumnya sebagai pencegahan temuan berulang.
+          </p>
+          <div class="form-group">
+            <label for="new-product-name">Nama Produk / Nomor Seri Unit</label>
+            <input type="text" id="new-product-name" required placeholder="Contoh: Produk 5 (Unit 05)">
+          </div>
+          <label class="checkbox-inline-label">
+            <input type="checkbox" id="inherit-ncr" checked>
+            <span>Salin daftar NCR aktif dari produk terakhir</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-add-product', false)">Batal</button>
+          <button type="submit" class="btn btn-indigo">Simpan Produk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 2: TAMBAH MASTER NCR ================= -->
+  <div id="modal-add-ncr" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Master NCR Baru</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-ncr', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="form-add-ncr">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="ncr-no">Nomor NCR</label>
+            <input type="text" id="ncr-no" required placeholder="Contoh: NCR-2026-004">
+          </div>
+          <div class="form-group">
+            <label for="ncr-part">Area / Komponen Part</label>
+            <input type="text" id="ncr-part" required placeholder="Contoh: Frame Underframe / Bogie">
+          </div>
+          <div class="form-group">
+            <label for="ncr-desc">Deskripsi Ketidaksesuaian</label>
+            <textarea id="ncr-desc" required rows="2" placeholder="Jelaskan detail temuan agar dicek di produk target..."></textarea>
+          </div>
+          <div class="form-group mb-0">
+            <div class="checklist-header-row">
+              <label class="mb-0">Terapkan NCR ke Produk Pilihan:</label>
+              <button type="button" id="btn-select-active" class="link-action-btn">
+                Pilih Semua Produk Aktif
+              </button>
+            </div>
+            <div id="ncr-product-checklist" class="checklist-container"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-add-ncr', false)">Batal</button>
+          <button type="submit" class="btn btn-indigo">Simpan Master NCR</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 3: UBAH DATA NCR & CAKUPAN UNIT ================= -->
+  <div id="modal-edit-ncr" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Ubah Data NCR & Cakupan Unit</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-edit-ncr', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="form-edit-ncr">
+        <div class="modal-body">
+          <input type="hidden" id="edit-ncr-id">
+          <div class="form-group">
+            <label for="edit-ncr-no">Nomor NCR</label>
+            <input type="text" id="edit-ncr-no" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-ncr-part">Area / Komponen Part</label>
+            <input type="text" id="edit-ncr-part" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-ncr-desc">Deskripsi Ketidaksesuaian</label>
+            <textarea id="edit-ncr-desc" required rows="2"></textarea>
+          </div>
+          <div class="form-group mb-0">
+            <label>Cakupan Produk / Nomor Unit Wajib Periksa:</label>
+            <div id="edit-product-checklist" class="checklist-container"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-edit-ncr', false)">Batal</button>
+          <button type="submit" class="btn btn-indigo">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 4: MULTIPLE UPLOAD FOTO KHUSUS ANDROID (KAMERA + GALERI) ================= -->
+  <div id="modal-upload-foto" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Bukti Inspector (Multi-Foto)</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-upload-foto', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="form-upload-foto">
+        <div class="modal-body">
+          <p id="upload-ncr-title" class="upload-ncr-subtitle"></p>
+          <input type="hidden" id="upload-ncr-id">
+
+          <div class="form-group">
+            <div class="checklist-header-row">
+              <label class="mb-0">Ambil / Pilih Foto (Otomatis Kompresi HD)</label>
+              <span id="upload-photo-counter" class="badge badge-indigo">0 Foto (0 KB)</span>
+            </div>
+
+            <!-- Tombol Ganda Khusus HP Android: Kamera Langsung vs Galeri Multi-Foto -->
+            <div class="android-upload-grid">
+              <label for="foto-input-camera" class="android-upload-btn camera-btn">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                <span class="upload-btn-title">Buka Kamera HP</span>
+                <span class="upload-btn-sub">Potret langsung bertahap</span>
+              </label>
+
+              <label for="foto-input-gallery" class="android-upload-btn gallery-btn">
+                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                <span class="upload-btn-title">Pilih Galeri HP</span>
+                <span class="upload-btn-sub">Pilih 2+ foto sekaligus</span>
+              </label>
+            </div>
+
+            <!-- Input 1: Kamera Belakang Langsung (Android) -->
+            <input type="file" id="foto-input-camera" accept="image/*" capture="environment" class="hidden">
+            <!-- Input 2: Pilih Banyak Foto dari Galeri -->
+            <input type="file" id="foto-input-gallery" accept="image/*" multiple class="hidden">
+
+            <!-- Grid Preview Multi-Foto beserta Indikator KB -->
+            <div id="foto-preview-grid" class="preview-grid hidden"></div>
+          </div>
+
+          <div class="form-group mb-0">
+            <label for="foto-note">Catatan Verifikasi Inspector</label>
+            <input type="text" id="foto-note" required placeholder="Contoh: Sudah dicek dari 2 sudut, dimensi & las sesuai drawing">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-upload-foto', false)">Batal</button>
+          <button type="submit" class="btn btn-emerald">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+            <span>Simpan & Ubah CLOSED</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 5: TAMBAH USER ================= -->
+  <div id="modal-add-user" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Tambah Akun User</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-user', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="form-add-user">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="new-username">Username</label>
+            <input type="text" id="new-username" required placeholder="Contoh: inspector_budi">
+          </div>
+          <div class="form-group">
+            <label for="new-password">Password</label>
+            <input type="text" id="new-password" required placeholder="Masukkan password">
+          </div>
+          <div class="form-group mb-0">
+            <label for="new-role">Hak Akses (Role)</label>
+            <select id="new-role">
+              <option value="inspector">Inspector (Akses Upload Foto)</option>
+              <option value="admin">Admin (Kelola NCR, Produk & User)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-add-user', false)">Batal</button>
+          <button type="submit" class="btn btn-indigo">Simpan User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 6: LIGHTBOX GALERI MULTI-FOTO (SUPPORT SWIPE ANDROID) ================= -->
+  <div id="modal-lightbox" class="modal-backdrop hidden" onclick="toggleModal('modal-lightbox', false)">
+    <div class="modal-panel modal-lightbox-panel" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="lightbox-title" class="modal-title">Detail Foto Bukti</h3>
+          <div id="lightbox-counter" class="lightbox-counter-text"></div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-lightbox', false)">
+          <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="lightbox-stage" class="lightbox-stage">
+          <button type="button" id="lightbox-prev" class="lightbox-nav-btn lightbox-nav-prev" onclick="stepLightbox(-1)">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+          </button>
+          <img id="lightbox-img" src="" class="lightbox-main-img" alt="Bukti NCR">
+          <button type="button" id="lightbox-next" class="lightbox-nav-btn lightbox-nav-next" onclick="stepLightbox(1)">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+          </button>
+        </div>
+        <div class="swipe-hint-mobile">Geser gambar ke kiri / kanan untuk melihat foto lainnya</div>
+
+        <div id="lightbox-thumbs" class="lightbox-thumbs"></div>
+        <p id="lightbox-note" class="lightbox-note-text"></p>
+        <p id="lightbox-meta" class="lightbox-meta-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
