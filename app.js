@@ -5,7 +5,7 @@
  * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
  * Jika dikosongkan "", aplikasi otomatis berjalan dalam Mode Lokal (LocalStorage).
  */
-const GAS_API_URL = ""; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec"; 
 
 // Pengaturan Kompresi Foto Otomatis (Hemat Storage GDrive hingga 90%)
 const IMAGE_MAX_WIDTH = 1280; // Resolusi HD 1280px
