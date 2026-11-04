@@ -69,7 +69,6 @@
           <div class="sidebar-brand-logo">QC</div>
           <div>
             <div class="sidebar-brand-title">NCR Portal</div>
-            <div class="sidebar-brand-sub">Quality Control</div>
           </div>
         </div>
         <button type="button" id="btn-close-sidebar-mobile" class="sidebar-close-mobile" title="Tutup">
@@ -97,7 +96,7 @@
             <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
             </svg>
-            <span>Monitoring Unit</span>
+            <span>Monitoring per Unit</span>
           </div>
         </button>
 
@@ -165,7 +164,7 @@
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-text-wrap">
-                <div class="stat-label">Master NCR</div>
+                <div class="stat-label">NCR</div>
                 <div id="hist-stat-master" class="stat-value">0</div>
                 <div class="stat-sub">Terdaftar</div>
               </div>
@@ -219,17 +218,8 @@
           <div class="panel-card">
             <div class="panel-toolbar">
               <div class="toolbar-info-group">
-                <h3 class="panel-title">Daftar & History Master NCR</h3>
+                <h3 class="panel-title">Daftar & History NCR</h3>
                 <p class="panel-desc">Ringkasan seluruh NCR dan status di tiap unit produk.</p>
-              </div>
-
-              <div class="toolbar-action-wrap">
-                <button type="button" id="btn-add-ncr-history" class="btn btn-indigo btn-mobile-full hidden">
-                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  <span>Tambah Master NCR</span>
-                </button>
               </div>
             </div>
 
@@ -350,7 +340,7 @@
                   <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
-                  <span>Tambah Master NCR</span>
+                  <span>Tambah NCR</span>
                 </button>
               </div>
             </div>
@@ -475,7 +465,7 @@
           </div>
           <label class="checkbox-inline-label">
             <input type="checkbox" id="inherit-ncr" checked>
-            <span>Terapkan daftar Master NCR yang ada ke unit ini</span>
+            <span>Terapkan daftar NCR yang ada ke unit ini</span>
           </label>
         </div>
         <div class="modal-footer">
@@ -486,11 +476,11 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 2: TAMBAH MASTER NCR BARU (SCROLLABLE + STICKY FOOTER) ================= -->
+  <!-- ================= MODAL 2: TAMBAH NCR BARU ================= -->
   <div id="modal-add-ncr" class="modal-backdrop hidden">
     <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
-        <h3 class="modal-title">Input Master NCR Baru</h3>
+        <h3 class="modal-title">Tambah NCR</h3>
         <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-ncr', false)">✕</button>
       </div>
       <form id="form-add-ncr">
@@ -570,17 +560,17 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" onclick="toggleModal('modal-add-ncr', false)">Batal</button>
-          <button type="submit" class="btn btn-indigo">Simpan Master NCR</button>
+          <button type="submit" class="btn btn-indigo">Simpan NCR</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ================= MODAL 3: EDIT MASTER NCR (SCROLLABLE + STICKY FOOTER) ================= -->
+  <!-- ================= MODAL 3: EDIT NCR ================= -->
   <div id="modal-edit-ncr" class="modal-backdrop hidden">
     <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
-        <h3 class="modal-title">Edit Master NCR</h3>
+        <h3 class="modal-title">Edit NCR</h3>
         <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-edit-ncr', false)">✕</button>
       </div>
       <form id="form-edit-ncr">
