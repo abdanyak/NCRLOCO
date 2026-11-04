@@ -634,7 +634,7 @@ function buildGdriveDocHtml(ncr) {
   return '';
 }
 
-// ================= RENDER HISTORY NCR (DENGAN DROPDOWN UNIT) =================
+// ================= RENDER HISTORY NCR =================
 function renderHistoryView() {
   const tbody = document.getElementById('history-table-body');
   tbody.innerHTML = '';
@@ -701,35 +701,64 @@ function renderHistoryView() {
 
   filteredHistory.forEach((item, index) => {
     let closedCount = 0;
-    let unitDropdownHtml = '';
+    let unitCardsHtml = '';
 
     if (item.assignedProducts.length === 0) {
-      unitDropdownHtml =
-        '<div style="padding:8px; font-size:12.5px; color:var(--slate-500);">' +
+      unitCardsHtml =
+        '<div style="padding:10px; border-radius:8px; border:1px dashed var(--slate-300); background:var(--slate-50); color:var(--slate-500); font-size:12.5px;">' +
           'Belum ada unit. ' +
           (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit &rarr;</button>' : '') +
         '</div>';
     } else {
-      // Menggunakan Dropdown interaktif untuk menampilkan status dari puluhan unit dengan rapi
-      unitDropdownHtml = 
-        '<div style="display:flex; flex-direction:column; gap:6px;">' +
-          '<select class="product-select-input" style="width:100%; font-size:12.5px; padding:6px 10px;" onchange="if(this.value) { const parts=this.value.split(\'__\'); openLightboxByIndex(Number(parts[0]), Number(parts[1]), 0); }">' +
-            '<option value="">-- Pilih Unit (' + item.assignedProducts.length + ' Unit) --</option>';
-
+      // Dibungkus dengan scroll-box agar aman meskipun ada sampai 50 unit
+      unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">';
       item.assignedProducts.forEach(prodName => {
         const prodIdx = getProductIndex(prodName);
+        const prodObj = products[prodIdx];
+        const prodStateBadge = (prodObj && prodObj.status === 'archived')
+          ? '<span style="font-size:10px; color:var(--slate-500); background:var(--slate-200); padding:1px 5px; border-radius:4px;">Arsip</span>'
+          : '';
+
         const key = prodName + '_' + item.id;
-        const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '' };
+        const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '' };
         const photos = getPhotosArray(followUp);
-        const isClosed = followUp.status === 'CLOSED';
 
-        if (isClosed) closedCount++;
+        if (followUp.status === 'CLOSED') {
+          closedCount++;
+          const driveLinkHtml = followUp.folderUrl
+            ? '<a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
+            : '';
 
-        const statusText = isClosed ? '✔ CLOSED (' + photos.length + ' Foto)' : '⏳ OPEN (Belum dicek)';
-        unitDropdownHtml += '<option value="' + prodIdx + '__' + item.id + '" ' + (!isClosed ? 'style="color:var(--rose-600);"' : 'style="color:var(--emerald-650);"') + '>' + prodName + ' — ' + statusText + '</option>';
+          unitCardsHtml +=
+            '<div class="history-unit-card is-closed">' +
+              '<div style="min-width:0; flex:1;">' +
+                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
+                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
+                  prodStateBadge +
+                  '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
+                '</div>' +
+                '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
+                  (followUp.note || 'OK') +
+                '</div>' +
+                driveLinkHtml +
+              '</div>' +
+              buildThumbnailsHtml(photos, prodIdx, item.id) +
+            '</div>';
+        } else {
+          unitCardsHtml +=
+            '<div class="history-unit-card is-open">' +
+              '<div style="min-width:0; flex:1;">' +
+                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
+                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
+                  prodStateBadge +
+                  '<span class="badge badge-open">OPEN</span>' +
+                '</div>' +
+                '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>' +
+              '</div>' +
+            '</div>';
+        }
       });
-
-      unitDropdownHtml += '</select><div style="font-size:11px; color:var(--slate-400);">Pilih unit di atas untuk melihat detail/foto bukti</div></div>';
+      unitCardsHtml += '</div></div>';
     }
 
     const totalAssigned = item.assignedProducts.length;
@@ -783,7 +812,7 @@ function renderHistoryView() {
         buildMasterPhotosHtml(item) +
       '</td>' +
       '<td data-label="Progress Unit">' + progressHtml + '</td>' +
-      '<td data-label="Status per Unit">' + unitDropdownHtml + '</td>';
+      '<td data-label="Status per Unit">' + unitCardsHtml + '</td>';
     tbody.appendChild(tr);
   });
 }
