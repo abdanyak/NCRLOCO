@@ -56,7 +56,7 @@ body {
 .text-emerald { color: var(--emerald-600) !important; }
 .text-muted { color: var(--slate-400); }
 
-/* ================= OVERLAY LOADING ================= */
+/* ================= OVERLAY LOADING ================= -->
 .cloud-loading {
   position: fixed;
   inset: 0;
@@ -587,6 +587,7 @@ body {
   transform: translateY(-50%);
   color: var(--slate-400);
   pointer-events: none;
+  z-index: 2;
 }
 .search-input-wrap input {
   padding-left: 36px !important;
@@ -731,16 +732,17 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--amber-100);
 }
 
-/* ================= BADGES & PILLS ================= */
+/* ================= PERBAIKAN BADGE TUMPANG TINDIH ================= */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  font-size: 11.5px;
-  font-weight: 600;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
   border-radius: 9999px;
-  max-width: 100%;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .dot {
@@ -784,11 +786,20 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-/* ================= TABLES & CARDS (ANTI OVERFLOW) ================= */
+/* ================= PERBAIKAN STATUS PER UNIT NUMPUK KE BAWAH (SCROLLABLE CONTAINER) ================= */
+.history-unit-scroll-box {
+  max-height: 170px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
 .history-unit-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .history-unit-card {
@@ -796,7 +807,7 @@ input:focus, select:focus, textarea:focus {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--slate-200);
   background: var(--slate-50);
@@ -812,17 +823,16 @@ input:focus, select:focus, textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 5px;
-  padding: 3px 8px;
-  border-radius: 6px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 5px;
   background: var(--indigo-50);
   border: 1px solid var(--indigo-100);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--indigo-700);
   text-decoration: none;
   max-width: 100%;
-  word-break: break-word;
 }
 
 .platform-tag {
@@ -956,9 +966,9 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .thumb-img {
-  width: 44px;
-  height: 44px;
-  border-radius: 7px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   object-fit: cover;
   border: 1px solid var(--slate-300);
   cursor: zoom-in;
@@ -966,13 +976,13 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .thumb-more-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 7px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   background: var(--indigo-50);
   color: var(--indigo-700);
   border: 1px solid var(--indigo-100);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -1028,9 +1038,7 @@ tbody tr:last-child td { border-bottom: none; }
   justify-content: center;
 }
 
-/* ============================================================================
- * PERBAIKAN UTAMA MODAL FORM AGAR BISA DI-SCROLL & TOMBOL SUBMIT SELALU MUNCUL
- * ============================================================================ */
+/* ================= MODAL FORM ================= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1059,7 +1067,6 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-panel-lg { max-width: 560px; }
 .modal-lightbox-panel { max-width: 600px; }
 
-/* Kunci agar <form> tidak memanjang melebihi modal dan memotong tombol submit */
 .modal-panel > form {
   display: flex;
   flex-direction: column;
@@ -1254,9 +1261,7 @@ tbody tr:last-child td { border-bottom: none; }
   word-break: break-word;
 }
 
-/* ============================================================================
- * OPTIMASI TAMPILAN MOBILE / HP (<= 768px) — RAPI & TIDAK KELUAR FRAME
- * ============================================================================ */
+/* ================= RESPONSIF MOBILE ================= */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -1272,22 +1277,12 @@ tbody tr:last-child td { border-bottom: none; }
   .sidebar-close-mobile { display: inline-flex; }
   .mobile-bottom-nav { display: flex; }
 
-  .content-wrapper {
-    padding: 10px 10px 76px 10px;
-  }
-
-  .topbar {
-    padding: 0 10px;
-    height: 54px;
-  }
+  .content-wrapper { padding: 10px 10px 76px 10px; }
+  .topbar { padding: 0 10px; height: 54px; }
   .topbar-title { font-size: 14.5px; }
   .hide-on-small-mobile { display: none !important; }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-bottom: 12px;
-  }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
   .stat-card { padding: 11px 12px; }
   .stat-value { font-size: 18px; }
   .stat-value-unit { font-size: 13.5px; }
@@ -1295,81 +1290,27 @@ tbody tr:last-child td { border-bottom: none; }
 
   .form-row-2col { grid-template-columns: 1fr; }
 
-  input[type="text"],
-  input[type="password"],
-  input[type="url"],
-  input[type="date"],
-  select,
-  textarea {
+  input[type="text"], input[type="password"], input[type="url"], input[type="date"], select, textarea {
     font-size: 15px;
     padding: 9px 11px;
   }
 
-  .panel-toolbar {
-    padding: 12px;
-    gap: 10px;
-  }
-  .unit-selector-group,
-  .toolbar-info-group,
-  .toolbar-action-wrap,
-  .btn-mobile-full {
-    width: 100%;
-    min-width: 0;
-  }
-  .product-select-input {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-  .unit-selector-controls {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    width: 100%;
-  }
-  .unit-selector-controls select {
-    grid-column: 1 / -1;
-  }
-  .unit-selector-controls .btn {
-    width: 100%;
-    padding: 0 6px;
-    font-size: 12px;
-    height: 36px;
-  }
+  .search-input-wrap input { padding-left: 36px !important; }
 
-  .filter-bar {
-    padding: 10px 12px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  .pill-group {
-    width: 100%;
-    display: flex;
-  }
-  .pill-btn {
-    flex: 1;
-    text-align: center;
-    padding: 6px 4px;
-    font-size: 12px;
-  }
-  .search-history-wrap,
-  .search-unit-wrap {
-    max-width: 100%;
-  }
+  .panel-toolbar { padding: 12px; gap: 10px; }
+  .unit-selector-group, .toolbar-info-group, .toolbar-action-wrap, .btn-mobile-full { width: 100%; min-width: 0; }
+  .product-select-input { width: 100%; max-width: 100%; min-width: 0; }
+  .unit-selector-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
+  .unit-selector-controls select { grid-column: 1 / -1; }
+  .unit-selector-controls .btn { width: 100%; padding: 0 6px; font-size: 12px; height: 36px; }
 
-  .table-responsive {
-    overflow-x: hidden;
-    padding: 8px;
-    background: var(--slate-100);
-  }
+  .filter-bar { padding: 10px 12px; flex-direction: column; align-items: stretch; gap: 8px; }
+  .pill-group { width: 100%; display: flex; }
+  .pill-btn { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
+  .search-history-wrap, .search-unit-wrap { max-width: 100%; }
 
-  table.mobile-card-table,
-  table.mobile-card-table tbody {
-    display: block;
-    width: 100%;
-  }
-
+  .table-responsive { overflow-x: hidden; padding: 8px; background: var(--slate-100); }
+  table.mobile-card-table, table.mobile-card-table tbody { display: block; width: 100%; }
   table.mobile-card-table thead { display: none; }
 
   table.mobile-card-table tbody tr {
@@ -1398,12 +1339,7 @@ tbody tr:last-child td { border-bottom: none; }
   }
 
   table.mobile-card-table tbody td:first-child { padding-top: 0; }
-
-  table.mobile-card-table tbody td:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-    padding-top: 10px;
-  }
+  table.mobile-card-table tbody td:last-child { border-bottom: none; padding-bottom: 0; padding-top: 10px; }
 
   table.mobile-card-table tbody td[data-label]::before {
     content: attr(data-label);
@@ -1432,32 +1368,12 @@ tbody tr:last-child td { border-bottom: none; }
     height: 36px;
   }
 
-  /* Modal Mobile: Nyaman di-scroll & Tombol Submit selalu terlihat di bawah */
-  .modal-backdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
-  .modal-panel {
-    max-width: 100%;
-    width: 100%;
-    max-height: 92vh;
-    max-height: 92dvh;
-    border-radius: 16px 16px 0 0;
-    border-bottom: none;
-  }
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal-panel { max-width: 100%; width: 100%; max-height: 92vh; max-height: 92dvh; border-radius: 16px 16px 0 0; border-bottom: none; }
   .modal-header { padding: 12px 14px; }
   .modal-body { padding: 14px; }
-  .modal-footer {
-    padding: 10px 14px;
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
-    gap: 8px;
-  }
-  .modal-footer .btn {
-    width: 100%;
-    height: 40px;
-    font-size: 13px;
-  }
+  .modal-footer { padding: 10px 14px; display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; }
+  .modal-footer .btn { width: 100%; height: 40px; font-size: 13px; }
 
   .swipe-hint-mobile { display: block; }
 }
