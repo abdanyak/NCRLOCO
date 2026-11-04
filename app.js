@@ -210,6 +210,11 @@ document.getElementById('form-login').addEventListener('submit', function(e) {
 
 document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
+  
+  // HAPUS SESI SAAT KELUAR SISTEM
+  sessionStorage.removeItem('qc_active_role');
+  sessionStorage.removeItem('qc_active_user');
+
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
@@ -280,6 +285,11 @@ document.getElementById('btn-select-active').addEventListener('click', selectAll
 function enterApp(role, username) {
   currentRole = role;
   currentUsername = username || role;
+  
+  // SIMPAN SESI LOGIN AGAR TIDAK HILANG SAAT REFRESH
+  sessionStorage.setItem('qc_active_role', currentRole);
+  sessionStorage.setItem('qc_active_user', currentUsername);
+
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
 
@@ -1264,3 +1274,14 @@ window.toggleModal = function(modalId, show) {
   if (show) el.classList.remove('hidden');
   else el.classList.add('hidden');
 };
+
+// ================= CEK OTOMATIS SESI LOGIN SAAT HALAMAN DI-REFRESH =================
+window.addEventListener('DOMContentLoaded', function() {
+  const savedRole = sessionStorage.getItem('qc_active_role');
+  const savedUser = sessionStorage.getItem('qc_active_user');
+
+  if (savedRole) {
+    // Jika sesi ditemukan, langsung masuk ke dashboard tanpa menampilkan form login
+    enterApp(savedRole, savedUser);
+  }
+});
