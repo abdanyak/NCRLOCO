@@ -710,7 +710,6 @@ function renderHistoryView() {
           (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit &rarr;</button>' : '') +
         '</div>';
     } else {
-      // Dibungkus dengan scroll-box agar aman meskipun ada sampai 50 unit
       unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">';
       item.assignedProducts.forEach(prodName => {
         const prodIdx = getProductIndex(prodName);
@@ -1060,7 +1059,7 @@ if (lightboxStageEl) {
   }, { passive: true });
 }
 
-// ================= MODAL TAMBAH & EDIT NCR =================
+// ================= MODAL TAMBAH & EDIT NCR (DENGAN DUKUNGAN CTRL+V PASTE FOTO) =================
 function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
@@ -1194,6 +1193,38 @@ document.getElementById('edit-master-foto-camera').addEventListener('change', fu
 });
 document.getElementById('edit-master-foto-gallery').addEventListener('change', function() {
   handleMasterPhotoSelection(this, 'edit');
+});
+
+// Fitur Ctrl+V (Paste Gambar) di dalam Modal Tambah & Edit NCR
+async function handlePasteImageEvent(e, mode) {
+  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  let hasImage = false;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile();
+      if (blob) {
+        hasImage = true;
+        try {
+          const compressed = await compressAndResizeImage(blob);
+          if (mode === 'add') tempMasterPhotosAdd.push(compressed.dataUrl);
+          else tempMasterPhotosEdit.push(compressed.dataUrl);
+          renderMasterPhotoPreview(mode);
+        } catch (err) {
+          console.warn('Gagal mem-paste gambar:', err);
+        }
+      }
+    }
+  }
+  if (hasImage) {
+    e.preventDefault();
+  }
+}
+
+document.getElementById('form-add-ncr').addEventListener('paste', function(e) {
+  handlePasteImageEvent(e, 'add');
+});
+document.getElementById('form-edit-ncr').addEventListener('paste', function(e) {
+  handlePasteImageEvent(e, 'edit');
 });
 
 window.removeMasterTempPhoto = function(mode, idx) {
