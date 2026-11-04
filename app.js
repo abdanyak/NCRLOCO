@@ -10,6 +10,7 @@ const GAS_API_URL = "";
 // Pengaturan Kompresi Foto Otomatis (Hemat Storage GDrive hingga 90%)
 const IMAGE_MAX_WIDTH = 1280; // Resolusi HD 1280px
 const IMAGE_JPEG_QUALITY = 0.75; // Kualitas 75% (~120KB - 220KB per foto)
+const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 
 // Kumpulan SVG Heroicons (Tailwind Official Icons)
 const HEROICONS = {
@@ -38,90 +39,16 @@ let searchQuery = '';
 let historyFilter = 'ALL';
 let historySearchQuery = '';
 
-const samplePhotoSvg1 = "data:image/svg+xml;utf8," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">' +
-  '<rect width="320" height="200" fill="#ecfdf5"/>' +
-  '<circle cx="160" cy="80" r="30" fill="#10b981"/>' +
-  '<path d="M146 80 l10 10 l18 -20" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/>' +
-  '<text x="50%" y="140" dominant-baseline="middle" text-anchor="middle" fill="#047857" font-family="Arial" font-size="15" font-weight="bold">FOTO 1 — TAMPAK DEPAN OK</text>' +
-  '</svg>'
-);
+// ================= DATA AWAL KOSONGAN (PRODUCTION CLEAN STATE) =================
+let products = [];
+let selectedProduct = '';
+let masterNcrList = [];
+let productFollowUps = {};
 
-const samplePhotoSvg2 = "data:image/svg+xml;utf8," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">' +
-  '<rect width="320" height="200" fill="#eef2ff"/>' +
-  '<circle cx="160" cy="80" r="30" fill="#4f46e5"/>' +
-  '<path d="M146 80 l10 10 l18 -20" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/>' +
-  '<text x="50%" y="140" dominant-baseline="middle" text-anchor="middle" fill="#4338ca" font-family="Arial" font-size="15" font-weight="bold">FOTO 2 — DETAIL DIMENSI OK</text>' +
-  '</svg>'
-);
-
-let products = [
-  { name: 'Produk 1 (Unit 01)', status: 'archived' },
-  { name: 'Produk 2 (Unit 02)', status: 'active' },
-  { name: 'Produk 3 (Unit 03)', status: 'active' },
-  { name: 'Produk 4 (Unit 04)', status: 'active' }
-];
-let selectedProduct = 'Produk 4 (Unit 04)';
-
+// Hanya menyisakan 1 akun Admin utama agar Anda bisa masuk pertama kali
 let users = [
-  { id: 1, username: 'admin', password: '123', role: 'admin' },
-  { id: 2, username: 'inspector1', password: '123', role: 'inspector' }
+  { id: 1, username: 'admin', password: '123', role: 'admin' }
 ];
-
-let masterNcrList = [
-  {
-    id: 101,
-    no: 'NCR-2026-001',
-    date: '10 Okt 2026',
-    part: 'Welding Joint Sidewall',
-    desc: 'Ditemukan undercut sepanjang 15mm pada sambungan las area pintu.',
-    assignedProducts: ['Produk 1 (Unit 01)', 'Produk 2 (Unit 02)', 'Produk 3 (Unit 03)', 'Produk 4 (Unit 04)']
-  },
-  {
-    id: 102,
-    no: 'NCR-2026-002',
-    date: '12 Okt 2026',
-    part: 'Bracket Panel Listrik',
-    desc: 'Posisi lubang baut bergeser 3mm dari drawing referensi.',
-    assignedProducts: ['Produk 1 (Unit 01)', 'Produk 2 (Unit 02)', 'Produk 3 (Unit 03)', 'Produk 4 (Unit 04)']
-  },
-  {
-    id: 103,
-    no: 'NCR-2026-003',
-    date: '14 Okt 2026',
-    part: 'Pipa Saluran Udara Bogie',
-    desc: 'Klem pengikat pipa kurang rapat pada area bawah frame (Temuan baru di Produk 4).',
-    assignedProducts: ['Produk 2 (Unit 02)', 'Produk 3 (Unit 03)', 'Produk 4 (Unit 04)']
-  }
-];
-
-let productFollowUps = {
-  'Produk 1 (Unit 01)_101': {
-    status: 'CLOSED',
-    photos: [samplePhotoSvg1, samplePhotoSvg2],
-    note: 'Sudah dicek 2 sudut & aman sebelum unit dikirim.',
-    inspector: 'inspector1',
-    updatedAt: '11 Okt 2026, 09:30',
-    folderUrl: ''
-  },
-  'Produk 1 (Unit 01)_102': {
-    status: 'CLOSED',
-    photos: [samplePhotoSvg1],
-    note: 'Dimensi bracket Produk 1 sudah OK.',
-    inspector: 'inspector1',
-    updatedAt: '12 Okt 2026, 14:15',
-    folderUrl: ''
-  },
-  'Produk 2 (Unit 02)_101': {
-    status: 'CLOSED',
-    photos: [samplePhotoSvg1, samplePhotoSvg2],
-    note: 'Sambungan las sidewall Unit 02 sudah sesuai.',
-    inspector: 'inspector1',
-    updatedAt: '13 Okt 2026, 11:00',
-    folderUrl: ''
-  }
-};
 
 // ================= SINKRONISASI CLOUD & LOCALSTORAGE =================
 function isCloudConfigured() {
@@ -138,7 +65,7 @@ function showCloudLoading(show, text) {
 
 function saveToLocalStorage() {
   try {
-    localStorage.setItem('qc_ncr_portal_data', JSON.stringify({
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
       products, users, masterNcrList, productFollowUps
     }));
   } catch (e) {
@@ -148,13 +75,15 @@ function saveToLocalStorage() {
 
 function loadFromLocalStorage() {
   try {
-    const raw = localStorage.getItem('qc_ncr_portal_data');
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed.products) products = parsed.products;
-    if (parsed.users) users = parsed.users;
-    if (parsed.masterNcrList) masterNcrList = parsed.masterNcrList;
-    if (parsed.productFollowUps) productFollowUps = parsed.productFollowUps;
+    if (Array.isArray(parsed.products)) products = parsed.products;
+    if (Array.isArray(parsed.users) && parsed.users.length > 0) users = parsed.users;
+    if (Array.isArray(parsed.masterNcrList)) masterNcrList = parsed.masterNcrList;
+    if (parsed.productFollowUps && typeof parsed.productFollowUps === 'object') {
+      productFollowUps = parsed.productFollowUps;
+    }
   } catch (e) {
     console.warn('Gagal membaca LocalStorage:', e);
   }
@@ -182,11 +111,13 @@ async function syncFromCloud() {
     const json = await res.json();
     if (json.status === 'success' && json.data) {
       products = json.data.products || [];
-      users = json.data.users || [];
+      users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
       masterNcrList = json.data.masterNcrList || [];
       productFollowUps = json.data.productFollowUps || {};
       if (products.length > 0 && !products.some(p => p.name === selectedProduct)) {
         selectedProduct = products[products.length - 1].name;
+      } else if (products.length === 0) {
+        selectedProduct = '';
       }
       saveToLocalStorage();
       renderProductDropdown();
@@ -213,10 +144,10 @@ async function sendActionToBackend(payload, loadingText) {
     });
     const json = await res.json();
     if (json.status === 'success' && json.data) {
-      products = json.data.products;
-      users = json.data.users;
-      masterNcrList = json.data.masterNcrList;
-      productFollowUps = json.data.productFollowUps;
+      products = json.data.products || [];
+      users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
+      masterNcrList = json.data.masterNcrList || [];
+      productFollowUps = json.data.productFollowUps || {};
       saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
@@ -269,16 +200,12 @@ document.getElementById('form-login').addEventListener('submit', function(e) {
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value.trim();
   const found = users.find(user => user.username === u && user.password === p);
-  if (found) enterApp(found.role, found.username);
-  else alert('Username atau Password salah! Gunakan tombol Demo Akses Instan di bawah.');
-});
-
-document.getElementById('btn-quick-admin').addEventListener('click', function() {
-  enterApp('admin', 'admin');
-});
-
-document.getElementById('btn-quick-inspector').addEventListener('click', function() {
-  enterApp('inspector', 'inspector1');
+  if (found) {
+    document.getElementById('form-login').reset();
+    enterApp(found.role, found.username);
+  } else {
+    alert('Username atau Password yang Anda masukkan salah!');
+  }
 });
 
 document.getElementById('btn-logout').addEventListener('click', function() {
@@ -288,7 +215,6 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   document.getElementById('login-view').classList.remove('hidden');
 });
 
-// Event Listener Navigasi Sidebar & Bottom Bar Android
 ['history', 'ncr', 'users'].forEach(tabName => {
   const sideBtn = document.getElementById('nav-' + tabName);
   const botBtn = document.getElementById('bnav-' + tabName);
@@ -403,6 +329,23 @@ function renderAllViews() {
 function renderProductDropdown() {
   const select = document.getElementById('product-select');
   select.innerHTML = '';
+
+  if (products.length === 0) {
+    selectedProduct = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '-- Belum Ada Unit Produk --';
+    select.appendChild(opt);
+    select.disabled = true;
+    updateProductStatusUI();
+    return;
+  }
+
+  select.disabled = false;
+  if (!selectedProduct || !products.some(p => p.name === selectedProduct)) {
+    selectedProduct = products[products.length - 1].name;
+  }
+
   products.forEach(prod => {
     const opt = document.createElement('option');
     opt.value = prod.name;
@@ -420,7 +363,13 @@ function updateProductStatusUI() {
   const btnToggle = document.getElementById('btn-toggle-archive');
   const statName = document.getElementById('stat-product-name');
   const statState = document.getElementById('stat-product-state');
-  if (!prodObj) return;
+
+  if (!prodObj) {
+    statName.textContent = 'Belum Ada Unit';
+    statState.innerHTML = '<span class="badge badge-archived">Silakan tambah unit</span>';
+    btnToggle.classList.add('hidden');
+    return;
+  }
 
   statName.textContent = prodObj.name;
 
@@ -434,7 +383,9 @@ function updateProductStatusUI() {
     btnToggle.className = 'btn btn-amber-soft btn-sm';
   }
 
-  if (currentRole !== 'admin') {
+  if (currentRole === 'admin') {
+    btnToggle.classList.remove('hidden');
+  } else {
     btnToggle.classList.add('hidden');
   }
 }
@@ -465,7 +416,12 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
   const name = document.getElementById('new-product-name').value.trim();
   const inherit = document.getElementById('inherit-ncr').checked;
 
-  if (name && !products.some(p => p.name === name)) {
+  if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    alert('Nama Produk / Nomor Unit tersebut sudah terdaftar!');
+    return;
+  }
+
+  if (name) {
     const lastActiveProd = [...products].reverse().find(p => p.status === 'active');
     const lastActiveName = lastActiveProd ? lastActiveProd.name : null;
 
@@ -541,6 +497,11 @@ function renderHistoryView() {
   document.getElementById('hist-stat-open').textContent = totalOpenInstances;
   document.getElementById('hist-stat-closed').textContent = totalClosedInstances;
   document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai';
+
+  if (masterNcrList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 36px; color: var(--slate-400);">Belum ada data Master NCR yang terdaftar di sistem.</td></tr>';
+    return;
+  }
 
   const filteredHistory = masterNcrList.filter(item => {
     let closedUnits = 0;
@@ -671,10 +632,19 @@ function renderHistoryView() {
   });
 }
 
-// ================= RENDER TABEL MONITORING PER UNIT (MOBILE CARD READY) =================
+// ================= RENDER TABEL MONITORING PER UNIT =================
 function renderNcrTable() {
   const tbody = document.getElementById('ncr-table-body');
   tbody.innerHTML = '';
+
+  if (products.length === 0 || !selectedProduct) {
+    document.getElementById('stat-total-ncr').textContent = 0;
+    document.getElementById('stat-open-ncr').textContent = 0;
+    document.getElementById('stat-closed-ncr').textContent = 0;
+    document.getElementById('stat-progress-pct').textContent = '0% Selesai';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 36px; color: var(--slate-400);">Belum ada Produk / Nomor Unit yang terdaftar. Silakan tambah unit terlebih dahulu.</td></tr>';
+    return;
+  }
 
   const allProductNcr = masterNcrList.filter(item => item.assignedProducts.includes(selectedProduct));
   let totalCount = allProductNcr.length;
@@ -706,7 +676,7 @@ function renderNcrTable() {
   });
 
   if (displayedNcr.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 32px; color: var(--slate-400);">Tidak ada data NCR yang cocok dengan filter pada <b>' + selectedProduct + '</b>.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 32px; color: var(--slate-400);">Belum ada data NCR pada <b>' + selectedProduct + '</b>.</td></tr>';
     return;
   }
 
@@ -863,7 +833,6 @@ function updateLightboxSlide() {
   }
 }
 
-// Gesture Geser Jari (Touch Swipe Kiri / Kanan) di Lightbox untuk HP Android
 let touchStartX = 0;
 const lightboxStageEl = document.getElementById('lightbox-stage');
 if (lightboxStageEl) {
@@ -875,14 +844,19 @@ if (lightboxStageEl) {
     const touchEndX = e.changedTouches[0].screenX;
     const diff = touchStartX - touchEndX;
     if (Math.abs(diff) > 40) {
-      if (diff > 0) stepLightbox(1); // Geser ke kiri -> Foto berikutnya
-      else stepLightbox(-1);         // Geser ke kanan -> Foto sebelumnya
+      if (diff > 0) stepLightbox(1);
+      else stepLightbox(-1);
     }
   }, { passive: true });
 }
 
 // ================= MODAL TAMBAH & EDIT MASTER NCR =================
 function openAddNcrModal() {
+  if (products.length === 0) {
+    alert('Belum ada Produk / Nomor Unit yang terdaftar.\nSilakan klik tombol "+ Tambah Unit" terlebih dahulu sebelum membuat Master NCR.');
+    return;
+  }
+
   const container = document.getElementById('ncr-product-checklist');
   container.innerHTML = '';
 
@@ -1224,7 +1198,7 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
   }, 'Mengunggah ' + compressedDataUrls.length + ' foto terkompresi ke Folder Google Drive & Sheets...');
 });
 
-// ================= MANAJEMEN USER (MOBILE CARD READY) =================
+// ================= MANAJEMEN USER (DENGAN PROTEKSI ADMIN UTAMA) =================
 function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
@@ -1241,9 +1215,15 @@ function renderUserTable() {
 
 document.getElementById('form-add-user').addEventListener('submit', async function(e) {
   e.preventDefault();
+  const uname = document.getElementById('new-username').value.trim();
+  if (users.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
+    alert('Username tersebut sudah digunakan!');
+    return;
+  }
+
   const newUser = {
     id: Date.now(),
-    username: document.getElementById('new-username').value.trim(),
+    username: uname,
     password: document.getElementById('new-password').value.trim(),
     role: document.getElementById('new-role').value
   };
@@ -1259,6 +1239,17 @@ document.getElementById('form-add-user').addEventListener('submit', async functi
 });
 
 window.deleteUser = async function(id) {
+  const targetUser = users.find(u => u.id === id);
+  if (!targetUser) return;
+
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  if (targetUser.role === 'admin' && adminCount <= 1) {
+    alert('Tidak dapat menghapus satu-satunya akun Admin yang tersisa!');
+    return;
+  }
+
+  if (!confirm('Hapus akun user "' + targetUser.username + '"?')) return;
+
   users = users.filter(u => u.id !== id);
   renderUserTable();
 

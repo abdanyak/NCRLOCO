@@ -129,7 +129,7 @@ body {
 .login-card {
   background: #ffffff;
   width: 100%;
-  max-width: 430px;
+  max-width: 420px;
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
   overflow: hidden;
@@ -137,7 +137,7 @@ body {
 
 .login-header {
   background: var(--slate-900);
-  padding: 28px 24px 24px;
+  padding: 32px 24px 26px;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
@@ -169,29 +169,7 @@ body {
   margin-bottom: 12px;
 }
 
-.login-body { padding: 24px; }
-
-.quick-demo-box {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--slate-200);
-}
-
-.quick-demo-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--slate-400);
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.quick-demo-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
+.login-body { padding: 28px 24px; }
 
 /* ================= LAYOUT & HAMBURGER SIDEBAR ================= */
 .admin-layout {
@@ -1200,7 +1178,6 @@ tbody tr:last-child td { border-bottom: none; }
  * OPTIMASI PENUH UNTUK HP ANDROID / LAYAR MOBILE (<= 768px)
  * ============================================================================ */
 @media (max-width: 768px) {
-  /* 1. Sidebar Drawer & Bottom Navigation Aktif */
   .sidebar {
     position: fixed;
     top: 0;
@@ -1224,7 +1201,6 @@ tbody tr:last-child td { border-bottom: none; }
     display: flex;
   }
 
-  /* Beri ruang di bagian bawah agar konten tidak tertutup Bottom Nav */
   .content-wrapper {
     padding: 12px 12px 84px 12px;
   }
@@ -1240,7 +1216,6 @@ tbody tr:last-child td { border-bottom: none; }
     display: none !important;
   }
 
-  /* 2. Statistik Kompak 2x2 di HP Android */
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -1260,7 +1235,6 @@ tbody tr:last-child td { border-bottom: none; }
     height: 36px;
   }
 
-  /* 3. Toolbar, Input, & Filter Mobile-Friendly (Font 16px mencegah auto-zoom) */
   input[type="text"],
   input[type="password"],
   select,
@@ -1314,7 +1288,6 @@ tbody tr:last-child td { border-bottom: none; }
     max-width: 100%;
   }
 
-  /* 4. TABEL BERUBAH MENJADI KARTU VERTIKAL (MOBILE CARD VIEW - TANPA SCROLL SAMPING) */
   .table-responsive {
     overflow-x: visible;
     padding: 10px;
@@ -1364,7 +1337,6 @@ tbody tr:last-child td { border-bottom: none; }
     padding-top: 12px;
   }
 
-  /* Label otomatis di atas setiap bagian kartu pada HP */
   table.mobile-card-table tbody td[data-label]::before {
     content: attr(data-label);
     display: block;
@@ -1384,7 +1356,6 @@ tbody tr:last-child td { border-bottom: none; }
     grid-template-columns: 1fr;
   }
 
-  /* Tombol aksi di dalam kartu melebar penuh agar mudah ditekan jempol */
   .mobile-action-group {
     display: flex !important;
     width: 100%;
@@ -1396,7 +1367,6 @@ tbody tr:last-child td { border-bottom: none; }
     font-size: 13px;
   }
 
-  /* 5. Modal Bottom-Sheet (Muncul dari bawah layar seperti aplikasi Android) */
   .modal-backdrop {
     align-items: flex-end;
     padding: 0;
