@@ -2,20 +2,16 @@
  * ============================================================================
  * KONFIGURASI API GOOGLE APPS SCRIPT (GOOGLE SHEETS & GOOGLE DRIVE)
  * ============================================================================
- * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
- * Jika dikosongkan "", aplikasi otomatis berjalan dalam Mode Lokal (LocalStorage).
  */
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec";
 
-// Pengaturan Kompresi Foto Otomatis (Hemat Storage GDrive hingga 90%)
-const IMAGE_MAX_WIDTH = 1280; // Resolusi HD 1280px
-const IMAGE_JPEG_QUALITY = 0.75; // Kualitas 75% (~120KB - 220KB per foto)
+const IMAGE_MAX_WIDTH = 1280;
+const IMAGE_JPEG_QUALITY = 0.75;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 
-// Kumpulan SVG Heroicons
 const HEROICONS = {
-  calendar: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:4px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>',
-  wrench: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:3px; color:var(--indigo-600);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" /></svg>',
+  calendar: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:3px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>',
+  wrench: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:2px; color:var(--indigo-600);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" /></svg>',
   pencil: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>',
   trash: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>',
   camera: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" /></svg>',
@@ -32,18 +28,12 @@ const HEROICONS = {
 let currentRole = null;
 let currentUsername = '';
 
-// State Foto Bukti Inspector
 let tempImageList = [];
-
-// State Foto Master NCR (Saat Tambah / Edit Master NCR)
 let tempMasterPhotosAdd = [];
 let tempMasterPhotosEdit = [];
+let tempMasterDocAdd = null;
+let tempMasterDocEdit = null;
 
-// State File GDrive NCR (Saat Tambah / Edit Master NCR)
-let tempMasterDocAdd = null;  // { name, dataUrl }
-let tempMasterDocEdit = null; // { name, dataUrl }
-
-// State Lightbox
 let activeLightboxPhotos = [];
 let activeLightboxIndex = 0;
 
@@ -52,18 +42,16 @@ let searchQuery = '';
 let historyFilter = 'ALL';
 let historySearchQuery = '';
 
-// ================= DATA AWAL KOSONGAN (PRODUCTION CLEAN STATE) =================
 let products = [];
 let selectedProduct = '';
 let masterNcrList = [];
 let productFollowUps = {};
 
-// Akun Admin utama
 let users = [
   { id: 1, username: 'admin', password: '123', role: 'admin' }
 ];
 
-// ================= HELPER FORMAT TANGGAL & DATA MASTER NCR =================
+// ================= HELPER TANGGAL & DATA =================
 function getTodayIsoDate() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -87,7 +75,6 @@ function normalizeNcrItem(item) {
   let platform = item.platform || '';
   let title = item.title || '';
 
-  // Kompatibilitas dengan data lama yang hanya menyimpan kolom `part`
   if (!platform && !title && item.part) {
     if (item.part.includes(' — ')) {
       const splitParts = item.part.split(' — ');
@@ -119,7 +106,7 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= SINKRONISASI CLOUD & LOCALSTORAGE =================
+// ================= SINKRONISASI CLOUD & LOKAL =================
 function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
@@ -138,7 +125,7 @@ function saveToLocalStorage() {
       products, users, masterNcrList, productFollowUps
     }));
   } catch (e) {
-    console.warn('LocalStorage penuh atau tidak tersedia:', e);
+    console.warn('LocalStorage penuh:', e);
   }
 }
 
@@ -161,7 +148,6 @@ function loadFromLocalStorage() {
   }
 }
 
-// Menggabungkan data atribut tambahan lokal agar tidak hilang jika backend GAS belum memiliki kolom baru
 function mergeCloudMasterWithLocalExtras(cloudList, localList) {
   return (cloudList || []).map(cloudItem => {
     const localMatch = (localList || []).find(l => Number(l.id) === Number(cloudItem.id));
@@ -192,17 +178,17 @@ async function syncFromCloud() {
   const previousLocalMaster = [...masterNcrList];
 
   if (!isCloudConfigured()) {
-    modeBadge.textContent = 'Mode Lokal';
+    modeBadge.textContent = 'Lokal';
     modeBadge.className = 'badge badge-archived hide-on-small-mobile';
     btnRefresh.classList.add('hidden');
     return;
   }
 
-  modeBadge.innerHTML = '<span class="dot"></span> Cloud GSheets';
+  modeBadge.innerHTML = '<span class="dot"></span> Cloud';
   modeBadge.className = 'badge badge-closed hide-on-small-mobile';
   btnRefresh.classList.remove('hidden');
 
-  showCloudLoading(true, 'Memuat data dari Google Sheets...');
+  showCloudLoading(true, 'Memuat data...');
   try {
     const res = await fetch(GAS_API_URL);
     const json = await res.json();
@@ -221,7 +207,7 @@ async function syncFromCloud() {
       renderAllViews();
     }
   } catch (err) {
-    console.error('Gagal memuat dari Google Sheets:', err);
+    console.error('Gagal memuat dari Cloud:', err);
   } finally {
     showCloudLoading(false);
   }
@@ -232,7 +218,7 @@ async function sendActionToBackend(payload, loadingText) {
   if (!isCloudConfigured()) return;
 
   const previousLocalMaster = [...masterNcrList];
-  showCloudLoading(true, loadingText || 'Menyimpan ke Google Sheets & Drive...');
+  showCloudLoading(true, loadingText || 'Menyimpan data...');
   try {
     const res = await fetch(GAS_API_URL, {
       method: 'POST',
@@ -249,10 +235,10 @@ async function sendActionToBackend(payload, loadingText) {
       renderProductDropdown();
       renderAllViews();
     } else if (json.status === 'error') {
-      alert('Pesan Server Google Script: ' + json.message);
+      alert('Error Server: ' + json.message);
     }
   } catch (err) {
-    alert('Gagal mengirim ke Google Sheets. Data tetap tersimpan di penyimpanan lokal perangkat.');
+    alert('Koneksi gagal. Data tersimpan di perangkat.');
   } finally {
     showCloudLoading(false);
   }
@@ -268,15 +254,14 @@ function getPhotosArray(followUp) {
   return [];
 }
 
-// ================= LOGIKA HAMBURGER MENU & BOTTOM NAV MOBILE =================
+// ================= SIDEBAR & NAVIGASI =================
 const appLayout = document.getElementById('app-view');
 const btnHamburger = document.getElementById('btn-hamburger');
 const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const btnCloseSidebarMobile = document.getElementById('btn-close-sidebar-mobile');
 
 function toggleSidebar() {
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
+  if (window.innerWidth <= 768) {
     appLayout.classList.toggle('mobile-sidebar-open');
   } else {
     appLayout.classList.toggle('sidebar-collapsed');
@@ -291,7 +276,6 @@ btnHamburger.addEventListener('click', toggleSidebar);
 sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
 
-// ================= LOGIKA LOGIN & NAVIGASI =================
 document.getElementById('form-login').addEventListener('submit', function(e) {
   e.preventDefault();
   const u = document.getElementById('username').value.trim();
@@ -301,7 +285,7 @@ document.getElementById('form-login').addEventListener('submit', function(e) {
     document.getElementById('form-login').reset();
     enterApp(found.role, found.username);
   } else {
-    alert('Username atau Password yang Anda masukkan salah!');
+    alert('Username atau Password salah!');
   }
 });
 
@@ -309,7 +293,6 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
   sessionStorage.removeItem('qc_active_role');
   sessionStorage.removeItem('qc_active_user');
-
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
@@ -403,9 +386,9 @@ function enterApp(role, username) {
   document.getElementById('sidebar-avatar').textContent = currentUsername.substring(0, 2).toUpperCase();
 
   if (role === 'admin') {
-    badge.innerHTML = '<span class="dot" style="background:var(--indigo-500)"></span> ADMIN QC';
+    badge.innerHTML = '<span class="dot" style="background:var(--indigo-500)"></span> ADMIN';
     badge.className = 'badge badge-indigo';
-    document.getElementById('sidebar-role-text').textContent = 'Full Administrator';
+    document.getElementById('sidebar-role-text').textContent = 'Admin QC';
     navUsers.classList.remove('hidden');
     bnavUsers.classList.remove('hidden');
     btnAddNcr.classList.remove('hidden');
@@ -416,7 +399,7 @@ function enterApp(role, username) {
   } else {
     badge.innerHTML = '<span class="dot" style="background:var(--emerald-500)"></span> INSPECTOR';
     badge.className = 'badge badge-closed';
-    document.getElementById('sidebar-role-text').textContent = 'QC Field Inspector';
+    document.getElementById('sidebar-role-text').textContent = 'Inspector';
     navUsers.classList.add('hidden');
     bnavUsers.classList.add('hidden');
     btnAddNcr.classList.add('hidden');
@@ -448,7 +431,7 @@ function renderProductDropdown() {
     selectedProduct = '';
     const opt = document.createElement('option');
     opt.value = '';
-    opt.textContent = '-- Belum Ada Unit Produk --';
+    opt.textContent = '-- Belum Ada Unit --';
     select.appendChild(opt);
     select.disabled = true;
     updateProductStatusUI();
@@ -480,8 +463,8 @@ function updateProductStatusUI() {
   const statState = document.getElementById('stat-product-state');
 
   if (!prodObj) {
-    statName.textContent = 'Belum Ada Unit';
-    statState.innerHTML = '<span class="badge badge-archived">Silakan tambah unit</span>';
+    statName.textContent = 'Belum Ada';
+    statState.innerHTML = '<span class="badge badge-archived">Kosong</span>';
     btnToggle.classList.add('hidden');
     btnDelete.classList.add('hidden');
     return;
@@ -490,12 +473,12 @@ function updateProductStatusUI() {
   statName.textContent = prodObj.name;
 
   if (prodObj.status === 'archived') {
-    statState.innerHTML = '<span class="badge badge-archived">' + HEROICONS.archiveBox + ' Diarsipkan</span>';
-    btnToggle.innerHTML = HEROICONS.lockOpen + ' <span>Aktifkan Unit</span>';
+    statState.innerHTML = '<span class="badge badge-archived">Arsip</span>';
+    btnToggle.innerHTML = HEROICONS.lockOpen + ' <span>Aktifkan</span>';
     btnToggle.className = 'btn btn-outline';
   } else {
     statState.innerHTML = '<span class="badge badge-closed"><span class="dot"></span> Aktif</span>';
-    btnToggle.innerHTML = HEROICONS.lockClosed + ' <span>Arsipkan Unit</span>';
+    btnToggle.innerHTML = HEROICONS.lockClosed + ' <span>Arsipkan</span>';
     btnToggle.className = 'btn btn-amber-soft';
   }
 
@@ -512,9 +495,7 @@ async function toggleProductStatus() {
   const prodObj = products.find(p => p.name === selectedProduct);
   if (!prodObj) return;
   if (prodObj.status === 'active') {
-    if (!confirm('Tandai "' + selectedProduct + '" sebagai Selesai/Arsip?\n\nUnit yang diarsipkan otomatis TIDAK dicentang saat Anda menambah NCR baru.')) {
-      return;
-    }
+    if (!confirm('Arsipkan unit "' + selectedProduct + '"?')) return;
     prodObj.status = 'archived';
   } else {
     prodObj.status = 'active';
@@ -526,29 +507,26 @@ async function toggleProductStatus() {
     action: 'TOGGLE_PRODUCT_STATUS',
     name: prodObj.name,
     status: prodObj.status
-  }, 'Memperbarui status unit di Google Sheets...');
+  }, 'Memperbarui status unit...');
 }
 
-// ================= FITUR BARU: HAPUS UNIT PRODUK (MENGATASI SALAH INPUT) =================
 async function deleteSelectedProduct() {
   const prodObj = products.find(p => p.name === selectedProduct);
   if (!prodObj) return;
 
   const targetName = prodObj.name;
-  if (!confirm('Hapus unit produk "' + targetName + '"?\n\nData unit ini akan dihapus dari daftar produk, namun data Master NCR tetap aman tersimpan.')) {
+  if (!confirm('Hapus unit "' + targetName + '"? Data Master NCR tetap aman.')) {
     return;
   }
 
   products = products.filter(p => p.name !== targetName);
 
-  // Hapus referensi unit dari setiap Master NCR
   masterNcrList.forEach(ncr => {
     if (Array.isArray(ncr.assignedProducts)) {
       ncr.assignedProducts = ncr.assignedProducts.filter(pName => pName !== targetName);
     }
   });
 
-  // Hapus riwayat followUp khusus untuk unit yang dihapus
   Object.keys(productFollowUps).forEach(key => {
     if (key.startsWith(targetName + '_')) {
       delete productFollowUps[key];
@@ -562,7 +540,7 @@ async function deleteSelectedProduct() {
   await sendActionToBackend({
     action: 'DELETE_PRODUCT',
     name: targetName
-  }, 'Menghapus unit produk dari Google Sheets...');
+  }, 'Menghapus unit...');
 }
 
 document.getElementById('form-add-product').addEventListener('submit', async function(e) {
@@ -571,7 +549,7 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
   const inherit = document.getElementById('inherit-ncr').checked;
 
   if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    alert('Nama Produk / Nomor Unit tersebut sudah terdaftar!');
+    alert('Nama unit sudah ada!');
     return;
   }
 
@@ -584,12 +562,10 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
     if (inherit) {
       masterNcrList.forEach(ncr => {
         if (lastActiveName) {
-          // Salin dari unit aktif terakhir, atau jika Master NCR belum punya unit sama sekali, ikut terapkan
           if (ncr.assignedProducts.includes(lastActiveName) || ncr.assignedProducts.length === 0) {
             if (!ncr.assignedProducts.includes(name)) ncr.assignedProducts.push(name);
           }
         } else {
-          // Jika ini adalah unit produk pertama yang dibuat setelah Master NCR diinput lebih dulu
           if (!ncr.assignedProducts.includes(name)) {
             ncr.assignedProducts.push(name);
           }
@@ -610,7 +586,7 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
       name: name,
       inherit: inherit,
       lastActiveProd: lastActiveName
-    }, 'Menambahkan produk baru ke Google Sheets...');
+    }, 'Menambahkan unit...');
   }
 });
 
@@ -623,11 +599,11 @@ function buildThumbnailsHtml(photos, prodIdx, ncrId) {
   const maxVisible = 3;
   let html = '<div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + src + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')" title="Klik untuk lihat Foto ' + (idx + 1) + '">';
+    html += '<img src="' + src + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')">';
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
-    html += '<div class="thumb-more-badge" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + maxVisible + ')" title="Lihat semua ' + photos.length + ' foto">+' + extra + '</div>';
+    html += '<div class="thumb-more-badge" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + maxVisible + ')">+' + extra + '</div>';
   }
   html += '</div>';
   return html;
@@ -637,9 +613,9 @@ function buildMasterPhotosHtml(ncr) {
   const photos = ncr.masterPhotos || [];
   if (photos.length === 0) return '';
   const maxVisible = 3;
-  let html = '<div style="margin-top:8px;"><div style="font-size:11.5px; font-weight:700; color:var(--slate-500); margin-bottom:4px;">Foto Temuan NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
+  let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + src + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')" title="Lihat Foto Temuan ' + (idx + 1) + '">';
+    html += '<img src="' + src + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')">';
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
@@ -652,17 +628,17 @@ function buildMasterPhotosHtml(ncr) {
 function buildGdriveDocHtml(ncr) {
   if (ncr.gdriveLink) {
     return '<div><a href="' + ncr.gdriveLink + '" target="_blank" rel="noopener" class="gdrive-folder-link">' +
-      HEROICONS.docText + ' <span>Buka File GDrive NCR</span></a></div>';
+      HEROICONS.docText + ' <span>File GDrive</span></a></div>';
   }
   if (ncr.gdriveFileData) {
-    const fileName = ncr.gdriveFileName || 'Dokumen_NCR';
+    const fileName = ncr.gdriveFileName || 'File_NCR';
     return '<div><a href="' + ncr.gdriveFileData + '" download="' + fileName + '" class="gdrive-folder-link">' +
-      HEROICONS.docText + ' <span>Unduh File: ' + fileName + '</span></a></div>';
+      HEROICONS.docText + ' <span>Unduh File</span></a></div>';
   }
   return '';
 }
 
-// ================= RENDER INDEKS HISTORY NCR =================
+// ================= RENDER HISTORY NCR =================
 function renderHistoryView() {
   const tbody = document.getElementById('history-table-body');
   tbody.innerHTML = '';
@@ -691,7 +667,7 @@ function renderHistoryView() {
   document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai';
 
   if (masterNcrList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 36px; color: var(--slate-400);">Belum ada data Master NCR yang terdaftar di sistem.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada Master NCR.</td></tr>';
     return;
   }
 
@@ -723,7 +699,7 @@ function renderHistoryView() {
   });
 
   if (filteredHistory.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 32px; color: var(--slate-400);">Tidak ada indeks history NCR yang sesuai dengan filter pencarian.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>';
     return;
   }
 
@@ -733,9 +709,9 @@ function renderHistoryView() {
 
     if (item.assignedProducts.length === 0) {
       unitCardsHtml =
-        '<div style="padding:12px 14px; border-radius:8px; border:1px dashed var(--slate-300); background:var(--slate-50); color:var(--slate-500); font-size:13px;">' +
-          'Belum diterapkan ke unit produk mana pun. ' +
-          (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit Sekarang &rarr;</button>' : '') +
+        '<div style="padding:10px; border-radius:8px; border:1px dashed var(--slate-300); background:var(--slate-50); color:var(--slate-500); font-size:12.5px;">' +
+          'Belum ada unit. ' +
+          (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit &rarr;</button>' : '') +
         '</div>';
     } else {
       unitCardsHtml = '<div class="history-unit-list">';
@@ -743,8 +719,8 @@ function renderHistoryView() {
         const prodIdx = getProductIndex(prodName);
         const prodObj = products[prodIdx];
         const prodStateBadge = (prodObj && prodObj.status === 'archived')
-          ? '<span style="font-size:10.5px; color:var(--slate-500); background:var(--slate-200); padding:1px 6px; border-radius:4px;">Arsip</span>'
-          : '<span style="font-size:10.5px; color:var(--emerald-700); background:var(--emerald-100); padding:1px 6px; border-radius:4px;">Aktif</span>';
+          ? '<span style="font-size:10px; color:var(--slate-500); background:var(--slate-200); padding:1px 5px; border-radius:4px;">Arsip</span>'
+          : '';
 
         const key = prodName + '_' + item.id;
         const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '' };
@@ -753,19 +729,19 @@ function renderHistoryView() {
         if (followUp.status === 'CLOSED') {
           closedCount++;
           const driveLinkHtml = followUp.folderUrl
-            ? '<a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>Buka Folder GDrive</span></a>'
+            ? '<a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
             : '';
 
           unitCardsHtml +=
             '<div class="history-unit-card is-closed">' +
               '<div style="min-width:0; flex:1;">' +
-                '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
+                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
                   '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
                   prodStateBadge +
-                  '<span class="badge badge-closed" style="padding:2px 7px; font-size:11px;"><span class="dot"></span> CLOSED (' + photos.length + ' Foto)</span>' +
+                  '<span class="badge badge-closed" style="padding:1px 6px; font-size:10.5px;">CLOSED (' + photos.length + ')</span>' +
                 '</div>' +
-                '<div style="font-size:12.5px; color:var(--slate-600); margin-top:4px; line-height:1.4;">' +
-                  '<b>Catatan:</b> ' + (followUp.note || 'Terverifikasi OK') +
+                '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
+                  (followUp.note || 'OK') +
                 '</div>' +
                 driveLinkHtml +
               '</div>' +
@@ -775,14 +751,12 @@ function renderHistoryView() {
           unitCardsHtml +=
             '<div class="history-unit-card is-open">' +
               '<div style="min-width:0; flex:1;">' +
-                '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
+                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
                   '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
                   prodStateBadge +
-                  '<span class="badge badge-open" style="padding:2px 7px; font-size:11px;"><span class="dot"></span> OPEN</span>' +
+                  '<span class="badge badge-open" style="padding:1px 6px; font-size:10.5px;">OPEN</span>' +
                 '</div>' +
-                '<div style="font-size:12px; color:var(--rose-600); margin-top:4px; font-style:italic;">' +
-                  'Belum ada foto & catatan verifikasi inspector' +
-                '</div>' +
+                '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>' +
               '</div>' +
             '</div>';
         }
@@ -797,60 +771,56 @@ function renderHistoryView() {
 
     let globalStatusBadge = '';
     if (totalAssigned === 0) {
-      globalStatusBadge = '<span class="badge badge-archived">BELUM ADA UNIT</span>';
+      globalStatusBadge = '<span class="badge badge-archived">Tanpa Unit</span>';
     } else if (pct === 100) {
-      globalStatusBadge = '<span class="badge badge-closed"><span class="dot"></span> 100% CLOSED</span>';
+      globalStatusBadge = '<span class="badge badge-closed">CLOSED</span>';
     } else {
-      globalStatusBadge = '<span class="badge badge-open"><span class="dot"></span> ADA OPEN (' + openAssigned + ')</span>';
+      globalStatusBadge = '<span class="badge badge-open">OPEN (' + openAssigned + ')</span>';
     }
 
     const adminQuickEditHtml = currentRole === 'admin'
-      ? '<div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">' +
-          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Ubah</span></button>' +
+      ? '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
           '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteNcr(' + item.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button>' +
         '</div>'
       : '';
 
     const progressHtml =
       '<div class="progress-wrap">' +
-        '<div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--slate-800);">' +
-          '<span>' + closedCount + ' / ' + totalAssigned + ' Unit Selesai</span>' +
+        '<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--slate-800);">' +
+          '<span>' + closedCount + '/' + totalAssigned + ' Unit</span>' +
           '<span>' + pct + '%</span>' +
         '</div>' +
         '<div class="progress-bar-bg">' +
           '<div class="progress-bar-fill" style="width:' + pct + '%; background:' + barColor + ';"></div>' +
         '</div>' +
-        '<div style="font-size:12px; color:var(--slate-500); margin-top:5px;">' +
-          'Closed: <b style="color:var(--emerald-600);">' + closedCount + '</b> &bull; Open: <b style="color:var(--rose-600);">' + openAssigned + '</b>' +
-        '</div>' +
       '</div>';
 
     const tr = document.createElement('tr');
     tr.innerHTML =
-      '<td style="min-width:185px;">' +
-        '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:5px;">' +
-          '<span style="font-size:11px; font-weight:800; color:var(--indigo-600); background:var(--indigo-50); padding:2px 8px; border-radius:4px;">INDEKS #' + (masterNcrList.length - index) + '</span>' +
+      '<td>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
+          '<span style="font-size:10.5px; font-weight:800; color:var(--indigo-600); background:var(--indigo-50); padding:2px 6px; border-radius:4px;">#' + (masterNcrList.length - index) + '</span>' +
           globalStatusBadge +
         '</div>' +
-        '<div style="font-weight:800; font-size:15.5px; color:var(--slate-900);">' + item.no + '</div>' +
-        '<div style="font-size:12.5px; color:var(--slate-500); margin-top:3px;">' + HEROICONS.calendar + item.date + '</div>' +
+        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + item.no + '</div>' +
+        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + item.date + '</div>' +
         buildGdriveDocHtml(item) +
         adminQuickEditHtml +
       '</td>' +
-      '<td data-label="Platform, Title & Issue Description" style="max-width:320px; min-width:240px;">' +
+      '<td data-label="Platform, Title & Deskripsi">' +
         '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + item.platform + '</span></div>' +
         '<div class="issue-title-text">' + item.title + '</div>' +
         '<div class="issue-desc-text">' + item.desc + '</div>' +
         buildMasterPhotosHtml(item) +
-        '<div style="margin-top:9px;"><span class="badge badge-indigo">Cakupan: ' + totalAssigned + ' Unit Produk</span></div>' +
       '</td>' +
-      '<td data-label="Progress Penyelesaian Global">' + progressHtml + '</td>' +
-      '<td data-label="Rincian Status & Bukti di Setiap Unit">' + unitCardsHtml + '</td>';
+      '<td data-label="Progress Unit">' + progressHtml + '</td>' +
+      '<td data-label="Status per Unit">' + unitCardsHtml + '</td>';
     tbody.appendChild(tr);
   });
 }
 
-// ================= RENDER TABEL MONITORING PER UNIT =================
+// ================= RENDER MONITORING PER UNIT =================
 function renderNcrTable() {
   const tbody = document.getElementById('ncr-table-body');
   tbody.innerHTML = '';
@@ -861,9 +831,8 @@ function renderNcrTable() {
     document.getElementById('stat-closed-ncr').textContent = 0;
     document.getElementById('stat-progress-pct').textContent = '0% Selesai';
     tbody.innerHTML =
-      '<tr><td colspan="7" style="text-align:center; padding: 36px; color: var(--slate-500);">' +
-        'Belum ada Unit Produk yang dipilih/terdaftar.<br>' +
-        '<span style="font-size:13px; color:var(--slate-400);">Anda tetap dapat langsung klik <b>+ Tambah Master NCR Baru</b> tanpa membuat unit produk terlebih dahulu, atau klik <b>+ Tambah Unit</b> untuk memonitor unit tertentu.</span>' +
+      '<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--slate-500);">' +
+        'Belum ada unit dipilih. Anda tetap bisa langsung klik <b>Tambah Master NCR</b> atau buat <b>Unit Baru</b>.' +
       '</td></tr>';
     return;
   }
@@ -899,7 +868,7 @@ function renderNcrTable() {
   });
 
   if (displayedNcr.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 32px; color: var(--slate-400);">Belum ada data NCR yang diterapkan pada unit <b>' + selectedProduct + '</b>.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + selectedProduct + '</b>.</td></tr>';
     return;
   }
 
@@ -912,36 +881,36 @@ function renderNcrTable() {
     const isClosed = followUp.status === 'CLOSED';
 
     const statusBadge = !isClosed
-      ? '<span class="badge badge-open"><span class="dot"></span> OPEN — Menunggu Foto</span>'
-      : '<span class="badge badge-closed"><span class="dot"></span> CLOSED (' + photos.length + ' Foto)</span>' +
-        (followUp.updatedAt ? '<div style="font-size:11.5px; color:var(--slate-400); margin-top:4px;">Diverifikasi: ' + followUp.updatedAt + '</div>' : '');
+      ? '<span class="badge badge-open"><span class="dot"></span> OPEN</span>'
+      : '<span class="badge badge-closed"><span class="dot"></span> CLOSED (' + photos.length + ')</span>' +
+        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + followUp.updatedAt + '</div>' : '');
 
     const driveFolderBtn = followUp.folderUrl
-      ? '<div><a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>Folder GDrive</span></a></div>'
+      ? '<div><a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a></div>'
       : '';
 
     const photoCell = photos.length > 0
       ? '<div class="thumb-wrapper">' +
           buildThumbnailsHtml(photos, currentProdIdx, item.id) +
-          '<div style="flex:1; min-width:140px;">' +
-            '<div style="font-size:13px; color:var(--slate-700); font-weight:600;">' + followUp.note + '</div>' +
-            '<div style="font-size:12px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:4px;" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">Lihat Galeri (' + photos.length + ' Foto) &rarr;</div>' +
+          '<div style="flex:1; min-width:110px;">' +
+            '<div style="font-size:12.5px; color:var(--slate-700); font-weight:600;">' + followUp.note + '</div>' +
+            '<div style="font-size:11.5px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:3px;" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">Galeri (' + photos.length + ') &rarr;</div>' +
             driveFolderBtn +
           '</div>' +
         '</div>'
-      : '<span style="font-size:12.5px; color:var(--slate-400); font-style:italic;">Belum ada foto bukti diunggah</span>';
+      : '<span style="font-size:12px; color:var(--slate-400);">Belum ada foto</span>';
 
-    const targetBadgeHtml = '<span class="badge badge-indigo">' + item.assignedProducts.length + ' Unit Terdaftar</span>';
+    const targetBadgeHtml = '<span class="badge badge-indigo">' + item.assignedProducts.length + ' Unit</span>';
 
     let actionBtn = '';
     if (currentRole === 'admin') {
       actionBtn =
         '<div class="mobile-action-group" style="display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
           (isClosed
-            ? '<button type="button" class="btn btn-emerald-soft btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' + HEROICONS.eye + ' <span>Bukti (' + photos.length + ')</span></button>' +
-              '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')" title="Buka kembali status menjadi OPEN">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
+            ? '<button type="button" class="btn btn-emerald-soft btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' + HEROICONS.eye + ' <span>Bukti</span></button>' +
+              '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
             : '') +
-          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Ubah NCR</span></button>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
           '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteNcr(' + item.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button>' +
         '</div>';
     } else {
@@ -949,15 +918,14 @@ function renderNcrTable() {
         actionBtn =
           '<div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;">' +
             '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' +
-              HEROICONS.camera + ' <span>Upload Bukti Foto</span>' +
+              HEROICONS.camera + ' <span>Upload Foto</span>' +
             '</button>' +
           '</div>';
       } else {
         actionBtn =
-          '<div class="mobile-action-group" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
-            '<span class="badge badge-closed">' + HEROICONS.checkBadge + ' <span>Selesai Diverifikasi</span></span>' +
+          '<div class="mobile-action-group" style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">' +
             '<button type="button" class="btn btn-outline btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' +
-              HEROICONS.eye + ' <span>Lihat Bukti (' + photos.length + ' Foto)</span>' +
+              HEROICONS.eye + ' <span>Lihat Foto (' + photos.length + ')</span>' +
             '</button>' +
           '</div>';
       }
@@ -965,29 +933,29 @@ function renderNcrTable() {
 
     const tr = document.createElement('tr');
     tr.innerHTML =
-      '<td style="min-width:165px;">' +
-        '<div style="font-weight:800; font-size:15.5px; color:var(--slate-900);">' + item.no + '</div>' +
-        '<div style="font-size:12.5px; color:var(--slate-500); margin-top:3px;">' + HEROICONS.calendar + item.date + '</div>' +
+      '<td>' +
+        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + item.no + '</div>' +
+        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + item.date + '</div>' +
         buildGdriveDocHtml(item) +
       '</td>' +
-      '<td data-label="Platform & Title" style="min-width:180px;">' +
+      '<td data-label="Platform & Title">' +
         '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + item.platform + '</span></div>' +
         '<div class="issue-title-text">' + item.title + '</div>' +
       '</td>' +
-      '<td data-label="Issue Description & Foto NCR" style="max-width:280px;">' +
+      '<td data-label="Deskripsi & Foto NCR">' +
         '<div class="issue-desc-text">' + item.desc + '</div>' +
         buildMasterPhotosHtml(item) +
       '</td>' +
-      '<td data-label="Cakupan Unit">' + targetBadgeHtml + '</td>' +
-      '<td data-label="Status Unit Ini">' + statusBadge + '</td>' +
-      '<td data-label="Bukti Foto & Catatan Inspector">' + photoCell + '</td>' +
+      '<td data-label="Cakupan">' + targetBadgeHtml + '</td>' +
+      '<td data-label="Status">' + statusBadge + '</td>' +
+      '<td data-label="Bukti Inspector">' + photoCell + '</td>' +
       '<td class="text-right">' + actionBtn + '</td>';
     tbody.appendChild(tr);
   });
 }
 
 window.reopenUnitNcr = async function(ncrId) {
-  if (confirm('Ubah kembali status NCR ini pada "' + selectedProduct + '" menjadi OPEN agar Inspector dapat mengunggah ulang bukti?')) {
+  if (confirm('Ubah status kembali menjadi OPEN pada "' + selectedProduct + '"?')) {
     const key = selectedProduct + '_' + ncrId;
     delete productFollowUps[key];
     renderAllViews();
@@ -996,11 +964,11 @@ window.reopenUnitNcr = async function(ncrId) {
       action: 'REOPEN_NCR',
       productName: selectedProduct,
       ncrId: ncrId
-    }, 'Mereset status verifikasi di Google Sheets...');
+    }, 'Mereset status...');
   }
 };
 
-// ================= LIGHTBOX GALERI MULTI-FOTO (INSPECTOR & MASTER NCR) =================
+// ================= LIGHTBOX GALERI FOTO =================
 window.openLightboxByIndex = function(prodIdx, ncrId, startPhotoIndex) {
   const prodObj = products[prodIdx];
   if (!prodObj) return;
@@ -1014,11 +982,11 @@ window.openLightboxByIndex = function(prodIdx, ncrId, startPhotoIndex) {
   activeLightboxPhotos = photos;
   activeLightboxIndex = startPhotoIndex || 0;
 
-  document.getElementById('lightbox-title').textContent = (ncr ? ncr.no + ' (' + ncr.title + ')' : '') + ' — ' + prodName;
-  document.getElementById('lightbox-note').textContent = 'Catatan Inspector: "' + (followUp.note || '-') + '"';
+  document.getElementById('lightbox-title').textContent = (ncr ? ncr.no : '') + ' — ' + prodName;
+  document.getElementById('lightbox-note').textContent = 'Catatan: "' + (followUp.note || '-') + '"';
   document.getElementById('lightbox-meta').textContent =
-    (followUp.inspector ? 'Diverifikasi oleh: ' + followUp.inspector : '') +
-    (followUp.updatedAt ? ' • Waktu: ' + followUp.updatedAt : '');
+    (followUp.inspector ? 'Inspector: ' + followUp.inspector : '') +
+    (followUp.updatedAt ? ' • ' + followUp.updatedAt : '');
 
   updateLightboxSlide();
   toggleModal('modal-lightbox', true);
@@ -1031,7 +999,7 @@ window.openMasterLightbox = function(ncrId, startPhotoIndex) {
   activeLightboxPhotos = ncr.masterPhotos;
   activeLightboxIndex = startPhotoIndex || 0;
 
-  document.getElementById('lightbox-title').textContent = 'Foto Temuan Master NCR — ' + ncr.no;
+  document.getElementById('lightbox-title').textContent = 'Foto NCR — ' + ncr.no;
   document.getElementById('lightbox-note').textContent = ncr.platform + ' • ' + ncr.title;
   document.getElementById('lightbox-meta').textContent = ncr.desc;
 
@@ -1053,7 +1021,7 @@ window.selectLightboxSlide = function(idx) {
 function updateLightboxSlide() {
   const total = activeLightboxPhotos.length;
   document.getElementById('lightbox-img').src = activeLightboxPhotos[activeLightboxIndex];
-  document.getElementById('lightbox-counter').textContent = 'Foto ' + (activeLightboxIndex + 1) + ' dari ' + total;
+  document.getElementById('lightbox-counter').textContent = 'Foto ' + (activeLightboxIndex + 1) + ' / ' + total;
 
   const btnPrev = document.getElementById('lightbox-prev');
   const btnNext = document.getElementById('lightbox-next');
@@ -1095,15 +1063,15 @@ if (lightboxStageEl) {
   }, { passive: true });
 }
 
-// ================= MODAL TAMBAH & EDIT MASTER NCR (TANPA WAJIB UNIT PRODUK) =================
+// ================= MODAL TAMBAH & EDIT MASTER NCR =================
 function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
 
   if (products.length === 0) {
     container.innerHTML =
-      '<div style="padding:10px 12px; font-size:13px; color:var(--slate-500); line-height:1.45;">' +
-        'Belum ada unit produk yang terdaftar. Anda <b>tetap dapat menyimpan Master NCR ini sekarang</b> tanpa memilih unit produk.' +
+      '<div style="padding:8px; font-size:12.5px; color:var(--slate-500);">' +
+        'Belum ada unit produk. Anda tetap bisa langsung klik <b>Simpan Master NCR</b>.' +
       '</div>';
     return;
   }
@@ -1111,15 +1079,15 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   products.forEach(prod => {
     const isChecked = selectedProdArray.includes(prod.name) ? 'checked' : '';
     const badgeHtml = prod.status === 'archived'
-      ? '<span class="badge badge-archived">Selesai/Arsip</span>'
+      ? '<span class="badge badge-archived">Arsip</span>'
       : '<span class="badge badge-closed">Aktif</span>';
 
     const label = document.createElement('label');
     label.className = 'checklist-row';
     label.innerHTML =
-      '<div style="display:flex; align-items:center; gap:8px;">' +
-        '<input type="checkbox" name="' + inputName + '" value="' + prod.name + '" ' + isChecked + ' style="width:18px; height:18px;"> ' +
-        '<span style="font-size:13.5px; font-weight:600; color:var(--slate-800);">' + prod.name + '</span>' +
+      '<div style="display:flex; align-items:center; gap:8px; min-width:0;">' +
+        '<input type="checkbox" name="' + inputName + '" value="' + prod.name + '" ' + isChecked + ' style="width:17px; height:17px; flex-shrink:0;"> ' +
+        '<span style="font-size:13px; font-weight:600; color:var(--slate-800); word-break:break-word;">' + prod.name + '</span>' +
       '</div>' +
       badgeHtml;
     container.appendChild(label);
@@ -1132,7 +1100,7 @@ function openAddNcrModal() {
 
   tempMasterPhotosAdd = [];
   tempMasterDocAdd = null;
-  document.getElementById('ncr-gdrive-file-info').textContent = 'Belum ada file dipilih';
+  document.getElementById('ncr-gdrive-file-info').textContent = 'Belum ada file';
   document.getElementById('btn-clear-ncr-file').classList.add('hidden');
   renderMasterPhotoPreview('add');
 
@@ -1155,7 +1123,6 @@ function unselectAllProducts() {
   checkboxes.forEach(cb => { cb.checked = false; });
 }
 
-// File GDrive Document Picker (Modal Add & Edit)
 function readDocFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1173,14 +1140,14 @@ document.getElementById('ncr-gdrive-file').addEventListener('change', async func
     document.getElementById('ncr-gdrive-file-info').textContent = file.name;
     document.getElementById('btn-clear-ncr-file').classList.remove('hidden');
   } catch (err) {
-    alert('Gagal membaca file dokumen.');
+    alert('Gagal membaca file.');
   }
 });
 
 document.getElementById('btn-clear-ncr-file').addEventListener('click', function() {
   tempMasterDocAdd = null;
   document.getElementById('ncr-gdrive-file').value = '';
-  document.getElementById('ncr-gdrive-file-info').textContent = 'Belum ada file dipilih';
+  document.getElementById('ncr-gdrive-file-info').textContent = 'Belum ada file';
   this.classList.add('hidden');
 });
 
@@ -1192,18 +1159,17 @@ document.getElementById('edit-ncr-gdrive-file').addEventListener('change', async
     document.getElementById('edit-ncr-gdrive-file-info').textContent = file.name;
     document.getElementById('btn-clear-edit-ncr-file').classList.remove('hidden');
   } catch (err) {
-    alert('Gagal membaca file dokumen.');
+    alert('Gagal membaca file.');
   }
 });
 
 document.getElementById('btn-clear-edit-ncr-file').addEventListener('click', function() {
   tempMasterDocEdit = null;
   document.getElementById('edit-ncr-gdrive-file').value = '';
-  document.getElementById('edit-ncr-gdrive-file-info').textContent = 'Belum ada file dipilih';
+  document.getElementById('edit-ncr-gdrive-file-info').textContent = 'Belum ada file';
   this.classList.add('hidden');
 });
 
-// Upload Photo pada Form Master NCR (Add & Edit)
 async function handleMasterPhotoSelection(fileInputEl, mode) {
   const files = Array.from(fileInputEl.files || []);
   if (!files.length) return;
@@ -1215,7 +1181,7 @@ async function handleMasterPhotoSelection(fileInputEl, mode) {
     });
     renderMasterPhotoPreview(mode);
   } catch (err) {
-    alert('Gagal memproses foto Master NCR.');
+    alert('Gagal memproses foto.');
   }
   fileInputEl.value = '';
 }
@@ -1258,8 +1224,8 @@ function renderMasterPhotoPreview(mode) {
     const div = document.createElement('div');
     div.className = 'preview-item';
     div.innerHTML =
-      '<img src="' + src + '" alt="Foto NCR ' + (idx + 1) + '">' +
-      '<button type="button" class="preview-remove-btn" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')" title="Hapus foto">✕</button>';
+      '<img src="' + src + '" alt="Foto ' + (idx + 1) + '">' +
+      '<button type="button" class="preview-remove-btn" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
 }
@@ -1298,7 +1264,7 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
   await sendActionToBackend({
     action: 'ADD_NCR',
     ...newNcr
-  }, 'Menyimpan Master NCR baru ke Google Sheets...');
+  }, 'Menyimpan Master NCR...');
 });
 
 window.openEditNcrModal = function(ncrId) {
@@ -1319,7 +1285,7 @@ window.openEditNcrModal = function(ncrId) {
     document.getElementById('btn-clear-edit-ncr-file').classList.remove('hidden');
   } else {
     tempMasterDocEdit = null;
-    document.getElementById('edit-ncr-gdrive-file-info').textContent = 'Belum ada file dipilih';
+    document.getElementById('edit-ncr-gdrive-file-info').textContent = 'Belum ada file';
     document.getElementById('btn-clear-edit-ncr-file').classList.add('hidden');
   }
 
@@ -1363,19 +1329,19 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
     await sendActionToBackend({
       action: 'EDIT_NCR',
       ...ncr
-    }, 'Memperbarui data NCR & cakupan unit di Google Sheets...');
+    }, 'Memperbarui NCR...');
   }
 });
 
 window.deleteNcr = async function(id) {
-  if (confirm('Hapus item Master NCR ini dari semua produk?')) {
+  if (confirm('Hapus Master NCR ini?')) {
     masterNcrList = masterNcrList.filter(item => item.id !== id);
     renderAllViews();
 
     await sendActionToBackend({
       action: 'DELETE_NCR',
       id: id
-    }, 'Menghapus Master NCR dari Google Sheets...');
+    }, 'Menghapus NCR...');
   }
 };
 
@@ -1410,23 +1376,23 @@ function switchTab(tab) {
     secHistory.classList.remove('hidden');
     navHistory.classList.add('active');
     if (bnavHistory) bnavHistory.classList.add('active');
-    pageTitle.textContent = 'Indeks & History NCR';
+    pageTitle.textContent = 'History NCR';
     renderHistoryView();
   } else if (tab === 'ncr') {
     secNcr.classList.remove('hidden');
     navNcr.classList.add('active');
     if (bnavNcr) bnavNcr.classList.add('active');
-    pageTitle.textContent = 'Monitoring per Unit';
+    pageTitle.textContent = 'Monitoring Unit';
     renderNcrTable();
   } else {
     secUsers.classList.remove('hidden');
     navUsers.classList.add('active');
     if (bnavUsers) bnavUsers.classList.add('active');
-    pageTitle.textContent = 'Manajemen User';
+    pageTitle.textContent = 'Kelola User';
   }
 }
 
-// ================= LOGIKA MULTIPLE UPLOAD INSPECTOR + KOMPRESI =================
+// ================= UPLOAD BUKTI INSPECTOR =================
 function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAGE_JPEG_QUALITY) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1490,7 +1456,7 @@ async function handleSelectedFiles(fileListElement) {
   if (!files.length) return;
 
   const counter = document.getElementById('upload-photo-counter');
-  counter.textContent = 'Mengompresi ' + files.length + ' foto...';
+  counter.textContent = 'Memproses...';
 
   try {
     const compressedResults = await Promise.all(
@@ -1501,7 +1467,7 @@ async function handleSelectedFiles(fileListElement) {
     });
     renderUploadPreviewGrid();
   } catch (err) {
-    alert('Gagal memproses gambar. Pastikan file yang dipilih adalah foto yang valid.');
+    alert('Gagal memproses gambar.');
   }
 
   fileListElement.value = '';
@@ -1537,14 +1503,14 @@ function renderUploadPreviewGrid() {
   grid.innerHTML = '';
   tempImageList.forEach((item, idx) => {
     const src = typeof item === 'string' ? item : item.dataUrl;
-    const kbText = item.sizeKb ? item.sizeKb + ' KB' : 'Ready';
+    const kbText = item.sizeKb ? item.sizeKb + ' KB' : 'OK';
 
     const div = document.createElement('div');
     div.className = 'preview-item';
     div.innerHTML =
-      '<img src="' + src + '" alt="Preview ' + (idx + 1) + '">' +
+      '<img src="' + src + '" alt="Preview">' +
       '<span class="preview-kb-badge">' + kbText + '</span>' +
-      '<button type="button" class="preview-remove-btn" onclick="removeTempPhoto(' + idx + ')" title="Hapus foto ini">✕</button>';
+      '<button type="button" class="preview-remove-btn" onclick="removeTempPhoto(' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
 }
@@ -1552,7 +1518,7 @@ function renderUploadPreviewGrid() {
 document.getElementById('form-upload-foto').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (tempImageList.length === 0) {
-    alert('Silakan ambil foto dari kamera atau pilih minimal 1 foto dari galeri terlebih dahulu!');
+    alert('Pilih minimal 1 foto bukti!');
     return;
   }
 
@@ -1587,10 +1553,10 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
     note: note,
     inspector: currentUsername,
     photos: compressedDataUrls
-  }, 'Mengunggah ' + compressedDataUrls.length + ' foto terkompresi ke Folder Google Drive & Sheets...');
+  }, 'Mengunggah ' + compressedDataUrls.length + ' foto...');
 });
 
-// ================= MANAJEMEN USER =================
+// ================= KELOLA USER =================
 function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
@@ -1599,8 +1565,8 @@ function renderUserTable() {
     tr.innerHTML =
       '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + u.username + '</td>' +
       '<td data-label="Password" style="font-family:monospace; color:var(--slate-600);">' + u.password + '</td>' +
-      '<td data-label="Hak Akses (Role)"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + u.role.toUpperCase() + '</span></td>' +
-      '<td class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus Akun</span></button></div></td>';
+      '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + u.role.toUpperCase() + '</span></td>' +
+      '<td class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button></div></td>';
     tbody.appendChild(tr);
   });
 }
@@ -1609,7 +1575,7 @@ document.getElementById('form-add-user').addEventListener('submit', async functi
   e.preventDefault();
   const uname = document.getElementById('new-username').value.trim();
   if (users.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
-    alert('Username tersebut sudah digunakan!');
+    alert('Username sudah dipakai!');
     return;
   }
 
@@ -1627,7 +1593,7 @@ document.getElementById('form-add-user').addEventListener('submit', async functi
   await sendActionToBackend({
     action: 'ADD_USER',
     ...newUser
-  }, 'Menyimpan akun user baru ke Google Sheets...');
+  }, 'Menyimpan user...');
 });
 
 window.deleteUser = async function(id) {
@@ -1636,11 +1602,11 @@ window.deleteUser = async function(id) {
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   if (targetUser.role === 'admin' && adminCount <= 1) {
-    alert('Tidak dapat menghapus satu-satunya akun Admin yang tersisa!');
+    alert('Admin utama tidak boleh dihapus!');
     return;
   }
 
-  if (!confirm('Hapus akun user "' + targetUser.username + '"?')) return;
+  if (!confirm('Hapus user "' + targetUser.username + '"?')) return;
 
   users = users.filter(u => u.id !== id);
   renderUserTable();
@@ -1648,7 +1614,7 @@ window.deleteUser = async function(id) {
   await sendActionToBackend({
     action: 'DELETE_USER',
     id: id
-  }, 'Menghapus akun user dari Google Sheets...');
+  }, 'Menghapus user...');
 };
 
 window.toggleModal = function(modalId, show) {
@@ -1657,7 +1623,6 @@ window.toggleModal = function(modalId, show) {
   else el.classList.add('hidden');
 };
 
-// ================= CEK OTOMATIS SESI LOGIN SAAT HALAMAN DI-REFRESH =================
 window.addEventListener('DOMContentLoaded', function() {
   const savedRole = sessionStorage.getItem('qc_active_role');
   const savedUser = sessionStorage.getItem('qc_active_user');
