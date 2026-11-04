@@ -356,7 +356,6 @@ document.getElementById('btn-add-product').addEventListener('click', function() 
   toggleModal('modal-add-product', true);
 });
 document.getElementById('btn-add-ncr').addEventListener('click', openAddNcrModal);
-document.getElementById('btn-add-ncr-history').addEventListener('click', openAddNcrModal);
 document.getElementById('btn-open-add-user').addEventListener('click', function() {
   toggleModal('modal-add-user', true);
 });
@@ -377,7 +376,6 @@ function enterApp(role, username) {
   const navUsers = document.getElementById('nav-users');
   const bnavUsers = document.getElementById('bnav-users');
   const btnAddNcr = document.getElementById('btn-add-ncr');
-  const btnAddNcrHistory = document.getElementById('btn-add-ncr-history');
   const btnAddProduct = document.getElementById('btn-add-product');
   const btnToggleArchive = document.getElementById('btn-toggle-archive');
   const btnDeleteProduct = document.getElementById('btn-delete-product');
@@ -392,7 +390,6 @@ function enterApp(role, username) {
     navUsers.classList.remove('hidden');
     bnavUsers.classList.remove('hidden');
     btnAddNcr.classList.remove('hidden');
-    btnAddNcrHistory.classList.remove('hidden');
     btnAddProduct.classList.remove('hidden');
     btnToggleArchive.classList.remove('hidden');
     btnDeleteProduct.classList.remove('hidden');
@@ -403,7 +400,6 @@ function enterApp(role, username) {
     navUsers.classList.add('hidden');
     bnavUsers.classList.add('hidden');
     btnAddNcr.classList.add('hidden');
-    btnAddNcrHistory.classList.add('hidden');
     btnAddProduct.classList.add('hidden');
     btnToggleArchive.classList.add('hidden');
     btnDeleteProduct.classList.add('hidden');
@@ -515,7 +511,7 @@ async function deleteSelectedProduct() {
   if (!prodObj) return;
 
   const targetName = prodObj.name;
-  if (!confirm('Hapus unit "' + targetName + '"? Data Master NCR tetap aman.')) {
+  if (!confirm('Hapus unit "' + targetName + '"? Data NCR tetap aman.')) {
     return;
   }
 
@@ -667,7 +663,7 @@ function renderHistoryView() {
   document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai';
 
   if (masterNcrList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada Master NCR.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada data NCR.</td></tr>';
     return;
   }
 
@@ -832,7 +828,7 @@ function renderNcrTable() {
     document.getElementById('stat-progress-pct').textContent = '0% Selesai';
     tbody.innerHTML =
       '<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--slate-500);">' +
-        'Belum ada unit dipilih. Anda tetap bisa langsung klik <b>Tambah Master NCR</b> atau buat <b>Unit Baru</b>.' +
+        'Belum ada unit dipilih. Anda tetap bisa langsung klik <b>Tambah NCR</b> atau buat <b>Unit Baru</b>.' +
       '</td></tr>';
     return;
   }
@@ -1063,7 +1059,7 @@ if (lightboxStageEl) {
   }, { passive: true });
 }
 
-// ================= MODAL TAMBAH & EDIT MASTER NCR =================
+// ================= MODAL TAMBAH & EDIT NCR =================
 function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
@@ -1071,7 +1067,7 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   if (products.length === 0) {
     container.innerHTML =
       '<div style="padding:8px; font-size:12.5px; color:var(--slate-500);">' +
-        'Belum ada unit produk. Anda tetap bisa langsung klik <b>Simpan Master NCR</b>.' +
+        'Belum ada unit produk. Anda tetap bisa langsung klik <b>Simpan NCR</b>.' +
       '</div>';
     return;
   }
@@ -1264,7 +1260,7 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
   await sendActionToBackend({
     action: 'ADD_NCR',
     ...newNcr
-  }, 'Menyimpan Master NCR...');
+  }, 'Menyimpan NCR...');
 });
 
 window.openEditNcrModal = function(ncrId) {
@@ -1334,7 +1330,7 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
 });
 
 window.deleteNcr = async function(id) {
-  if (confirm('Hapus Master NCR ini?')) {
+  if (confirm('Hapus NCR ini?')) {
     masterNcrList = masterNcrList.filter(item => item.id !== id);
     renderAllViews();
 
@@ -1382,7 +1378,7 @@ function switchTab(tab) {
     secNcr.classList.remove('hidden');
     navNcr.classList.add('active');
     if (bnavNcr) bnavNcr.classList.add('active');
-    pageTitle.textContent = 'Monitoring Unit';
+    pageTitle.textContent = 'Monitoring per Unit';
     renderNcrTable();
   } else {
     secUsers.classList.remove('hidden');
