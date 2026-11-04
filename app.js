@@ -62,10 +62,16 @@ function getTodayIsoDate() {
 
 function formatDisplayDate(dateStr) {
   if (!dateStr) return '-';
+  // Jika format sudah YYYY-MM-DD, ubah jadi format tanggal bersih Indonesia (tanpa jam/GMT)
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
     return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  // Membersihkan format tanggal lama yang telanjur tersimpan dengan teks objek jam/GMT
+  const cleanStr = String(dateStr).split(' 00:00:00')[0].split(' GMT')[0];
+  if (cleanStr && cleanStr !== 'Invalid Date' && cleanStr !== '-') {
+    return cleanStr;
   }
   return dateStr;
 }
@@ -86,10 +92,18 @@ function normalizeNcrItem(item) {
     }
   }
 
+  let rawDate = item.rawDate || '';
+  if (!rawDate && item.date) {
+    // Coba ekstrak jika tanggal lama berupa string ISO
+    const match = String(item.date).match(/\d{4}-\d{2}-\d{2}/);
+    if (match) rawDate = match[0];
+  }
+  if (!rawDate) rawDate = getTodayIsoDate();
+
   return {
     ...item,
-    rawDate: item.rawDate || '',
-    date: item.date || formatDisplayDate(item.rawDate) || '-',
+    rawDate: rawDate,
+    date: formatDisplayDate(rawDate),
     platform: platform || '-',
     title: title || '-',
     part: item.part || (platform && title ? `${platform} — ${title}` : (platform || title || '-')),
@@ -1059,7 +1073,7 @@ if (lightboxStageEl) {
   }, { passive: true });
 }
 
-// ================= MODAL TAMBAH & EDIT NCR (DENGAN DUKUNGAN CTRL+V PASTE FOTO) =================
+// ================= MODAL TAMBAH & EDIT NCR (AUTO-SAVE TANGGAL LAMA) =================
 function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
@@ -1195,7 +1209,6 @@ document.getElementById('edit-master-foto-gallery').addEventListener('change', f
   handleMasterPhotoSelection(this, 'edit');
 });
 
-// Fitur Ctrl+V (Paste Gambar) di dalam Modal Tambah & Edit NCR
 async function handlePasteImageEvent(e, mode) {
   const items = (e.clipboardData || e.originalEvent.clipboardData).items;
   let hasImage = false;
@@ -1301,6 +1314,7 @@ window.openEditNcrModal = function(ncrId) {
 
   document.getElementById('edit-ncr-id').value = ncrId;
   document.getElementById('edit-ncr-no').value = ncr.no;
+  // Otomatis isi tanggal lama agar tersimpan otomatis saat diedit tanpa perlu input ulang
   document.getElementById('edit-ncr-date').value = ncr.rawDate || getTodayIsoDate();
   document.getElementById('edit-ncr-gdrive-link').value = ncr.gdriveLink || '';
   document.getElementById('edit-ncr-platform').value = ncr.platform || '';
@@ -1332,7 +1346,7 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
   const checkedProds = Array.from(document.querySelectorAll('input[name="edit-target-prod"]:checked')).map(cb => cb.value);
 
   if (ncr) {
-    const rawDate = document.getElementById('edit-ncr-date').value || getTodayIsoDate();
+    const rawDate = document.getElementById('edit-ncr-date').value || ncr.rawDate || getTodayIsoDate();
     const platform = document.getElementById('edit-ncr-platform').value.trim();
     const title = document.getElementById('edit-ncr-title').value.trim();
 
