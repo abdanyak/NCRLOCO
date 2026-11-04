@@ -710,7 +710,8 @@ function renderHistoryView() {
           (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit &rarr;</button>' : '') +
         '</div>';
     } else {
-      unitCardsHtml = '<div class="history-unit-list">';
+      // Dibungkus dengan scroll-box agar aman meskipun ada sampai 50 unit
+      unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">';
       item.assignedProducts.forEach(prodName => {
         const prodIdx = getProductIndex(prodName);
         const prodObj = products[prodIdx];
@@ -734,7 +735,7 @@ function renderHistoryView() {
                 '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
                   '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
                   prodStateBadge +
-                  '<span class="badge badge-closed" style="padding:1px 6px; font-size:10.5px;">CLOSED (' + photos.length + ')</span>' +
+                  '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
                 '</div>' +
                 '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
                   (followUp.note || 'OK') +
@@ -750,14 +751,14 @@ function renderHistoryView() {
                 '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
                   '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
                   prodStateBadge +
-                  '<span class="badge badge-open" style="padding:1px 6px; font-size:10.5px;">OPEN</span>' +
+                  '<span class="badge badge-open">OPEN</span>' +
                 '</div>' +
                 '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>' +
               '</div>' +
             '</div>';
         }
       });
-      unitCardsHtml += '</div>';
+      unitCardsHtml += '</div></div>';
     }
 
     const totalAssigned = item.assignedProducts.length;
@@ -877,8 +878,8 @@ function renderNcrTable() {
     const isClosed = followUp.status === 'CLOSED';
 
     const statusBadge = !isClosed
-      ? '<span class="badge badge-open"><span class="dot"></span> OPEN</span>'
-      : '<span class="badge badge-closed"><span class="dot"></span> CLOSED (' + photos.length + ')</span>' +
+      ? '<span class="badge badge-open">OPEN</span>'
+      : '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
         (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + followUp.updatedAt + '</div>' : '');
 
     const driveFolderBtn = followUp.folderUrl
