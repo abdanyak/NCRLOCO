@@ -8,6 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>QC Admin Portal — Sistem Monitoring & Indeks History NCR</title>
+  <!-- Google Fonts: Inter untuk keterbacaan tabel dan form yang lebih rapi -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,7 +24,7 @@
     </div>
   </div>
 
-  <!-- ================= 1. HALAMAN LOGIN (PRODUKSI - TANPA DEMO) ================= -->
+  <!-- ================= 1. HALAMAN LOGIN ================= -->
   <div id="login-view" class="login-wrapper">
     <div class="login-card">
       <div class="login-header">
@@ -80,7 +84,7 @@
       <div class="sidebar-nav">
         <div class="nav-section-label">Menu Utama</div>
 
-        <!-- 1. INDEKS HISTORY NCR (PALING ATAS) -->
+        <!-- 1. INDEKS HISTORY NCR -->
         <button type="button" id="nav-history" class="nav-item active">
           <div class="nav-item-left">
             <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +164,7 @@
 
       <main class="content-wrapper">
 
-        <!-- ================= VIEW 1 (PALING ATAS): INDEKS HISTORY KESELURUHAN NCR (MODE VIEW SAJA) ================= -->
+        <!-- ================= VIEW 1: INDEKS HISTORY KESELURUHAN NCR ================= -->
         <div id="section-history">
 
           <div class="stats-grid">
@@ -219,7 +223,7 @@
 
           <div class="panel-card">
             <div class="panel-toolbar">
-              <div>
+              <div class="toolbar-info-group">
                 <div class="toolbar-heading-row">
                   <h3 class="panel-title">Indeks & Riwayat Status Lengkap NCR</h3>
                   <span class="badge badge-indigo">
@@ -227,12 +231,21 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
-                    <span>Mode Tampilan (View-Only)</span>
+                    <span>Ringkasan Global</span>
                   </span>
                 </div>
                 <p class="panel-desc">
-                  Menampilkan riwayat lengkap NCR, catatan Inspector, dan galeri multi-foto di setiap unit. Kelola data atau upload bukti melalui menu <b>Monitoring per Unit</b>.
+                  Menampilkan riwayat lengkap Master NCR, file dokumen GDrive, foto temuan awal, serta rincian status verifikasi di setiap unit produk.
                 </p>
+              </div>
+
+              <div class="toolbar-action-wrap">
+                <button type="button" id="btn-add-ncr-history" class="btn btn-indigo btn-mobile-full hidden">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span>Tambah Master NCR Baru</span>
+                </button>
               </div>
             </div>
 
@@ -241,7 +254,7 @@
                 <span class="filter-label">Filter Status:</span>
                 <div class="pill-group" id="history-filter-pills">
                   <button type="button" class="pill-btn active" data-hfilter="ALL">Semua</button>
-                  <button type="button" class="pill-btn" data-hfilter="INCOMPLETE">Ada OPEN</button>
+                  <button type="button" class="pill-btn" data-hfilter="INCOMPLETE">Ada OPEN / Belum Unit</button>
                   <button type="button" class="pill-btn" data-hfilter="COMPLETE">100% CLOSED</button>
                 </div>
               </div>
@@ -250,7 +263,7 @@
                 <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-                <input type="text" id="search-history" placeholder="Cari No. NCR, part, catatan, atau unit...">
+                <input type="text" id="search-history" placeholder="Cari No. NCR, platform, title, deskripsi, atau unit...">
               </div>
             </div>
 
@@ -258,10 +271,10 @@
               <table class="mobile-card-table">
                 <thead>
                   <tr>
-                    <th>Indeks & Informasi NCR</th>
-                    <th>Area / Komponen & Deskripsi Temuan</th>
+                    <th>No. NCR & Tanggal</th>
+                    <th>Platform, Title & Issue Description</th>
                     <th>Progress Penyelesaian Global</th>
-                    <th>Rincian Status, Catatan & Galeri Bukti Foto di Setiap Unit</th>
+                    <th>Rincian Status, Catatan & Bukti di Setiap Unit</th>
                   </tr>
                 </thead>
                 <tbody id="history-table-body"></tbody>
@@ -270,7 +283,7 @@
           </div>
         </div>
 
-        <!-- ================= VIEW 2: MONITORING NCR PER UNIT (PUSAT TAMBAH & UBAH DATA) ================= -->
+        <!-- ================= VIEW 2: MONITORING NCR PER UNIT ================= -->
         <div id="section-ncr" class="hidden">
 
           <div class="stats-grid">
@@ -328,17 +341,23 @@
           </div>
 
           <div class="panel-card">
-            <div class="panel-toolbar">
+            <div class="panel-toolbar panel-toolbar-aligned">
               <div class="unit-selector-group">
                 <span class="unit-selector-label">Pilih & Kelola Produk / Nomor Unit:</span>
                 <div class="unit-selector-controls">
                   <select id="product-select" class="product-select-input"></select>
-                  <button type="button" id="btn-toggle-archive" class="btn btn-amber-soft btn-sm hidden"></button>
-                  <button type="button" id="btn-add-product" class="btn btn-outline btn-sm hidden">
+                  <button type="button" id="btn-add-product" class="btn btn-outline hidden">
                     <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                     <span>Tambah Unit</span>
+                  </button>
+                  <button type="button" id="btn-toggle-archive" class="btn btn-amber-soft hidden"></button>
+                  <button type="button" id="btn-delete-product" class="btn btn-rose-soft hidden" title="Hapus Unit Produk yang sedang dipilih">
+                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    <span>Hapus Unit</span>
                   </button>
                 </div>
               </div>
@@ -367,7 +386,7 @@
                 <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-                <input type="text" id="search-ncr" placeholder="Cari No. NCR, part, atau temuan...">
+                <input type="text" id="search-ncr" placeholder="Cari No. NCR, platform, title, atau deskripsi...">
               </div>
             </div>
 
@@ -376,12 +395,12 @@
                 <thead>
                   <tr>
                     <th>No. NCR & Tanggal</th>
-                    <th>Area / Komponen Part</th>
-                    <th>Deskripsi Ketidaksesuaian</th>
+                    <th>Platform & Title</th>
+                    <th>Issue Description & Foto NCR</th>
                     <th>Cakupan Unit</th>
                     <th>Status Unit Ini</th>
-                    <th>Galeri Bukti Foto & Catatan</th>
-                    <th class="text-right">Aksi Kelola / Status Verifikasi</th>
+                    <th>Galeri Bukti Foto & Catatan Inspector</th>
+                    <th class="text-right">Aksi Kelola / Verifikasi</th>
                   </tr>
                 </thead>
                 <tbody id="ncr-table-body"></tbody>
@@ -394,16 +413,18 @@
         <div id="section-users" class="hidden">
           <div class="panel-card">
             <div class="panel-toolbar">
-              <div>
+              <div class="toolbar-info-group">
                 <h3 class="panel-title">Daftar Akun Pengguna</h3>
                 <p class="panel-desc">Kelola kredensial login untuk Admin QC dan Inspector lapangan</p>
               </div>
-              <button type="button" id="btn-open-add-user" class="btn btn-indigo btn-mobile-full">
-                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-                </svg>
-                <span>Tambah User Baru</span>
-              </button>
+              <div class="toolbar-action-wrap">
+                <button type="button" id="btn-open-add-user" class="btn btn-indigo btn-mobile-full">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                  </svg>
+                  <span>Tambah User Baru</span>
+                </button>
+              </div>
             </div>
 
             <div class="table-responsive">
@@ -469,15 +490,15 @@
       <form id="form-add-product">
         <div class="modal-body">
           <p class="modal-helper-text">
-            Unit baru dapat otomatis mewarisi daftar NCR dari unit aktif sebelumnya sebagai pencegahan temuan berulang.
+            Unit baru dapat otomatis mewarisi daftar Master NCR yang sudah ada sebagai pencegahan temuan berulang.
           </p>
           <div class="form-group">
             <label for="new-product-name">Nama Produk / Nomor Seri Unit</label>
-            <input type="text" id="new-product-name" required placeholder="Masukkan nama produk / nomor seri unit">
+            <input type="text" id="new-product-name" required placeholder="Contoh: Unit Lokomotif 9411">
           </div>
           <label class="checkbox-inline-label">
             <input type="checkbox" id="inherit-ncr" checked>
-            <span>Salin daftar NCR aktif dari produk terakhir</span>
+            <span>Terapkan daftar Master NCR aktif ke unit produk baru ini</span>
           </label>
         </div>
         <div class="modal-footer">
@@ -488,9 +509,9 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 2: TAMBAH MASTER NCR ================= -->
+  <!-- ================= MODAL 2: TAMBAH MASTER NCR BARU (7 URUTAN KOLOM) ================= -->
   <div id="modal-add-ncr" class="modal-backdrop hidden">
-    <div class="modal-panel">
+    <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
         <h3 class="modal-title">Tambah Master NCR Baru</h3>
         <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-ncr', false)">
@@ -499,24 +520,94 @@
       </div>
       <form id="form-add-ncr">
         <div class="modal-body">
+          <!-- 1. No NCR & Tanggal -->
           <div class="form-group">
-            <label for="ncr-no">Nomor NCR</label>
-            <input type="text" id="ncr-no" required placeholder="Masukkan nomor dokumen NCR">
+            <label><span class="step-num">1</span> No. NCR & Tanggal</label>
+            <div class="form-row-2col">
+              <div>
+                <input type="text" id="ncr-no" required placeholder="Nomor Dokumen NCR (Contoh: NCR-001)">
+              </div>
+              <div>
+                <input type="date" id="ncr-date" required>
+              </div>
+            </div>
           </div>
+
+          <!-- 2. Upload File Gdrive NCR (Optional Jika Ada) -->
           <div class="form-group">
-            <label for="ncr-part">Area / Komponen Part</label>
-            <input type="text" id="ncr-part" required placeholder="Masukkan nama area atau komponen part">
+            <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Optional Jika Ada)</span></label>
+            <div class="gdrive-input-stack">
+              <input type="url" id="ncr-gdrive-link" placeholder="Tempel Link Google Drive File NCR (https://drive.google.com/...)">
+              <div class="file-upload-inline">
+                <label for="ncr-gdrive-file" class="btn btn-outline btn-sm mb-0">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <span>Atau Pilih File Dokumen NCR</span>
+                </label>
+                <span id="ncr-gdrive-file-info" class="file-chosen-text">Belum ada file dipilih</span>
+                <button type="button" id="btn-clear-ncr-file" class="link-danger-btn hidden">Hapus File</button>
+              </div>
+              <input type="file" id="ncr-gdrive-file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" class="hidden">
+            </div>
           </div>
+
+          <!-- 3. Issue Identified in the Platform -->
           <div class="form-group">
-            <label for="ncr-desc">Deskripsi Ketidaksesuaian</label>
-            <textarea id="ncr-desc" required rows="2" placeholder="Jelaskan detail temuan agar diperiksa pada unit target..."></textarea>
+            <label for="ncr-platform"><span class="step-num">3</span> Issue Identified in the Platform</label>
+            <input type="text" id="ncr-platform" required placeholder="Masukkan Platform / Area Komponen (Contoh: Underframe / Bogie / Cabin)">
           </div>
+
+          <!-- 4. Title -->
+          <div class="form-group">
+            <label for="ncr-title"><span class="step-num">4</span> Title</label>
+            <input type="text" id="ncr-title" required placeholder="Masukkan Judul Singkat Temuan NCR">
+          </div>
+
+          <!-- 5. Issue Description -->
+          <div class="form-group">
+            <label for="ncr-desc"><span class="step-num">5</span> Issue Description</label>
+            <textarea id="ncr-desc" required rows="3" placeholder="Jelaskan detail ketidaksesuaian / temuan NCR secara lengkap..."></textarea>
+          </div>
+
+          <!-- 6. Upload Photo (Optional) -->
+          <div class="form-group">
+            <div class="checklist-header-row">
+              <label class="mb-0"><span class="step-num">6</span> Upload Photo <span class="label-optional">(Optional)</span></label>
+              <span id="master-photo-counter" class="badge badge-indigo">0 Foto</span>
+            </div>
+            <div class="android-upload-grid">
+              <label for="master-foto-camera" class="android-upload-btn camera-btn">
+                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                <span class="upload-btn-title">Kamera</span>
+                <span class="upload-btn-sub">Foto temuan awal</span>
+              </label>
+
+              <label for="master-foto-gallery" class="android-upload-btn gallery-btn">
+                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                <span class="upload-btn-title">Pilih File Foto</span>
+                <span class="upload-btn-sub">Dari galeri / perangkat</span>
+              </label>
+            </div>
+            <input type="file" id="master-foto-camera" accept="image/*" capture="environment" class="hidden">
+            <input type="file" id="master-foto-gallery" accept="image/*" multiple class="hidden">
+            <div id="master-foto-preview-grid" class="preview-grid hidden"></div>
+          </div>
+
+          <!-- 7. Terapkan NCR ke Produk Pilihan -->
           <div class="form-group mb-0">
             <div class="checklist-header-row">
-              <label class="mb-0">Terapkan NCR ke Produk Pilihan:</label>
-              <button type="button" id="btn-select-active" class="link-action-btn">
-                Pilih Semua Produk Aktif
-              </button>
+              <label class="mb-0"><span class="step-num">7</span> Terapkan NCR ke Produk Pilihan <span class="label-optional">(Bisa menyusul tanpa unit)</span></label>
+              <div class="checklist-actions">
+                <button type="button" id="btn-select-active" class="link-action-btn">Pilih Unit Aktif</button>
+                <span class="text-muted">•</span>
+                <button type="button" id="btn-unselect-all" class="link-action-btn">Kosongkan</button>
+              </div>
             </div>
             <div id="ncr-product-checklist" class="checklist-container"></div>
           </div>
@@ -529,11 +620,11 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 3: UBAH DATA NCR & CAKUPAN UNIT ================= -->
+  <!-- ================= MODAL 3: UBAH DATA NCR & CAKUPAN UNIT (7 URUTAN KOLOM) ================= -->
   <div id="modal-edit-ncr" class="modal-backdrop hidden">
-    <div class="modal-panel">
+    <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
-        <h3 class="modal-title">Ubah Data NCR & Cakupan Unit</h3>
+        <h3 class="modal-title">Ubah Data Master NCR & Cakupan Unit</h3>
         <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-edit-ncr', false)">
           <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
         </button>
@@ -541,20 +632,87 @@
       <form id="form-edit-ncr">
         <div class="modal-body">
           <input type="hidden" id="edit-ncr-id">
+
+          <!-- 1. No NCR & Tanggal -->
           <div class="form-group">
-            <label for="edit-ncr-no">Nomor NCR</label>
-            <input type="text" id="edit-ncr-no" required>
+            <label><span class="step-num">1</span> No. NCR & Tanggal</label>
+            <div class="form-row-2col">
+              <div>
+                <input type="text" id="edit-ncr-no" required placeholder="Nomor Dokumen NCR">
+              </div>
+              <div>
+                <input type="date" id="edit-ncr-date" required>
+              </div>
+            </div>
           </div>
+
+          <!-- 2. Upload File Gdrive NCR (Optional Jika Ada) -->
           <div class="form-group">
-            <label for="edit-ncr-part">Area / Komponen Part</label>
-            <input type="text" id="edit-ncr-part" required>
+            <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Optional Jika Ada)</span></label>
+            <div class="gdrive-input-stack">
+              <input type="url" id="edit-ncr-gdrive-link" placeholder="Tempel Link Google Drive File NCR (https://drive.google.com/...)">
+              <div class="file-upload-inline">
+                <label for="edit-ncr-gdrive-file" class="btn btn-outline btn-sm mb-0">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <span>Ganti / Pilih File Dokumen NCR</span>
+                </label>
+                <span id="edit-ncr-gdrive-file-info" class="file-chosen-text">Belum ada file dipilih</span>
+                <button type="button" id="btn-clear-edit-ncr-file" class="link-danger-btn hidden">Hapus File</button>
+              </div>
+              <input type="file" id="edit-ncr-gdrive-file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" class="hidden">
+            </div>
           </div>
+
+          <!-- 3. Issue Identified in the Platform -->
           <div class="form-group">
-            <label for="edit-ncr-desc">Deskripsi Ketidaksesuaian</label>
-            <textarea id="edit-ncr-desc" required rows="2"></textarea>
+            <label for="edit-ncr-platform"><span class="step-num">3</span> Issue Identified in the Platform</label>
+            <input type="text" id="edit-ncr-platform" required>
           </div>
+
+          <!-- 4. Title -->
+          <div class="form-group">
+            <label for="edit-ncr-title"><span class="step-num">4</span> Title</label>
+            <input type="text" id="edit-ncr-title" required>
+          </div>
+
+          <!-- 5. Issue Description -->
+          <div class="form-group">
+            <label for="edit-ncr-desc"><span class="step-num">5</span> Issue Description</label>
+            <textarea id="edit-ncr-desc" required rows="3"></textarea>
+          </div>
+
+          <!-- 6. Upload Photo (Optional) -->
+          <div class="form-group">
+            <div class="checklist-header-row">
+              <label class="mb-0"><span class="step-num">6</span> Upload Photo <span class="label-optional">(Optional)</span></label>
+              <span id="edit-master-photo-counter" class="badge badge-indigo">0 Foto</span>
+            </div>
+            <div class="android-upload-grid">
+              <label for="edit-master-foto-camera" class="android-upload-btn camera-btn">
+                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                <span class="upload-btn-title">Tambah dari Kamera</span>
+              </label>
+
+              <label for="edit-master-foto-gallery" class="android-upload-btn gallery-btn">
+                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                <span class="upload-btn-title">Tambah dari Galeri</span>
+              </label>
+            </div>
+            <input type="file" id="edit-master-foto-camera" accept="image/*" capture="environment" class="hidden">
+            <input type="file" id="edit-master-foto-gallery" accept="image/*" multiple class="hidden">
+            <div id="edit-master-foto-preview-grid" class="preview-grid hidden"></div>
+          </div>
+
+          <!-- 7. Terapkan NCR ke Produk Pilihan -->
           <div class="form-group mb-0">
-            <label>Cakupan Produk / Nomor Unit Wajib Periksa:</label>
+            <label><span class="step-num">7</span> Terapkan NCR ke Produk Pilihan:</label>
             <div id="edit-product-checklist" class="checklist-container"></div>
           </div>
         </div>
@@ -566,7 +724,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 4: MULTIPLE UPLOAD FOTO KHUSUS ANDROID (KAMERA + GALERI) ================= -->
+  <!-- ================= MODAL 4: MULTIPLE UPLOAD FOTO INSPECTOR ================= -->
   <div id="modal-upload-foto" class="modal-backdrop hidden">
     <div class="modal-panel">
       <div class="modal-header">
@@ -667,7 +825,7 @@
     <div class="modal-panel modal-lightbox-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div>
-          <h3 id="lightbox-title" class="modal-title">Detail Foto Bukti</h3>
+          <h3 id="lightbox-title" class="modal-title">Detail Foto</h3>
           <div id="lightbox-counter" class="lightbox-counter-text"></div>
         </div>
         <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-lightbox', false)">
