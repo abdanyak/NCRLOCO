@@ -123,7 +123,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 18px;
-  background: radial-gradient(circle at top left, #1e1b4b, #0f172a 60%);
+  
+  /* Menjadikan foto UGL2.jpg sebagai background, menutupi seluruh layar, dan diatur di tengah */
+  background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url('UGL2.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .login-card {
