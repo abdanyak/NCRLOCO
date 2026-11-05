@@ -688,7 +688,21 @@ function renderProductDropdown() {
     selectedProduct = products[products.length - 1].name;
   }
 
-  products.forEach(prod => {
+  // 1. Buat salinan array dan urutkan A-Z secara natural (alphanumeric)
+  const sortedProducts = [...products].sort((a, b) => {
+    // Unit [AKTIF] diposisikan di atas [ARSIP]
+    if (a.status !== b.status) {
+      return a.status === 'active' ? -1 : 1;
+    }
+    // Urutkan nama unit secara A-Z (numeric: true agar angka 022 < 023 < 024)
+    return String(a.name || '').localeCompare(String(b.name || ''), undefined, { 
+      numeric: true, 
+      sensitivity: 'base' 
+    });
+  });
+
+  // 2. Render opsi dari hasil yang sudah diurutkan
+  sortedProducts.forEach(prod => {
     const opt = document.createElement('option');
     opt.value = prod.name;
     opt.textContent = prod.status === 'archived'
@@ -1330,7 +1344,13 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
     return;
   }
 
-  products.forEach(prod => {
+  // Urutkan checklist A-Z
+  const sortedProducts = [...products].sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+    return String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  sortedProducts.forEach(prod => {
     const isChecked = selectedProdArray.includes(prod.name) ? 'checked' : '';
     const badgeHtml = prod.status === 'archived'
       ? '<span class="badge badge-archived">Arsip</span>'
