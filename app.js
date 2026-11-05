@@ -51,7 +51,17 @@ let users = [
   { id: 1, username: 'admin', password: '123', role: 'admin' }
 ];
 
-// ================= HELPER TANGGAL & DATA =================
+// ================= HELPER KEAMANAN (ANTI-XSS) & TANGGAL =================
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getTodayIsoDate() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -62,13 +72,11 @@ function getTodayIsoDate() {
 
 function formatDisplayDate(dateStr) {
   if (!dateStr) return '-';
-  // Jika format sudah YYYY-MM-DD, ubah jadi format tanggal bersih Indonesia (tanpa jam/GMT)
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
     return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   }
-  // Membersihkan format tanggal lama yang telanjur tersimpan dengan teks objek jam/GMT
   const cleanStr = String(dateStr).split(' 00:00:00')[0].split(' GMT')[0];
   if (cleanStr && cleanStr !== 'Invalid Date' && cleanStr !== '-') {
     return cleanStr;
@@ -94,11 +102,14 @@ function normalizeNcrItem(item) {
 
   let rawDate = item.rawDate || '';
   if (!rawDate && item.date) {
-    // Coba ekstrak jika tanggal lama berupa string ISO
     const match = String(item.date).match(/\d{4}-\d{2}-\d{2}/);
     if (match) rawDate = match[0];
   }
   if (!rawDate) rawDate = getTodayIsoDate();
+
+  const gdriveLink = item.gdriveLink || '';
+  // Jika sudah ada gdriveLink dari Cloud, kosongkan gdriveFileData Base64 agar tidak membebani LocalStorage
+  const gdriveFileData = gdriveLink ? '' : (item.gdriveFileData || '');
 
   return {
     ...item,
@@ -108,9 +119,9 @@ function normalizeNcrItem(item) {
     title: title || '-',
     part: item.part || (platform && title ? `${platform} — ${title}` : (platform || title || '-')),
     desc: item.desc || '-',
-    gdriveLink: item.gdriveLink || '',
+    gdriveLink: gdriveLink,
     gdriveFileName: item.gdriveFileName || '',
-    gdriveFileData: item.gdriveFileData || '',
+    gdriveFileData: gdriveFileData,
     masterPhotos: Array.isArray(item.masterPhotos) ? item.masterPhotos : [],
     assignedProducts: Array.isArray(item.assignedProducts) ? item.assignedProducts : []
   };
@@ -128,15 +139,24 @@ function isCloudConfigured() {
 function showCloudLoading(show, text) {
   const el = document.getElementById('cloud-loading');
   const txt = document.getElementById('cloud-loading-text');
-  if (text) txt.textContent = text;
+  if (text && txt) txt.textContent = text;
+  if (!el) return;
   if (show) el.classList.remove('hidden');
   else el.classList.add('hidden');
 }
 
 function saveToLocalStorage() {
   try {
+    // Bersihkan gdriveFileData jika gdriveLink sudah ada untuk menjaga kapasitas LocalStorage
+    const lightMasterList = (masterNcrList || []).map(item => ({
+      ...item,
+      gdriveFileData: item.gdriveLink ? '' : (item.gdriveFileData || '')
+    }));
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
-      products, users, masterNcrList, productFollowUps
+      products,
+      users,
+      masterNcrList: lightMasterList,
+      productFollowUps
     }));
   } catch (e) {
     console.warn('LocalStorage penuh:', e);
@@ -162,26 +182,12 @@ function loadFromLocalStorage() {
   }
 }
 
-function mergeCloudMasterWithLocalExtras(cloudList, localList) {
-  return (cloudList || []).map(cloudItem => {
-    const localMatch = (localList || []).find(l => Number(l.id) === Number(cloudItem.id));
-    if (localMatch) {
-      return normalizeNcrItem({
-        ...localMatch,
-        ...cloudItem,
-        rawDate: cloudItem.rawDate || localMatch.rawDate,
-        platform: cloudItem.platform || localMatch.platform,
-        title: cloudItem.title || localMatch.title,
-        gdriveLink: cloudItem.gdriveLink || localMatch.gdriveLink,
-        gdriveFileName: cloudItem.gdriveFileName || localMatch.gdriveFileName,
-        gdriveFileData: cloudItem.gdriveFileData || localMatch.gdriveFileData,
-        masterPhotos: (Array.isArray(cloudItem.masterPhotos) && cloudItem.masterPhotos.length > 0)
-          ? cloudItem.masterPhotos
-          : (localMatch.masterPhotos || [])
-      });
-    }
-    return normalizeNcrItem(cloudItem);
-  });
+function mergeCloudMasterWithLocalExtras(cloudList) {
+  // Cloud menjadi sumber kebenaran utama (authoritative) agar foto/link yang dihapus tidak muncul lagi
+  return (cloudList || []).map(cloudItem => normalizeNcrItem({
+    ...cloudItem,
+    gdriveFileData: ''
+  }));
 }
 
 async function syncFromCloud() {
@@ -189,7 +195,6 @@ async function syncFromCloud() {
   const btnRefresh = document.getElementById('btn-refresh-cloud');
 
   loadFromLocalStorage();
-  const previousLocalMaster = [...masterNcrList];
 
   if (!isCloudConfigured()) {
     modeBadge.textContent = 'Lokal';
@@ -209,7 +214,7 @@ async function syncFromCloud() {
     if (json.status === 'success' && json.data) {
       products = json.data.products || [];
       users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
-      masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || [], previousLocalMaster);
+      masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
       productFollowUps = json.data.productFollowUps || {};
       if (products.length > 0 && !products.some(p => p.name === selectedProduct)) {
         selectedProduct = products[products.length - 1].name;
@@ -231,19 +236,22 @@ async function sendActionToBackend(payload, loadingText) {
   saveToLocalStorage();
   if (!isCloudConfigured()) return;
 
-  const previousLocalMaster = [...masterNcrList];
   showCloudLoading(true, loadingText || 'Menyimpan data...');
   try {
     const res = await fetch(GAS_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        ...payload,
+        actorRole: currentRole,
+        actorUser: currentUsername
+      })
     });
     const json = await res.json();
     if (json.status === 'success' && json.data) {
       products = json.data.products || [];
       users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
-      masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || [], previousLocalMaster);
+      masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
       productFollowUps = json.data.productFollowUps || {};
       saveToLocalStorage();
       renderProductDropdown();
@@ -305,6 +313,7 @@ document.getElementById('form-login').addEventListener('submit', function(e) {
 
 document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
+  currentUsername = '';
   sessionStorage.removeItem('qc_active_role');
   sessionStorage.removeItem('qc_active_user');
   closeMobileSidebar();
@@ -374,12 +383,10 @@ document.getElementById('btn-open-add-user').addEventListener('click', function(
   toggleModal('modal-add-user', true);
 });
 
-// Tombol Pilih Semua / Pilih Aktif / Reset pada Modal Tambah NCR
 document.getElementById('btn-select-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ALL'));
 document.getElementById('btn-select-active').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ACTIVE'));
 document.getElementById('btn-unselect-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'NONE'));
 
-// Tombol Pilih Semua / Pilih Aktif / Reset pada Modal Edit NCR
 document.getElementById('btn-edit-select-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ALL'));
 document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'));
 document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
@@ -563,49 +570,49 @@ async function deleteSelectedProduct() {
 
 document.getElementById('form-add-product').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const name = document.getElementById('new-product-name').value.trim();
+  const name = document.getElementById('new-product-name').value.replace(/,/g, ' ').trim();
   const inherit = document.getElementById('inherit-ncr').checked;
+
+  if (!name) return;
 
   if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
     alert('Nama unit sudah ada!');
     return;
   }
 
-  if (name) {
-    const lastActiveProd = [...products].reverse().find(p => p.status === 'active');
-    const lastActiveName = lastActiveProd ? lastActiveProd.name : null;
+  const lastActiveProd = [...products].reverse().find(p => p.status === 'active');
+  const lastActiveName = lastActiveProd ? lastActiveProd.name : null;
 
-    products.push({ name: name, status: 'active' });
+  products.push({ name: name, status: 'active' });
 
-    if (inherit) {
-      masterNcrList.forEach(ncr => {
-        if (lastActiveName) {
-          if (ncr.assignedProducts.includes(lastActiveName) || ncr.assignedProducts.length === 0) {
-            if (!ncr.assignedProducts.includes(name)) ncr.assignedProducts.push(name);
-          }
-        } else {
-          if (!ncr.assignedProducts.includes(name)) {
-            ncr.assignedProducts.push(name);
-          }
+  if (inherit) {
+    masterNcrList.forEach(ncr => {
+      if (lastActiveName) {
+        if (ncr.assignedProducts.includes(lastActiveName) || ncr.assignedProducts.length === 0) {
+          if (!ncr.assignedProducts.includes(name)) ncr.assignedProducts.push(name);
         }
-      });
-    }
-
-    selectedProduct = name;
-    renderProductDropdown();
-    renderAllViews();
-
-    e.target.reset();
-    document.getElementById('inherit-ncr').checked = true;
-    toggleModal('modal-add-product', false);
-
-    await sendActionToBackend({
-      action: 'ADD_PRODUCT',
-      name: name,
-      inherit: inherit,
-      lastActiveProd: lastActiveName
-    }, 'Menambahkan unit...');
+      } else {
+        if (!ncr.assignedProducts.includes(name)) {
+          ncr.assignedProducts.push(name);
+        }
+      }
+    });
   }
+
+  selectedProduct = name;
+  renderProductDropdown();
+  renderAllViews();
+
+  e.target.reset();
+  document.getElementById('inherit-ncr').checked = true;
+  toggleModal('modal-add-product', false);
+
+  await sendActionToBackend({
+    action: 'ADD_PRODUCT',
+    name: name,
+    inherit: inherit,
+    lastActiveProd: lastActiveName
+  }, 'Menambahkan unit...');
 });
 
 function getProductIndex(prodName) {
@@ -617,7 +624,7 @@ function buildThumbnailsHtml(photos, prodIdx, ncrId) {
   const maxVisible = 3;
   let html = '<div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + src + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')">';
+    html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')">';
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
@@ -633,7 +640,7 @@ function buildMasterPhotosHtml(ncr) {
   const maxVisible = 3;
   let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + src + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')">';
+    html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')">';
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
@@ -645,12 +652,12 @@ function buildMasterPhotosHtml(ncr) {
 
 function buildGdriveDocHtml(ncr) {
   if (ncr.gdriveLink) {
-    return '<div><a href="' + ncr.gdriveLink + '" target="_blank" rel="noopener" class="gdrive-folder-link">' +
+    return '<div><a href="' + escapeHtml(ncr.gdriveLink) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' +
       HEROICONS.docText + ' <span>File GDrive</span></a></div>';
   }
   if (ncr.gdriveFileData) {
     const fileName = ncr.gdriveFileName || 'File_NCR';
-    return '<div><a href="' + ncr.gdriveFileData + '" download="' + fileName + '" class="gdrive-folder-link">' +
+    return '<div><a href="' + escapeHtml(ncr.gdriveFileData) + '" download="' + escapeHtml(fileName) + '" class="gdrive-folder-link">' +
       HEROICONS.docText + ' <span>Unduh File</span></a></div>';
   }
   return '';
@@ -721,7 +728,10 @@ function renderHistoryView() {
     return;
   }
 
-  filteredHistory.forEach((item, index) => {
+  filteredHistory.forEach(item => {
+    const trueIndex = masterNcrList.indexOf(item);
+    const displayOrderNum = trueIndex !== -1 ? (masterNcrList.length - trueIndex) : '-';
+
     let closedCount = 0;
     let unitCardsHtml = '';
 
@@ -747,19 +757,19 @@ function renderHistoryView() {
         if (followUp.status === 'CLOSED') {
           closedCount++;
           const driveLinkHtml = followUp.folderUrl
-            ? '<a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
+            ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
             : '';
 
           unitCardsHtml +=
             '<div class="history-unit-card is-closed">' +
               '<div style="min-width:0; flex:1;">' +
                 '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
-                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
+                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
                   prodStateBadge +
                   '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
                 '</div>' +
                 '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
-                  (followUp.note || 'OK') +
+                  escapeHtml(followUp.note || 'OK') +
                 '</div>' +
                 driveLinkHtml +
               '</div>' +
@@ -770,7 +780,7 @@ function renderHistoryView() {
             '<div class="history-unit-card is-open">' +
               '<div style="min-width:0; flex:1;">' +
                 '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
-                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + prodName + '</span>' +
+                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
                   prodStateBadge +
                   '<span class="badge badge-open">OPEN</span>' +
                 '</div>' +
@@ -818,18 +828,18 @@ function renderHistoryView() {
     tr.innerHTML =
       '<td>' +
         '<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
-          '<span style="font-size:10.5px; font-weight:800; color:var(--indigo-600); background:var(--indigo-50); padding:2px 6px; border-radius:4px;">#' + (masterNcrList.length - index) + '</span>' +
+          '<span style="font-size:10.5px; font-weight:800; color:var(--indigo-600); background:var(--indigo-50); padding:2px 6px; border-radius:4px;">#' + displayOrderNum + '</span>' +
           globalStatusBadge +
         '</div>' +
-        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + item.no + '</div>' +
-        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + item.date + '</div>' +
+        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + escapeHtml(item.no) + '</div>' +
+        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + escapeHtml(item.date) + '</div>' +
         buildGdriveDocHtml(item) +
         adminQuickEditHtml +
       '</td>' +
       '<td data-label="Platform, Title & Deskripsi">' +
-        '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + item.platform + '</span></div>' +
-        '<div class="issue-title-text">' + item.title + '</div>' +
-        '<div class="issue-desc-text">' + item.desc + '</div>' +
+        '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + escapeHtml(item.platform) + '</span></div>' +
+        '<div class="issue-title-text">' + escapeHtml(item.title) + '</div>' +
+        '<div class="issue-desc-text">' + escapeHtml(item.desc) + '</div>' +
         buildMasterPhotosHtml(item) +
       '</td>' +
       '<td data-label="Progress Unit">' + progressHtml + '</td>' +
@@ -886,7 +896,7 @@ function renderNcrTable() {
   });
 
   if (displayedNcr.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + selectedProduct + '</b>.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + escapeHtml(selectedProduct) + '</b>.</td></tr>';
     return;
   }
 
@@ -901,17 +911,17 @@ function renderNcrTable() {
     const statusBadge = !isClosed
       ? '<span class="badge badge-open">OPEN</span>'
       : '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
-        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + followUp.updatedAt + '</div>' : '');
+        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + escapeHtml(followUp.updatedAt) + '</div>' : '');
 
     const driveFolderBtn = followUp.folderUrl
-      ? '<div><a href="' + followUp.folderUrl + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a></div>'
+      ? '<div><a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a></div>'
       : '';
 
     const photoCell = photos.length > 0
       ? '<div class="thumb-wrapper">' +
           buildThumbnailsHtml(photos, currentProdIdx, item.id) +
           '<div style="flex:1; min-width:110px;">' +
-            '<div style="font-size:12.5px; color:var(--slate-700); font-weight:600;">' + followUp.note + '</div>' +
+            '<div style="font-size:12.5px; color:var(--slate-700); font-weight:600;">' + escapeHtml(followUp.note) + '</div>' +
             '<div style="font-size:11.5px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:3px;" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">Galeri (' + photos.length + ') &rarr;</div>' +
             driveFolderBtn +
           '</div>' +
@@ -952,16 +962,16 @@ function renderNcrTable() {
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td>' +
-        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + item.no + '</div>' +
-        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + item.date + '</div>' +
+        '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + escapeHtml(item.no) + '</div>' +
+        '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + escapeHtml(item.date) + '</div>' +
         buildGdriveDocHtml(item) +
       '</td>' +
       '<td data-label="Platform & Title">' +
-        '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + item.platform + '</span></div>' +
-        '<div class="issue-title-text">' + item.title + '</div>' +
+        '<div class="platform-tag">' + HEROICONS.wrench + ' <span>' + escapeHtml(item.platform) + '</span></div>' +
+        '<div class="issue-title-text">' + escapeHtml(item.title) + '</div>' +
       '</td>' +
       '<td data-label="Deskripsi & Foto NCR">' +
-        '<div class="issue-desc-text">' + item.desc + '</div>' +
+        '<div class="issue-desc-text">' + escapeHtml(item.desc) + '</div>' +
         buildMasterPhotosHtml(item) +
       '</td>' +
       '<td data-label="Cakupan">' + targetBadgeHtml + '</td>' +
@@ -1081,7 +1091,7 @@ if (lightboxStageEl) {
   }, { passive: true });
 }
 
-// ================= MODAL TAMBAH & EDIT NCR (AUTO-SAVE TANGGAL LAMA) =================
+// ================= MODAL TAMBAH & EDIT NCR =================
 function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
@@ -1104,8 +1114,8 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
     label.className = 'checklist-row';
     label.innerHTML =
       '<div style="display:flex; align-items:center; gap:8px; min-width:0;">' +
-        '<input type="checkbox" name="' + inputName + '" value="' + prod.name + '" ' + isChecked + ' style="width:17px; height:17px; flex-shrink:0;"> ' +
-        '<span style="font-size:13px; font-weight:600; color:var(--slate-800); word-break:break-word;">' + prod.name + '</span>' +
+        '<input type="checkbox" name="' + escapeHtml(inputName) + '" value="' + escapeHtml(prod.name) + '" ' + isChecked + ' style="width:17px; height:17px; flex-shrink:0;"> ' +
+        '<span style="font-size:13px; font-weight:600; color:var(--slate-800); word-break:break-word;">' + escapeHtml(prod.name) + '</span>' +
       '</div>' +
       badgeHtml;
     container.appendChild(label);
@@ -1185,6 +1195,7 @@ document.getElementById('edit-ncr-gdrive-file').addEventListener('change', async
 document.getElementById('btn-clear-edit-ncr-file').addEventListener('click', function() {
   tempMasterDocEdit = null;
   document.getElementById('edit-ncr-gdrive-file').value = '';
+  document.getElementById('edit-ncr-gdrive-link').value = '';
   document.getElementById('edit-ncr-gdrive-file-info').textContent = 'Belum ada file';
   this.classList.add('hidden');
 });
@@ -1228,9 +1239,16 @@ async function handlePasteImageEvent(e, mode) {
         hasImage = true;
         try {
           const compressed = await compressAndResizeImage(blob);
-          if (mode === 'add') tempMasterPhotosAdd.push(compressed.dataUrl);
-          else tempMasterPhotosEdit.push(compressed.dataUrl);
-          renderMasterPhotoPreview(mode);
+          if (mode === 'add') {
+            tempMasterPhotosAdd.push(compressed.dataUrl);
+            renderMasterPhotoPreview('add');
+          } else if (mode === 'edit') {
+            tempMasterPhotosEdit.push(compressed.dataUrl);
+            renderMasterPhotoPreview('edit');
+          } else if (mode === 'followup') {
+            tempImageList.push(compressed);
+            renderUploadPreviewGrid();
+          }
         } catch (err) {
           console.warn('Gagal mem-paste gambar:', err);
         }
@@ -1247,6 +1265,9 @@ document.getElementById('form-add-ncr').addEventListener('paste', function(e) {
 });
 document.getElementById('form-edit-ncr').addEventListener('paste', function(e) {
   handlePasteImageEvent(e, 'edit');
+});
+document.getElementById('form-upload-foto').addEventListener('paste', function(e) {
+  handlePasteImageEvent(e, 'followup');
 });
 
 window.removeMasterTempPhoto = function(mode, idx) {
@@ -1274,7 +1295,7 @@ function renderMasterPhotoPreview(mode) {
     const div = document.createElement('div');
     div.className = 'preview-item';
     div.innerHTML =
-      '<img src="' + src + '" alt="Foto ' + (idx + 1) + '">' +
+      '<img src="' + escapeHtml(src) + '" alt="Foto ' + (idx + 1) + '">' +
       '<button type="button" class="preview-remove-btn" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
@@ -1282,6 +1303,13 @@ function renderMasterPhotoPreview(mode) {
 
 document.getElementById('form-add-ncr').addEventListener('submit', async function(e) {
   e.preventDefault();
+  const ncrNoInput = document.getElementById('ncr-no').value.trim();
+
+  if (masterNcrList.some(item => item.no.toLowerCase() === ncrNoInput.toLowerCase())) {
+    alert('Nomor NCR "' + ncrNoInput + '" sudah terdaftar!');
+    return;
+  }
+
   const checkedProds = Array.from(document.querySelectorAll('input[name="ncr-target-prod"]:checked')).map(cb => cb.value);
 
   const rawDate = document.getElementById('ncr-date').value || getTodayIsoDate();
@@ -1289,10 +1317,11 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
   const title = document.getElementById('ncr-title').value.trim();
   const desc = document.getElementById('ncr-desc').value.trim();
   const gdriveLink = document.getElementById('ncr-gdrive-link').value.trim();
+  const fileDataToSend = tempMasterDocAdd ? tempMasterDocAdd.dataUrl : '';
 
   const newNcr = normalizeNcrItem({
     id: Date.now(),
-    no: document.getElementById('ncr-no').value.trim(),
+    no: ncrNoInput,
     rawDate: rawDate,
     date: formatDisplayDate(rawDate),
     platform: platform,
@@ -1301,7 +1330,7 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
     desc: desc,
     gdriveLink: gdriveLink,
     gdriveFileName: tempMasterDocAdd ? tempMasterDocAdd.name : '',
-    gdriveFileData: tempMasterDocAdd ? tempMasterDocAdd.dataUrl : '',
+    gdriveFileData: isCloudConfigured() ? '' : fileDataToSend,
     masterPhotos: [...tempMasterPhotosAdd],
     assignedProducts: checkedProds
   });
@@ -1313,7 +1342,8 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
 
   await sendActionToBackend({
     action: 'ADD_NCR',
-    ...newNcr
+    ...newNcr,
+    gdriveFileData: fileDataToSend
   }, 'Menyimpan NCR...');
 });
 
@@ -1323,16 +1353,15 @@ window.openEditNcrModal = function(ncrId) {
 
   document.getElementById('edit-ncr-id').value = ncrId;
   document.getElementById('edit-ncr-no').value = ncr.no;
-  // Otomatis isi tanggal lama agar tersimpan otomatis saat diedit tanpa perlu input ulang
   document.getElementById('edit-ncr-date').value = ncr.rawDate || getTodayIsoDate();
   document.getElementById('edit-ncr-gdrive-link').value = ncr.gdriveLink || '';
   document.getElementById('edit-ncr-platform').value = ncr.platform || '';
   document.getElementById('edit-ncr-title').value = ncr.title || '';
   document.getElementById('edit-ncr-desc').value = ncr.desc || '';
 
-  if (ncr.gdriveFileName && ncr.gdriveFileData) {
-    tempMasterDocEdit = { name: ncr.gdriveFileName, dataUrl: ncr.gdriveFileData };
-    document.getElementById('edit-ncr-gdrive-file-info').textContent = ncr.gdriveFileName;
+  if (ncr.gdriveFileName || ncr.gdriveLink) {
+    tempMasterDocEdit = ncr.gdriveFileData ? { name: ncr.gdriveFileName, dataUrl: ncr.gdriveFileData } : { name: ncr.gdriveFileName || 'File Terlampir', dataUrl: '' };
+    document.getElementById('edit-ncr-gdrive-file-info').textContent = ncr.gdriveFileName || 'File GDrive Terlampir';
     document.getElementById('btn-clear-edit-ncr-file').classList.remove('hidden');
   } else {
     tempMasterDocEdit = null;
@@ -1351,20 +1380,29 @@ window.openEditNcrModal = function(ncrId) {
 document.getElementById('form-edit-ncr').addEventListener('submit', async function(e) {
   e.preventDefault();
   const ncrId = Number(document.getElementById('edit-ncr-id').value);
+  const ncrNoInput = document.getElementById('edit-ncr-no').value.trim();
+
+  if (masterNcrList.some(item => item.id !== ncrId && item.no.toLowerCase() === ncrNoInput.toLowerCase())) {
+    alert('Nomor NCR "' + ncrNoInput + '" sudah digunakan oleh NCR lain!');
+    return;
+  }
+
   const ncr = masterNcrList.find(item => item.id === ncrId);
   const checkedProds = Array.from(document.querySelectorAll('input[name="edit-target-prod"]:checked')).map(cb => cb.value);
+  let fileDataToSend = '';
 
   if (ncr) {
     const rawDate = document.getElementById('edit-ncr-date').value || ncr.rawDate || getTodayIsoDate();
     const platform = document.getElementById('edit-ncr-platform').value.trim();
     const title = document.getElementById('edit-ncr-title').value.trim();
+    fileDataToSend = tempMasterDocEdit ? (tempMasterDocEdit.dataUrl || '') : '';
 
-    ncr.no = document.getElementById('edit-ncr-no').value.trim();
+    ncr.no = ncrNoInput;
     ncr.rawDate = rawDate;
     ncr.date = formatDisplayDate(rawDate);
     ncr.gdriveLink = document.getElementById('edit-ncr-gdrive-link').value.trim();
     ncr.gdriveFileName = tempMasterDocEdit ? tempMasterDocEdit.name : '';
-    ncr.gdriveFileData = tempMasterDocEdit ? tempMasterDocEdit.dataUrl : '';
+    ncr.gdriveFileData = isCloudConfigured() ? '' : fileDataToSend;
     ncr.platform = platform;
     ncr.title = title;
     ncr.part = `${platform} — ${title}`;
@@ -1379,14 +1417,20 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
   if (ncr) {
     await sendActionToBackend({
       action: 'EDIT_NCR',
-      ...ncr
+      ...ncr,
+      gdriveFileData: fileDataToSend
     }, 'Memperbarui NCR...');
   }
 });
 
 window.deleteNcr = async function(id) {
-  if (confirm('Hapus NCR ini?')) {
+  if (confirm('Hapus NCR ini beserta riwayat pengecekannya?')) {
     masterNcrList = masterNcrList.filter(item => item.id !== id);
+    Object.keys(productFollowUps).forEach(key => {
+      if (key.endsWith('_' + id)) {
+        delete productFollowUps[key];
+      }
+    });
     renderAllViews();
 
     await sendActionToBackend({
@@ -1479,7 +1523,7 @@ function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAG
         resolve({
           dataUrl: compressedDataUrl,
           sizeKb: sizeInKb,
-          originalName: file.name
+          originalName: file.name || 'image.jpg'
         });
       };
       img.onerror = reject;
@@ -1559,8 +1603,8 @@ function renderUploadPreviewGrid() {
     const div = document.createElement('div');
     div.className = 'preview-item';
     div.innerHTML =
-      '<img src="' + src + '" alt="Preview">' +
-      '<span class="preview-kb-badge">' + kbText + '</span>' +
+      '<img src="' + escapeHtml(src) + '" alt="Preview">' +
+      '<span class="preview-kb-badge">' + escapeHtml(kbText) + '</span>' +
       '<button type="button" class="preview-remove-btn" onclick="removeTempPhoto(' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
@@ -1612,11 +1656,12 @@ function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
   users.forEach(u => {
+    const maskedPass = '•'.repeat(Math.max(String(u.password || '').length, 6));
     const tr = document.createElement('tr');
     tr.innerHTML =
-      '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + u.username + '</td>' +
-      '<td data-label="Password" style="font-family:monospace; color:var(--slate-600);">' + u.password + '</td>' +
-      '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + u.role.toUpperCase() + '</span></td>' +
+      '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + escapeHtml(u.username) + '</td>' +
+      '<td data-label="Password" style="font-family:monospace; color:var(--slate-500); letter-spacing:2px;">' + maskedPass + '</td>' +
+      '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + escapeHtml(u.role.toUpperCase()) + '</span></td>' +
       '<td class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button></div></td>';
     tbody.appendChild(tr);
   });
