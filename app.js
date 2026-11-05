@@ -8,6 +8,9 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76
 const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_JPEG_QUALITY = 0.75;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
+const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const HEROICONS = {
   calendar: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:3px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>',
@@ -219,7 +222,7 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= SINKRONISASI CLOUD & LOKAL =================
+// ================= SINKRONISASI CLOUD, LOKAL & ANTREAN OFFLINE =================
 function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
@@ -269,6 +272,67 @@ function loadFromLocalStorage() {
   }
 }
 
+function saveToOfflineQueue(payload) {
+  try {
+    let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    queue.push({
+      id: Date.now(),
+      payload: payload,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch (e) {
+    console.error('Gagal menyimpan ke antrean offline:', e);
+  }
+}
+
+async function processOfflineQueue() {
+  if (!isCloudConfigured()) return;
+
+  let queue = [];
+  try {
+    queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch (e) {
+    return;
+  }
+
+  if (queue.length === 0) return;
+
+  showCloudLoading(true, `Menyinkronkan ${queue.length} data tertunda...`);
+
+  let remainingQueue = [];
+
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    try {
+      item.payload.actorToken = currentToken;
+
+      const res = await fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(item.payload)
+      });
+      const json = await res.json();
+
+      if (json.status === 'success') {
+        // Berhasil dikirim, tidak dimasukkan ke remainingQueue
+      } else if (json.status === 'auth_error') {
+        remainingQueue = remainingQueue.concat(queue.slice(i));
+        alert(json.message || 'Sesi Anda telah berakhir. Sinkronisasi tertunda.');
+        document.getElementById('btn-logout').click();
+        break;
+      } else {
+        remainingQueue.push(item);
+      }
+    } catch (err) {
+      remainingQueue = remainingQueue.concat(queue.slice(i));
+      break;
+    }
+  }
+
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+}
+
 function mergeCloudMasterWithLocalExtras(cloudList) {
   return (cloudList || []).map(cloudItem => normalizeNcrItem({
     ...cloudItem,
@@ -293,7 +357,9 @@ async function syncFromCloud() {
   modeBadge.className = 'badge badge-closed hide-on-small-mobile';
   btnRefresh.classList.remove('hidden');
 
-  showCloudLoading(true, 'Memuat data...');
+  await processOfflineQueue();
+
+  showCloudLoading(true, 'Memuat data dari Cloud...');
   try {
     const res = await fetch(GAS_API_URL);
     const json = await res.json();
@@ -322,17 +388,19 @@ async function sendActionToBackend(payload, loadingText) {
   saveToLocalStorage();
   if (!isCloudConfigured()) return;
 
+  const fullPayload = {
+    ...payload,
+    actorRole: currentRole,
+    actorUser: currentUsername,
+    actorToken: currentToken
+  };
+
   showCloudLoading(true, loadingText || 'Menyimpan data...');
   try {
     const res = await fetch(GAS_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        ...payload,
-        actorRole: currentRole,
-        actorUser: currentUsername,
-        actorToken: currentToken
-      })
+      body: JSON.stringify(fullPayload)
     });
     const json = await res.json();
     if (json.status === 'success' && json.data) {
@@ -343,6 +411,8 @@ async function sendActionToBackend(payload, loadingText) {
       saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
+
+      processOfflineQueue();
     } else if (json.status === 'auth_error') {
       alert(json.message || 'Sesi Anda telah berakhir. Silakan login kembali.');
       document.getElementById('btn-logout').click();
@@ -351,7 +421,8 @@ async function sendActionToBackend(payload, loadingText) {
       await syncFromCloud();
     }
   } catch (err) {
-    alert('Koneksi gagal. Data tersimpan di perangkat.');
+    saveToOfflineQueue(fullPayload);
+    alert('Jaringan terputus. Data Anda tersimpan di perangkat dan akan disinkronkan nanti.');
   } finally {
     showCloudLoading(false);
   }
@@ -1304,6 +1375,13 @@ function readDocFileAsDataUrl(file) {
 document.getElementById('ncr-gdrive-file').addEventListener('change', async function() {
   if (!this.files || !this.files[0]) return;
   const file = this.files[0];
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    alert(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`);
+    this.value = '';
+    return;
+  }
+
   try {
     tempMasterDocAdd = await readDocFileAsDataUrl(file);
     document.getElementById('ncr-gdrive-file-info').textContent = file.name;
@@ -1323,6 +1401,13 @@ document.getElementById('btn-clear-ncr-file').addEventListener('click', function
 document.getElementById('edit-ncr-gdrive-file').addEventListener('change', async function() {
   if (!this.files || !this.files[0]) return;
   const file = this.files[0];
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    alert(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`);
+    this.value = '';
+    return;
+  }
+
   try {
     tempMasterDocEdit = await readDocFileAsDataUrl(file);
     document.getElementById('edit-ncr-gdrive-file-info').textContent = file.name;
