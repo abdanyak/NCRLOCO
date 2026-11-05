@@ -1986,6 +1986,12 @@ window.toggleModal = function(modalId, show) {
 
 // PEMULIHAN SESI LOGIN (TOKEN BASED)
 window.addEventListener('DOMContentLoaded', function() {
+// SET TAHUN COPYRIGHT OTOMATIS SESUAI TAHUN SISTEM SAAT INI
+  const currentYear = new Date().getFullYear();
+  document.querySelectorAll('.current-year').forEach(el => {
+    el.textContent = currentYear;
+  });
+
   const savedRole = sessionStorage.getItem('qc_active_role');
   const savedUser = sessionStorage.getItem('qc_active_user');
   const savedToken = sessionStorage.getItem('qc_active_token');
