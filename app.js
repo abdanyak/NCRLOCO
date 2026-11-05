@@ -1,10 +1,14 @@
 /**
  * ============================================================================
- * KONFIGURASI API GOOGLE APPS SCRIPT (GOOGLE SHEETS & GOOGLE DRIVE)
+ * QC PORTAL — MONITORING & HISTORY NCR
+ * File: app.js (Versi Lengkap Terintegrasi: Tahap 1, 2, & 3)
  * ============================================================================
  */
+
+// KONFIGURASI API GOOGLE APPS SCRIPT
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec";
 
+// KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE
 const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_JPEG_QUALITY = 0.75;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
@@ -28,6 +32,7 @@ const HEROICONS = {
   docText: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>'
 };
 
+// STATE APLIKASI
 let currentRole = null;
 let currentUsername = '';
 let currentToken = '';
@@ -53,10 +58,9 @@ let products = [];
 let selectedProduct = '';
 let masterNcrList = [];
 let productFollowUps = {};
-
 let users = [];
 
-// ================= HELPER KEAMANAN (ANTI-XSS), TANGGAL & SORTING =================
+// ================= HELPER KEAMANAN (ANTI-XSS), DEBOUNCE & SORTING =================
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -65,6 +69,14 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function debounce(fn, delay = 250) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
 }
 
 function getTodayIsoDate() {
@@ -315,7 +327,7 @@ async function processOfflineQueue() {
       const json = await res.json();
 
       if (json.status === 'success') {
-        // Berhasil dikirim, tidak dimasukkan ke remainingQueue
+        // Berhasil dikirim, dikeluarkan dari antrean
       } else if (json.status === 'auth_error') {
         remainingQueue = remainingQueue.concat(queue.slice(i));
         alert(json.message || 'Sesi Anda telah berakhir. Sinkronisasi tertunda.');
@@ -428,6 +440,7 @@ async function sendActionToBackend(payload, loadingText) {
   }
 }
 
+syncFromCloud();
 document.getElementById('btn-refresh-cloud').addEventListener('click', syncFromCloud);
 
 function getPhotosArray(followUp) {
@@ -552,10 +565,11 @@ document.getElementById('sort-unit').addEventListener('change', function(e) {
   renderNcrTable();
 });
 
-document.getElementById('search-ncr').addEventListener('input', function(e) {
+// Input pencarian unit dengan debounce
+document.getElementById('search-ncr').addEventListener('input', debounce(function(e) {
   searchQuery = e.target.value.toLowerCase().trim();
   renderNcrTable();
-});
+}, 250));
 
 document.querySelectorAll('#history-filter-pills .pill-btn').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -571,10 +585,11 @@ document.getElementById('sort-history').addEventListener('change', function(e) {
   renderHistoryView();
 });
 
-document.getElementById('search-history').addEventListener('input', function(e) {
+// Input pencarian history dengan debounce
+document.getElementById('search-history').addEventListener('input', debounce(function(e) {
   historySearchQuery = e.target.value.toLowerCase().trim();
   renderHistoryView();
-});
+}, 250));
 
 document.getElementById('btn-toggle-archive').addEventListener('click', toggleProductStatus);
 document.getElementById('btn-delete-product').addEventListener('click', deleteSelectedProduct);
@@ -1949,6 +1964,7 @@ window.toggleModal = function(modalId, show) {
   else el.classList.add('hidden');
 };
 
+// PEMULIHAN SESI LOGIN (TOKEN BASED)
 window.addEventListener('DOMContentLoaded', function() {
   const savedRole = sessionStorage.getItem('qc_active_role');
   const savedUser = sessionStorage.getItem('qc_active_user');
