@@ -39,8 +39,11 @@ let activeLightboxIndex = 0;
 
 let statusFilter = 'ALL';
 let searchQuery = '';
+let unitSortBy = 'DATE_DESC';
+
 let historyFilter = 'ALL';
 let historySearchQuery = '';
+let historySortBy = 'DATE_DESC';
 
 let products = [];
 let selectedProduct = '';
@@ -51,7 +54,7 @@ let users = [
   { id: 1, username: 'admin', password: '123', role: 'admin' }
 ];
 
-// ================= HELPER KEAMANAN (ANTI-XSS) & TANGGAL =================
+// ================= HELPER KEAMANAN (ANTI-XSS), TANGGAL & SORTING =================
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -84,6 +87,93 @@ function formatDisplayDate(dateStr) {
   return dateStr;
 }
 
+function sortNcrItems(list, sortMode) {
+  const copy = [...list];
+  copy.sort((a, b) => {
+    if (sortMode === 'DATE_DESC') {
+      const cmp = String(b.rawDate || '').localeCompare(String(a.rawDate || ''));
+      return cmp !== 0 ? cmp : (Number(b.id) - Number(a.id));
+    }
+    if (sortMode === 'DATE_ASC') {
+      const cmp = String(a.rawDate || '').localeCompare(String(b.rawDate || ''));
+      return cmp !== 0 ? cmp : (Number(a.id) - Number(b.id));
+    }
+    if (sortMode === 'PLATFORM_ASC') {
+      const cmp = String(a.platform || '').localeCompare(String(b.platform || ''), 'id', { numeric: true, sensitivity: 'base' });
+      return cmp !== 0 ? cmp : String(a.title || '').localeCompare(String(b.title || ''), 'id', { numeric: true, sensitivity: 'base' });
+    }
+    if (sortMode === 'PLATFORM_DESC') {
+      const cmp = String(b.platform || '').localeCompare(String(a.platform || ''), 'id', { numeric: true, sensitivity: 'base' });
+      return cmp !== 0 ? cmp : String(b.title || '').localeCompare(String(a.title || ''), 'id', { numeric: true, sensitivity: 'base' });
+    }
+    if (sortMode === 'NO_ASC') {
+      return String(a.no || '').localeCompare(String(b.no || ''), 'id', { numeric: true, sensitivity: 'base' });
+    }
+    if (sortMode === 'NO_DESC') {
+      return String(b.no || '').localeCompare(String(a.no || ''), 'id', { numeric: true, sensitivity: 'base' });
+    }
+    return 0;
+  });
+  return copy;
+}
+
+function updateSortIndicatorsUI() {
+  const histDateInd = document.getElementById('sort-ind-hist-date');
+  const histPlatInd = document.getElementById('sort-ind-hist-platform');
+  const unitDateInd = document.getElementById('sort-ind-unit-date');
+  const unitPlatInd = document.getElementById('sort-ind-unit-platform');
+
+  if (histDateInd && histPlatInd) {
+    histDateInd.className = 'sort-indicator';
+    histPlatInd.className = 'sort-indicator';
+    histDateInd.textContent = '↕';
+    histPlatInd.textContent = '↕';
+
+    if (historySortBy === 'DATE_DESC') { histDateInd.textContent = '↓'; histDateInd.classList.add('active'); }
+    else if (historySortBy === 'DATE_ASC') { histDateInd.textContent = '↑'; histDateInd.classList.add('active'); }
+    else if (historySortBy === 'NO_ASC') { histDateInd.textContent = 'A-Z'; histDateInd.classList.add('active'); }
+    else if (historySortBy === 'NO_DESC') { histDateInd.textContent = 'Z-A'; histDateInd.classList.add('active'); }
+    else if (historySortBy === 'PLATFORM_ASC') { histPlatInd.textContent = 'A-Z ↑'; histPlatInd.classList.add('active'); }
+    else if (historySortBy === 'PLATFORM_DESC') { histPlatInd.textContent = 'Z-A ↓'; histPlatInd.classList.add('active'); }
+  }
+
+  if (unitDateInd && unitPlatInd) {
+    unitDateInd.className = 'sort-indicator';
+    unitPlatInd.className = 'sort-indicator';
+    unitDateInd.textContent = '↕';
+    unitPlatInd.textContent = '↕';
+
+    if (unitSortBy === 'DATE_DESC') { unitDateInd.textContent = '↓'; unitDateInd.classList.add('active'); }
+    else if (unitSortBy === 'DATE_ASC') { unitDateInd.textContent = '↑'; unitDateInd.classList.add('active'); }
+    else if (unitSortBy === 'NO_ASC') { unitDateInd.textContent = 'A-Z'; unitDateInd.classList.add('active'); }
+    else if (unitSortBy === 'NO_DESC') { unitDateInd.textContent = 'Z-A'; unitDateInd.classList.add('active'); }
+    else if (unitSortBy === 'PLATFORM_ASC') { unitPlatInd.textContent = 'A-Z ↑'; unitPlatInd.classList.add('active'); }
+    else if (unitSortBy === 'PLATFORM_DESC') { unitPlatInd.textContent = 'Z-A ↓'; unitPlatInd.classList.add('active'); }
+  }
+}
+
+window.toggleTableSort = function(view, column) {
+  if (view === 'history') {
+    if (column === 'DATE') {
+      historySortBy = (historySortBy === 'DATE_DESC') ? 'DATE_ASC' : 'DATE_DESC';
+    } else if (column === 'PLATFORM') {
+      historySortBy = (historySortBy === 'PLATFORM_ASC') ? 'PLATFORM_DESC' : 'PLATFORM_ASC';
+    }
+    const sel = document.getElementById('sort-history');
+    if (sel) sel.value = historySortBy;
+    renderHistoryView();
+  } else if (view === 'unit') {
+    if (column === 'DATE') {
+      unitSortBy = (unitSortBy === 'DATE_DESC') ? 'DATE_ASC' : 'DATE_DESC';
+    } else if (column === 'PLATFORM') {
+      unitSortBy = (unitSortBy === 'PLATFORM_ASC') ? 'PLATFORM_DESC' : 'PLATFORM_ASC';
+    }
+    const sel = document.getElementById('sort-unit');
+    if (sel) sel.value = unitSortBy;
+    renderNcrTable();
+  }
+};
+
 function normalizeNcrItem(item) {
   if (!item) return item;
   let platform = item.platform || '';
@@ -108,7 +198,6 @@ function normalizeNcrItem(item) {
   if (!rawDate) rawDate = getTodayIsoDate();
 
   const gdriveLink = item.gdriveLink || '';
-  // Jika sudah ada gdriveLink dari Cloud, kosongkan gdriveFileData Base64 agar tidak membebani LocalStorage
   const gdriveFileData = gdriveLink ? '' : (item.gdriveFileData || '');
 
   return {
@@ -147,7 +236,6 @@ function showCloudLoading(show, text) {
 
 function saveToLocalStorage() {
   try {
-    // Bersihkan gdriveFileData jika gdriveLink sudah ada untuk menjaga kapasitas LocalStorage
     const lightMasterList = (masterNcrList || []).map(item => ({
       ...item,
       gdriveFileData: item.gdriveLink ? '' : (item.gdriveFileData || '')
@@ -183,7 +271,6 @@ function loadFromLocalStorage() {
 }
 
 function mergeCloudMasterWithLocalExtras(cloudList) {
-  // Cloud menjadi sumber kebenaran utama (authoritative) agar foto/link yang dihapus tidak muncul lagi
   return (cloudList || []).map(cloudItem => normalizeNcrItem({
     ...cloudItem,
     gdriveFileData: ''
@@ -354,6 +441,11 @@ document.querySelectorAll('#unit-filter-pills .pill-btn').forEach(btn => {
   });
 });
 
+document.getElementById('sort-unit').addEventListener('change', function(e) {
+  unitSortBy = e.target.value;
+  renderNcrTable();
+});
+
 document.getElementById('search-ncr').addEventListener('input', function(e) {
   searchQuery = e.target.value.toLowerCase().trim();
   renderNcrTable();
@@ -366,6 +458,11 @@ document.querySelectorAll('#history-filter-pills .pill-btn').forEach(btn => {
     historyFilter = this.getAttribute('data-hfilter');
     renderHistoryView();
   });
+});
+
+document.getElementById('sort-history').addEventListener('change', function(e) {
+  historySortBy = e.target.value;
+  renderHistoryView();
 });
 
 document.getElementById('search-history').addEventListener('input', function(e) {
@@ -667,6 +764,7 @@ function buildGdriveDocHtml(ncr) {
 function renderHistoryView() {
   const tbody = document.getElementById('history-table-body');
   tbody.innerHTML = '';
+  updateSortIndicatorsUI();
 
   let totalMaster = masterNcrList.length;
   let totalInstances = 0;
@@ -723,12 +821,14 @@ function renderHistoryView() {
     return matchFilter && matchSearch;
   });
 
-  if (filteredHistory.length === 0) {
+  const sortedHistory = sortNcrItems(filteredHistory, historySortBy);
+
+  if (sortedHistory.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>';
     return;
   }
 
-  filteredHistory.forEach(item => {
+  sortedHistory.forEach(item => {
     const trueIndex = masterNcrList.indexOf(item);
     const displayOrderNum = trueIndex !== -1 ? (masterNcrList.length - trueIndex) : '-';
 
@@ -852,6 +952,7 @@ function renderHistoryView() {
 function renderNcrTable() {
   const tbody = document.getElementById('ncr-table-body');
   tbody.innerHTML = '';
+  updateSortIndicatorsUI();
 
   if (products.length === 0 || !selectedProduct) {
     document.getElementById('stat-total-ncr').textContent = 0;
@@ -895,14 +996,16 @@ function renderNcrTable() {
     return matchStatus && matchSearch;
   });
 
-  if (displayedNcr.length === 0) {
+  const sortedNcr = sortNcrItems(displayedNcr, unitSortBy);
+
+  if (sortedNcr.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + escapeHtml(selectedProduct) + '</b>.</td></tr>';
     return;
   }
 
   const currentProdIdx = getProductIndex(selectedProduct);
 
-  displayedNcr.forEach(item => {
+  sortedNcr.forEach(item => {
     const key = selectedProduct + '_' + item.id;
     const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '' };
     const photos = getPhotosArray(followUp);
