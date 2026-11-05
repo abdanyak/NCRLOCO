@@ -562,14 +562,32 @@ body {
   gap: 10px;
 }
 
+/* ================= DROPDOWN UNIT PRODUK (DENGAN GAP PANAH) ================= */
 .product-select-input {
   width: auto;
   min-width: 240px;
   max-width: 360px;
   height: 38px;
-  padding: 0 12px;
+  /* Beri padding kanan 38px agar teks tidak menabrak ikon panah */
+  padding: 0 38px 0 14px;
   font-size: 13.5px;
   font-weight: 700;
+  color: var(--slate-900);
+  background-color: #ffffff;
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  cursor: pointer;
+
+  /* Hapus panah bawaan browser yang menempel di tepi */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* Ikon panah baru dengan jarak 14px dari tepi kanan kotak */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 14px;
 }
 
 .toolbar-action-wrap {
@@ -602,9 +620,11 @@ body {
   align-items: center;
 }
 
+/* ================= DROPDOWN URUTKAN (DENGAN GAP PANAH) ================= */
 .sort-select {
   height: 36px;
-  padding: 0 12px;
+  /* Beri padding kanan 34px agar teks tidak menabrak ikon panah */
+  padding: 0 34px 0 12px;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--slate-700);
@@ -613,6 +633,17 @@ body {
   border-radius: 8px;
   cursor: pointer;
   width: auto;
+
+  /* Hapus panah bawaan browser */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* Ikon panah dengan jarak 12px dari tepi kanan kotak */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 13px 13px;
 }
 
 .search-input-wrap {
