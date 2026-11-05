@@ -27,6 +27,7 @@ const HEROICONS = {
 
 let currentRole = null;
 let currentUsername = '';
+let currentToken = '';
 
 let tempImageList = [];
 let tempMasterPhotosAdd = [];
@@ -50,9 +51,7 @@ let selectedProduct = '';
 let masterNcrList = [];
 let productFollowUps = {};
 
-let users = [
-  { id: 1, username: 'admin', password: '123', role: 'admin' }
-];
+let users = [];
 
 // ================= HELPER KEAMANAN (ANTI-XSS), TANGGAL & SORTING =================
 function escapeHtml(str) {
@@ -331,7 +330,8 @@ async function sendActionToBackend(payload, loadingText) {
       body: JSON.stringify({
         ...payload,
         actorRole: currentRole,
-        actorUser: currentUsername
+        actorUser: currentUsername,
+        actorToken: currentToken
       })
     });
     const json = await res.json();
@@ -343,8 +343,12 @@ async function sendActionToBackend(payload, loadingText) {
       saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
+    } else if (json.status === 'auth_error') {
+      alert(json.message || 'Sesi Anda telah berakhir. Silakan login kembali.');
+      document.getElementById('btn-logout').click();
     } else if (json.status === 'error') {
       alert('Error Server: ' + json.message);
+      await syncFromCloud();
     }
   } catch (err) {
     alert('Koneksi gagal. Data tersimpan di perangkat.');
@@ -353,7 +357,6 @@ async function sendActionToBackend(payload, loadingText) {
   }
 }
 
-syncFromCloud();
 document.getElementById('btn-refresh-cloud').addEventListener('click', syncFromCloud);
 
 function getPhotosArray(followUp) {
@@ -385,24 +388,56 @@ btnHamburger.addEventListener('click', toggleSidebar);
 sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
 
-document.getElementById('form-login').addEventListener('submit', function(e) {
+document.getElementById('form-login').addEventListener('submit', async function(e) {
   e.preventDefault();
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value.trim();
-  const found = users.find(user => user.username === u && user.password === p);
-  if (found) {
-    document.getElementById('form-login').reset();
-    enterApp(found.role, found.username);
-  } else {
-    alert('Username atau Password salah!');
+
+  if (!isCloudConfigured()) {
+    alert('URL Server Cloud belum dikonfigurasi.');
+    return;
+  }
+
+  showCloudLoading(true, 'Memverifikasi akun...');
+  try {
+    const res = await fetch(GAS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'LOGIN',
+        username: u,
+        password: p
+      })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success' && json.user) {
+      if (json.data) {
+        products = json.data.products || [];
+        users = json.data.users || [];
+        masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
+        productFollowUps = json.data.productFollowUps || {};
+        saveToLocalStorage();
+      }
+      document.getElementById('form-login').reset();
+      enterApp(json.user.role, json.user.username, json.user.token);
+    } else {
+      alert(json.message || 'Username atau Password salah!');
+    }
+  } catch (err) {
+    alert('Gagal terhubung ke server autentikasi. Periksa koneksi internet Anda.');
+  } finally {
+    showCloudLoading(false);
   }
 });
 
 document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
   currentUsername = '';
+  currentToken = '';
   sessionStorage.removeItem('qc_active_role');
   sessionStorage.removeItem('qc_active_user');
+  sessionStorage.removeItem('qc_active_token');
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
@@ -488,12 +523,14 @@ document.getElementById('btn-edit-select-all').addEventListener('click', () => s
 document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'));
 document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
 
-function enterApp(role, username) {
+function enterApp(role, username, token) {
   currentRole = role;
   currentUsername = username || role;
+  currentToken = token || '';
 
   sessionStorage.setItem('qc_active_role', currentRole);
   sessionStorage.setItem('qc_active_user', currentUsername);
+  sessionStorage.setItem('qc_active_token', currentToken);
 
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
@@ -1759,7 +1796,7 @@ function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
   users.forEach(u => {
-    const maskedPass = '•'.repeat(Math.max(String(u.password || '').length, 6));
+    const maskedPass = '••••••';
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + escapeHtml(u.username) + '</td>' +
@@ -1773,25 +1810,30 @@ function renderUserTable() {
 document.getElementById('form-add-user').addEventListener('submit', async function(e) {
   e.preventDefault();
   const uname = document.getElementById('new-username').value.trim();
+  const passwordInput = document.getElementById('new-password').value.trim();
+  const roleInput = document.getElementById('new-role').value;
+
   if (users.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
     alert('Username sudah dipakai!');
     return;
   }
 
-  const newUser = {
-    id: Date.now(),
+  const newUserId = Date.now();
+  users.push({
+    id: newUserId,
     username: uname,
-    password: document.getElementById('new-password').value.trim(),
-    role: document.getElementById('new-role').value
-  };
-  users.push(newUser);
+    role: roleInput
+  });
   e.target.reset();
   toggleModal('modal-add-user', false);
   renderUserTable();
 
   await sendActionToBackend({
     action: 'ADD_USER',
-    ...newUser
+    id: newUserId,
+    username: uname,
+    password: passwordInput,
+    role: roleInput
   }, 'Menyimpan user...');
 });
 
@@ -1825,8 +1867,9 @@ window.toggleModal = function(modalId, show) {
 window.addEventListener('DOMContentLoaded', function() {
   const savedRole = sessionStorage.getItem('qc_active_role');
   const savedUser = sessionStorage.getItem('qc_active_user');
+  const savedToken = sessionStorage.getItem('qc_active_token');
 
-  if (savedRole) {
-    enterApp(savedRole, savedUser);
+  if (savedRole && savedUser && savedToken) {
+    enterApp(savedRole, savedUser, savedToken);
   }
 });
