@@ -16,6 +16,12 @@
   --slate-800: #1e293b;
   --slate-900: #0f172a;
   
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-500: #6366f1;
+  --indigo-600: #C8102E; /* Disesuaikan ke nuansa Merah INKA */
+  --indigo-700: #A00D24;
+  
   --emerald-50: #ecfdf5;
   --emerald-100: #d1fae5;
   --emerald-500: #10b981;
@@ -109,15 +115,15 @@ body {
 .icon-sm { width: 15px; height: 15px; flex-shrink: 0; stroke-width: 2; }
 .icon-lg { width: 22px; height: 22px; flex-shrink: 0; stroke-width: 1.8; }
 
-/* ================= HALAMAN LOGIN MINIMALIS & MODERN ================= */
+/* ================= LOGIN VIEW ================= */
 .login-wrapper {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   background-color: var(--inka-black);
-  background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(15, 23, 42, 0.85)), url('UGL2.jpg');
+  background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(15, 23, 42, 0.85)), url('UGL2.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -126,58 +132,40 @@ body {
 .login-card {
   background: #ffffff;
   width: 100%;
-  max-width: 420px;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  animation: fadeInLogin 0.4s ease-out;
-}
-
-@keyframes fadeInLogin {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .login-header {
   background: var(--inka-black);
-  padding: 36px 24px 30px;
+  padding: 28px 20px 24px;
   text-align: center;
   border-bottom: 3px solid var(--inka-red);
 }
 
-.login-title { 
-  color: #fff; 
-  font-size: 22px; 
-  font-weight: 800; 
-  letter-spacing: -0.02em;
-}
-
-.login-subtitle { 
-  color: var(--slate-400); 
-  font-size: 13px; 
-  margin-top: 6px; 
-}
+.login-title { color: #fff; font-size: 20px; font-weight: 800; }
+.login-subtitle { color: var(--slate-400); font-size: 13px; margin-top: 4px; }
 
 .brand-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  /* Gradien Merah ke Hitam ala Tailwind */
   background: linear-gradient(135deg, #C8102E 0%, #111111 100%);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
-  box-shadow: 0 8px 20px rgba(200, 16, 46, 0.4);
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.4);
 }
 
-.login-body { 
-  padding: 32px 28px; 
-  background: #ffffff;
-}
+.login-body { padding: 24px 20px; }
 
-/* ================= LAYOUT & SIDEBAR ================= */
+/* ================= LAYOUT & SIDEBAR (Nuansa Hitam & Merah INKA) ================= */
 .admin-layout {
   display: flex;
   min-height: 100vh;
@@ -228,6 +216,7 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 8px;
+  /* Gradien Merah INKA */
   background: linear-gradient(135deg, #C8102E 0%, #800A1C 100%);
   display: flex;
   align-items: center;
@@ -292,6 +281,7 @@ body {
 .nav-item-left { display: flex; align-items: center; gap: 10px; }
 .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
 
+/* Menu Aktif dengan Gradien Merah INKA ala Tailwind */
 .nav-item.active { 
   background: linear-gradient(135deg, #C8102E 0%, #990C23 100%); 
   color: #fff;
@@ -676,8 +666,8 @@ body {
   height: 38px;
 }
 
-/* ================= FORMS & TOMBOL DENGAN GRADIEN TAILWIND ================= -->
-.form-group { margin-bottom: 16px; }
+/* ================= FORMS & TOMBOL DENGAN GRADIEN TAILWIND ================= */
+.form-group { margin-bottom: 14px; }
 
 .form-row-2col {
   display: grid;
@@ -693,7 +683,7 @@ label {
   font-size: 13px;
   font-weight: 600;
   color: var(--slate-800);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .step-num {
@@ -703,6 +693,7 @@ label {
   width: 19px;
   height: 19px;
   border-radius: 5px;
+  /* Nomor langkah menggunakan merah INKA */
   background: var(--inka-red);
   color: #fff;
   font-size: 11px;
@@ -723,10 +714,10 @@ input[type="date"],
 select,
 textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--slate-300);
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
   color: var(--slate-800);
   background: #fff;
   outline: none;
@@ -771,12 +762,12 @@ input:focus, select:focus, textarea:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 13.5px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 600;
   padding: 0 16px;
-  height: 42px;
-  border-radius: 10px;
+  height: 38px;
+  border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -789,7 +780,7 @@ input:focus, select:focus, textarea:focus {
   transform: scale(0.98);
 }
 
-.btn-full { width: 100%; height: 44px; }
+.btn-full { width: 100%; height: 42px; }
 .btn-sm { padding: 0 10px; height: 32px; font-size: 12px; border-radius: 7px; }
 
 /* TOMBOL UTAMA DENGAN GRADIEN ALA TAILWIND (Merah INKA to Deep Maroon) */
@@ -797,11 +788,11 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(135deg, #C8102E 0%, #990C23 100%);
   color: #fff;
   border: none;
-  box-shadow: 0 4px 14px rgba(200, 16, 46, 0.35);
+  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.3);
 }
 .btn-indigo:hover {
   background: linear-gradient(135deg, #B00100 0%, #800A1C 100%);
-  box-shadow: 0 6px 18px rgba(200, 16, 46, 0.45);
+  box-shadow: 0 6px 16px rgba(200, 16, 46, 0.4);
 }
 
 /* Tombol Sukses dengan Gradien Emerald */
@@ -1253,7 +1244,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 .modal-panel {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
@@ -1277,7 +1268,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .modal-header {
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--slate-200);
   display: flex;
   align-items: center;
@@ -1288,7 +1279,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 800;
   color: var(--inka-black);
   word-break: break-word;
@@ -1303,7 +1294,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 16px 18px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1311,12 +1302,12 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .modal-footer {
-  padding: 14px 20px;
+  padding: 12px 18px;
   background: var(--slate-50);
   border-top: 1px solid var(--slate-200);
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -1326,7 +1317,7 @@ tbody tr:last-child td { border-bottom: none; }
   gap: 8px;
   cursor: pointer;
   font-weight: 500;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .checkbox-inline-label input { width: 17px; height: 17px; flex-shrink: 0; }
 
@@ -1334,7 +1325,7 @@ tbody tr:last-child td { border-bottom: none; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -1357,8 +1348,8 @@ tbody tr:last-child td { border-bottom: none; }
 .checklist-container {
   border: 1px solid var(--slate-200);
   background: var(--slate-50);
-  border-radius: 10px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 6px;
   max-height: 150px;
   overflow-y: auto;
 }
@@ -1368,8 +1359,8 @@ tbody tr:last-child td { border-bottom: none; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 0;
 }
@@ -1499,7 +1490,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   input[type="text"], input[type="password"], input[type="url"], input[type="date"], select, textarea {
     font-size: 15px;
-    padding: 10px 12px;
+    padding: 9px 11px;
   }
 
   .search-input-wrap input { padding-left: 36px !important; }
@@ -1552,6 +1543,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   table.mobile-card-table tbody td[data-label]::before {
     content: attr(data-label);
+    display: card;
     display: block;
     font-size: 10.5px;
     font-weight: 800;
