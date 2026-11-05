@@ -238,6 +238,17 @@
                   <button type="button" class="pill-btn" data-hfilter="INCOMPLETE">OPEN</button>
                   <button type="button" class="pill-btn" data-hfilter="COMPLETE">CLOSED</button>
                 </div>
+
+                <div class="sort-select-wrap">
+                  <select id="sort-history" class="sort-select" title="Urutkan Data History">
+                    <option value="DATE_DESC">Urut: Tanggal Terbaru</option>
+                    <option value="DATE_ASC">Urut: Tanggal Terlama</option>
+                    <option value="PLATFORM_ASC">Urut: Platform (A-Z)</option>
+                    <option value="PLATFORM_DESC">Urut: Platform (Z-A)</option>
+                    <option value="NO_ASC">Urut: No. NCR (A-Z)</option>
+                    <option value="NO_DESC">Urut: No. NCR (Z-A)</option>
+                  </select>
+                </div>
               </div>
 
               <div class="search-input-wrap search-history-wrap">
@@ -252,8 +263,18 @@
               <table class="mobile-card-table">
                 <thead>
                   <tr>
-                    <th>No. NCR & Tanggal</th>
-                    <th>Platform, Title & Deskripsi</th>
+                    <th class="sortable-th" onclick="toggleTableSort('history', 'DATE')" title="Klik untuk urutkan Tanggal">
+                      <div class="th-sort-inner">
+                        <span>No. NCR & Tanggal</span>
+                        <span id="sort-ind-hist-date" class="sort-indicator active">↓</span>
+                      </div>
+                    </th>
+                    <th class="sortable-th" onclick="toggleTableSort('history', 'PLATFORM')" title="Klik untuk urutkan Platform A-Z">
+                      <div class="th-sort-inner">
+                        <span>Platform, Title & Deskripsi</span>
+                        <span id="sort-ind-hist-platform" class="sort-indicator">↕</span>
+                      </div>
+                    </th>
                     <th>Progress Unit</th>
                     <th>Status per Unit</th>
                   </tr>
@@ -351,6 +372,17 @@
                   <button type="button" class="pill-btn" data-filter="OPEN">OPEN</button>
                   <button type="button" class="pill-btn" data-filter="CLOSED">CLOSED</button>
                 </div>
+
+                <div class="sort-select-wrap">
+                  <select id="sort-unit" class="sort-select" title="Urutkan Data Unit">
+                    <option value="DATE_DESC">Urut: Tanggal Terbaru</option>
+                    <option value="DATE_ASC">Urut: Tanggal Terlama</option>
+                    <option value="PLATFORM_ASC">Urut: Platform (A-Z)</option>
+                    <option value="PLATFORM_DESC">Urut: Platform (Z-A)</option>
+                    <option value="NO_ASC">Urut: No. NCR (A-Z)</option>
+                    <option value="NO_DESC">Urut: No. NCR (Z-A)</option>
+                  </select>
+                </div>
               </div>
 
               <div class="search-input-wrap search-unit-wrap">
@@ -365,8 +397,18 @@
               <table class="mobile-card-table">
                 <thead>
                   <tr>
-                    <th>No. NCR & Tanggal</th>
-                    <th>Platform & Title</th>
+                    <th class="sortable-th" onclick="toggleTableSort('unit', 'DATE')" title="Klik untuk urutkan Tanggal">
+                      <div class="th-sort-inner">
+                        <span>No. NCR & Tanggal</span>
+                        <span id="sort-ind-unit-date" class="sort-indicator active">↓</span>
+                      </div>
+                    </th>
+                    <th class="sortable-th" onclick="toggleTableSort('unit', 'PLATFORM')" title="Klik untuk urutkan Platform A-Z">
+                      <div class="th-sort-inner">
+                        <span>Platform & Title</span>
+                        <span id="sort-ind-unit-platform" class="sort-indicator">↕</span>
+                      </div>
+                    </th>
                     <th>Deskripsi & Foto NCR</th>
                     <th>Cakupan</th>
                     <th>Status</th>
@@ -484,7 +526,6 @@
       </div>
       <form id="form-add-ncr">
         <div class="modal-body">
-          <!-- 1. No NCR & Tanggal -->
           <div class="form-group">
             <label><span class="step-num">1</span> No. NCR & Tanggal</label>
             <div class="form-row-2col">
@@ -493,7 +534,6 @@
             </div>
           </div>
 
-          <!-- 2. Upload File Gdrive NCR (Optional Jika Ada) -->
           <div class="form-group">
             <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
             <div class="gdrive-input-stack">
@@ -507,25 +547,21 @@
             </div>
           </div>
 
-          <!-- 3. Issue Identified in the Platform -->
           <div class="form-group">
             <label for="ncr-platform"><span class="step-num">3</span> Issue Identified in the Platform</label>
             <input type="text" id="ncr-platform" required placeholder="Area / Platform (Misal: Bogie / Cabin)">
           </div>
 
-          <!-- 4. Title -->
           <div class="form-group">
             <label for="ncr-title"><span class="step-num">4</span> Title</label>
             <input type="text" id="ncr-title" required placeholder="Judul singkat temuan">
           </div>
 
-          <!-- 5. Issue Description -->
           <div class="form-group">
             <label for="ncr-desc"><span class="step-num">5</span> Issue Description</label>
             <textarea id="ncr-desc" required rows="3" placeholder="Jelaskan detail temuan NCR..."></textarea>
           </div>
 
-          <!-- 6. Upload Photo (Optional) -->
           <div class="form-group">
             <div class="checklist-header-row">
               <label class="mb-0"><span class="step-num">6</span> Upload Photo <span class="label-optional">(Opsional)</span></label>
@@ -544,7 +580,6 @@
             <div id="master-foto-preview-grid" class="preview-grid hidden"></div>
           </div>
 
-          <!-- 7. Terapkan NCR ke Produk Pilihan -->
           <div class="form-group mb-0">
             <div class="checklist-header-row">
               <label class="mb-0"><span class="step-num">7</span> Terapkan NCR ke Produk Pilihan <span class="label-optional">(Opsional)</span></label>
@@ -578,7 +613,6 @@
         <div class="modal-body">
           <input type="hidden" id="edit-ncr-id">
 
-          <!-- 1. No NCR & Tanggal -->
           <div class="form-group">
             <label><span class="step-num">1</span> No. NCR & Tanggal</label>
             <div class="form-row-2col">
@@ -587,7 +621,6 @@
             </div>
           </div>
 
-          <!-- 2. Upload File Gdrive NCR -->
           <div class="form-group">
             <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
             <div class="gdrive-input-stack">
@@ -601,25 +634,21 @@
             </div>
           </div>
 
-          <!-- 3. Issue Identified in the Platform -->
           <div class="form-group">
             <label for="edit-ncr-platform"><span class="step-num">3</span> Issue Identified in the Platform</label>
             <input type="text" id="edit-ncr-platform" required>
           </div>
 
-          <!-- 4. Title -->
           <div class="form-group">
             <label for="edit-ncr-title"><span class="step-num">4</span> Title</label>
             <input type="text" id="edit-ncr-title" required>
           </div>
 
-          <!-- 5. Issue Description -->
           <div class="form-group">
             <label for="edit-ncr-desc"><span class="step-num">5</span> Issue Description</label>
             <textarea id="edit-ncr-desc" required rows="3"></textarea>
           </div>
 
-          <!-- 6. Upload Photo -->
           <div class="form-group">
             <div class="checklist-header-row">
               <label class="mb-0"><span class="step-num">6</span> Upload Photo <span class="label-optional">(Opsional)</span></label>
@@ -638,7 +667,6 @@
             <div id="edit-master-foto-preview-grid" class="preview-grid hidden"></div>
           </div>
 
-          <!-- 7. Terapkan NCR ke Produk Pilihan -->
           <div class="form-group mb-0">
             <div class="checklist-header-row">
               <label class="mb-0"><span class="step-num">7</span> Terapkan NCR ke Produk Pilihan</label>
@@ -725,7 +753,7 @@
           </div>
           <div class="form-group">
             <label for="new-password">Password</label>
-            <input type="text" id="new-password" required placeholder="Password">
+            <input type="password" id="new-password" required placeholder="Password">
           </div>
           <div class="form-group mb-0">
             <label for="new-role">Role</label>
