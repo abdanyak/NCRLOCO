@@ -156,6 +156,7 @@ body {
   display: flex;
   min-height: 100vh;
   position: relative;
+  width: 100%;
 }
 
 .sidebar {
@@ -165,7 +166,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: margin-left 0.25s ease, transform 0.25s ease;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
 
@@ -298,39 +299,40 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  max-width: 100%;
+  width: 100%;
+  transition: width 0.25s ease;
 }
 
 .topbar {
-  height: 60px;
+  height: 62px;
   background: #ffffff;
   border-bottom: 1px solid var(--slate-200);
-  padding: 0 20px;
+  padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 20;
-  gap: 8px;
+  gap: 12px;
 }
 
 .topbar-left, .topbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 
 .topbar-title-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 
 .topbar-title {
-  font-size: 16.5px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--slate-900);
   white-space: nowrap;
@@ -350,13 +352,25 @@ body {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
+.hamburger-btn:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-300);
+}
+
+/* OPTIMASI DESKTOP: Memanfaatkan lebar layar penuh dengan ruang tepi proporsional */
 .content-wrapper {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px 28px 36px;
+  max-width: 100%;
   width: 100%;
   margin: 0 auto;
+}
+
+@media (min-width: 1600px) {
+  .topbar { padding: 0 36px; }
+  .content-wrapper { padding: 28px 36px 40px; }
 }
 
 /* ================= MOBILE BOTTOM NAV ================= */
@@ -415,20 +429,21 @@ body {
 /* ================= STATS CARDS ================= */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
 }
 
 .stat-card {
   background: #ffffff;
   border-radius: 12px;
-  padding: 15px 16px;
+  padding: 18px 20px;
   border: 1px solid var(--slate-200);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -438,9 +453,9 @@ body {
 }
 
 .stat-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,14 +468,14 @@ body {
 .icon-box-emerald { background: var(--emerald-50); color: var(--emerald-600); }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--slate-500);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--slate-900);
   line-height: 1.2;
@@ -469,12 +484,12 @@ body {
 }
 
 .stat-value-unit {
-  font-size: 15px;
+  font-size: 16.5px;
   margin-top: 2px;
 }
 
 .stat-sub {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--slate-400);
   margin-top: 4px;
 }
@@ -484,17 +499,18 @@ body {
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid var(--slate-200);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 
 .panel-toolbar {
-  padding: 16px 18px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--slate-200);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   background: var(--slate-50);
 }
 
@@ -504,24 +520,24 @@ body {
 
 .toolbar-info-group {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .panel-title {
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--slate-900);
 }
 
 .panel-desc {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--slate-500);
   margin-top: 2px;
 }
 
 .unit-selector-group {
   flex: 1;
-  min-width: 240px;
+  min-width: 260px;
 }
 
 .unit-selector-label {
@@ -530,22 +546,22 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   color: var(--slate-500);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .unit-selector-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .product-select-input {
   width: auto;
-  min-width: 200px;
-  max-width: 300px;
+  min-width: 240px;
+  max-width: 360px;
   height: 38px;
-  padding: 0 10px;
+  padding: 0 12px;
   font-size: 13.5px;
   font-weight: 700;
 }
@@ -558,13 +574,13 @@ body {
 }
 
 .filter-bar {
-  padding: 12px 18px;
+  padding: 14px 22px;
   border-bottom: 1px solid var(--slate-200);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
 }
 
@@ -572,7 +588,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sort-select-wrap {
@@ -581,9 +597,9 @@ body {
 }
 
 .sort-select {
-  height: 34px;
-  padding: 0 10px;
-  font-size: 12px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--slate-700);
   background-color: var(--slate-50);
@@ -597,8 +613,11 @@ body {
   position: relative;
   width: 100%;
 }
+
 .search-history-wrap,
-.search-unit-wrap { max-width: 300px; }
+.search-unit-wrap {
+  max-width: 380px;
+}
 
 .search-input-wrap .search-icon {
   position: absolute;
@@ -609,6 +628,7 @@ body {
   pointer-events: none;
   z-index: 2;
 }
+
 .search-input-wrap input {
   padding-left: 36px !important;
   height: 38px;
@@ -792,7 +812,7 @@ input:focus, select:focus, textarea:focus {
 .pill-btn {
   border: none;
   background: transparent;
-  padding: 5px 12px;
+  padding: 5px 14px;
   font-size: 12px;
   font-weight: 600;
   color: var(--slate-600);
@@ -806,28 +826,25 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-/* ================= STATUS PER UNIT (SCROLLABLE CONTAINER) ================= */
+/* ================= STATUS PER UNIT (MULTI-GRID DESKTOP) ================= */
 .history-unit-scroll-box {
-  max-height: 210px;
+  max-height: 230px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 2px 4px 6px 2px;
+  padding: 2px 4px 4px 2px;
 }
 
 .history-unit-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+  gap: 8px;
 }
 
 .history-unit-card {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 9px 11px;
   border-radius: 8px;
   border: 1px solid var(--slate-200);
   background: var(--slate-50);
@@ -843,8 +860,8 @@ input:focus, select:focus, textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 4px;
-  padding: 2px 6px;
+  margin-top: 5px;
+  padding: 3px 7px;
   border-radius: 5px;
   background: var(--indigo-50);
   border: 1px solid var(--indigo-100);
@@ -866,7 +883,7 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--indigo-100);
   padding: 2px 8px;
   border-radius: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   max-width: 100%;
   word-break: break-word;
 }
@@ -875,7 +892,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 14px;
   font-weight: 700;
   color: var(--slate-900);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   line-height: 1.35;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -884,40 +901,53 @@ input:focus, select:focus, textarea:focus {
 .issue-desc-text {
   font-size: 13px;
   color: var(--slate-600);
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-line;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
-.progress-wrap { width: 150px; max-width: 100%; }
+.progress-wrap {
+  width: 100%;
+  min-width: 130px;
+  max-width: 200px;
+}
+
 .progress-bar-bg {
   width: 100%;
-  height: 7px;
+  height: 8px;
   background: var(--slate-100);
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 5px;
+  margin-top: 6px;
   border: 1px solid var(--slate-200);
 }
-.progress-bar-fill { height: 100%; border-radius: 999px; }
 
-.table-responsive { width: 100%; overflow-x: auto; }
+.progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+
+/* ================= TABEL & PROPORSI KOLOM DESKTOP ================= */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
 
 table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  table-layout: auto;
 }
 
 th {
   background: var(--slate-50);
-  padding: 12px 16px;
+  padding: 13px 20px;
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
   color: var(--slate-500);
   border-bottom: 1px solid var(--slate-200);
+  white-space: nowrap;
 }
 
 th.sortable-th {
@@ -954,7 +984,7 @@ th.sortable-th:hover {
 }
 
 td {
-  padding: 14px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--slate-200);
   font-size: 13.5px;
   vertical-align: top;
@@ -965,6 +995,78 @@ td {
 
 tbody tr:hover td { background: #f8fafc; }
 tbody tr:last-child td { border-bottom: none; }
+
+/* Proporsi Kolom Desktop (Mencegah Overlap / Tumpang Tindih) */
+@media (min-width: 769px) {
+  /* 1. Tabel History NCR (4 Kolom) */
+  #section-history table th:nth-child(1),
+  #section-history table td:nth-child(1) {
+    width: 17%;
+    min-width: 185px;
+  }
+  #section-history table th:nth-child(2),
+  #section-history table td:nth-child(2) {
+    width: 34%;
+    min-width: 280px;
+  }
+  #section-history table th:nth-child(3),
+  #section-history table td:nth-child(3) {
+    width: 14%;
+    min-width: 155px;
+  }
+  #section-history table th:nth-child(4),
+  #section-history table td:nth-child(4) {
+    width: 35%;
+    min-width: 300px;
+  }
+
+  /* 2. Tabel Monitoring per Unit (7 Kolom) */
+  #section-ncr table th:nth-child(1),
+  #section-ncr table td:nth-child(1) {
+    width: 13%;
+    min-width: 150px;
+  }
+  #section-ncr table th:nth-child(2),
+  #section-ncr table td:nth-child(2) {
+    width: 16%;
+    min-width: 170px;
+  }
+  #section-ncr table th:nth-child(3),
+  #section-ncr table td:nth-child(3) {
+    width: 25%;
+    min-width: 240px;
+  }
+  #section-ncr table th:nth-child(4),
+  #section-ncr table td:nth-child(4) {
+    width: 8%;
+    min-width: 95px;
+  }
+  #section-ncr table th:nth-child(5),
+  #section-ncr table td:nth-child(5) {
+    width: 10%;
+    min-width: 115px;
+  }
+  #section-ncr table th:nth-child(6),
+  #section-ncr table td:nth-child(6) {
+    width: 16%;
+    min-width: 195px;
+  }
+  #section-ncr table th:nth-child(7),
+  #section-ncr table td:nth-child(7) {
+    width: 12%;
+    min-width: 165px;
+  }
+
+  /* 3. Tabel Kelola User (4 Kolom) */
+  #section-users table th:nth-child(1),
+  #section-users table td:nth-child(1) { width: 32%; }
+  #section-users table th:nth-child(2),
+  #section-users table td:nth-child(2) { width: 28%; }
+  #section-users table th:nth-child(3),
+  #section-users table td:nth-child(3) { width: 20%; }
+  #section-users table th:nth-child(4),
+  #section-users table td:nth-child(4) { width: 20%; }
+}
 
 /* ================= UPLOAD & THUMBNAILS ================= */
 .android-upload-grid {
@@ -1006,7 +1108,7 @@ tbody tr:last-child td { border-bottom: none; }
 .thumb-wrapper {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -1117,8 +1219,8 @@ tbody tr:last-child td { border-bottom: none; }
   overflow: hidden;
 }
 
-.modal-panel-lg { max-width: 560px; }
-.modal-lightbox-panel { max-width: 600px; }
+.modal-panel-lg { max-width: 580px; }
+.modal-lightbox-panel { max-width: 640px; }
 
 .modal-panel > form {
   display: flex;
@@ -1211,7 +1313,7 @@ tbody tr:last-child td { border-bottom: none; }
   background: var(--slate-50);
   border-radius: 8px;
   padding: 6px;
-  max-height: 140px;
+  max-height: 150px;
   overflow-y: auto;
 }
 
@@ -1235,13 +1337,13 @@ tbody tr:last-child td { border-bottom: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 220px;
+  min-height: 240px;
   touch-action: pan-y;
 }
 
 .lightbox-main-img {
   width: 100%;
-  max-height: 340px;
+  max-height: 380px;
   object-fit: contain;
   user-select: none;
 }
@@ -1314,7 +1416,13 @@ tbody tr:last-child td { border-bottom: none; }
   word-break: break-word;
 }
 
-/* ================= RESPONSIF MOBILE ================= */
+/* ================= RESPONSIF TABLET & MOBILE ================= */
+@media (max-width: 1100px) and (min-width: 769px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .content-wrapper { padding: 18px 20px 30px; }
+  .topbar { padding: 0 20px; }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -1406,7 +1514,7 @@ tbody tr:last-child td { border-bottom: none; }
     margin-bottom: 3px;
   }
 
-  .progress-wrap { width: 100%; }
+  .progress-wrap { width: 100%; max-width: 100%; }
   .history-unit-list { grid-template-columns: 1fr; }
 
   .mobile-action-group {
