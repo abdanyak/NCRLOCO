@@ -570,8 +570,27 @@ body {
 
 .filter-group {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.sort-select-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sort-select {
+  height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate-700);
+  background-color: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  cursor: pointer;
+  width: auto;
 }
 
 .search-input-wrap {
@@ -899,6 +918,39 @@ th {
   text-transform: uppercase;
   color: var(--slate-500);
   border-bottom: 1px solid var(--slate-200);
+}
+
+th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+th.sortable-th:hover {
+  background: var(--slate-100);
+  color: var(--slate-900);
+}
+
+.th-sort-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--slate-400);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.sort-indicator.active {
+  color: var(--indigo-600);
+  background: var(--indigo-50);
 }
 
 td {
@@ -1306,8 +1358,10 @@ tbody tr:last-child td { border-bottom: none; }
   .unit-selector-controls .btn { width: 100%; padding: 0 6px; font-size: 12px; height: 36px; }
 
   .filter-bar { padding: 10px 12px; flex-direction: column; align-items: stretch; gap: 8px; }
+  .filter-group { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
   .pill-group { width: 100%; display: flex; }
   .pill-btn { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
+  .sort-select-wrap, .sort-select { width: 100%; height: 38px; font-size: 13px; }
   .search-history-wrap, .search-unit-wrap { max-width: 100%; }
 
   .table-responsive { overflow-x: hidden; padding: 8px; background: var(--slate-100); }
