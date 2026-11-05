@@ -284,23 +284,6 @@ body {
   background: rgba(0, 0, 0, 0.2);
 }
 
-.sidebar-copyright {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--slate-400);
-  line-height: 1; /* Mencegah ruang kosong vertikal ekstra di bawah teks */
-  letter-spacing: 0.02em;
-  
-  /* Flexbox untuk memastikan teks tepat di titik tengah (align center) */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
 .user-mini-info { display: flex; align-items: center; gap: 10px; }
 .sidebar-user-name { font-size: 13px; font-weight: 700; color: #fff; }
 .sidebar-user-role { font-size: 11px; color: var(--slate-400); }
@@ -1619,15 +1602,20 @@ tbody tr:last-child td { border-bottom: none; }
 /* ================= COPYRIGHT STYLING (TANPA SCROLL) ================= */
 .sidebar-copyright {
   margin-top: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
+  font-weight: 500;
   color: var(--slate-400);
+  line-height: 1; /* Mencegah ruang kosong vertikal ekstra di bawah teks */
+  letter-spacing: 0.02em;
+  
+  /* Flexbox untuk memastikan teks tepat di titik tengah (align center) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  line-height: 1.4;
-  letter-spacing: 0.01em;
 }
-
 .login-copyright {
   margin-top: 18px;
   text-align: center;
