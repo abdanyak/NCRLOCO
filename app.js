@@ -1,17 +1,17 @@
 /**
  * ============================================================================
  * QC PORTAL — MONITORING & HISTORY NCR
- * File: app.js (Full Update: LocalStorage Session, Multi-Tab Sync, & Auto-Sort A-Z)
+ * File: app.js (Versi Lengkap Terintegrasi)
  * ============================================================================
  */
 
 // KONFIGURASI API GOOGLE APPS SCRIPT
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec"[cite: 1];
 
 // KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE
-const IMAGE_MAX_WIDTH = 1280;
-const IMAGE_JPEG_QUALITY = 0.75;
-const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
+const IMAGE_MAX_WIDTH = 1280[cite: 1];
+const IMAGE_JPEG_QUALITY = 0.75[cite: 1];
+const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1'[cite: 1];
 const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -30,34 +30,34 @@ const HEROICONS = {
   lockOpen: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>',
   folderOpen: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>',
   docText: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>'
-};
+}[cite: 1];
 
 // STATE APLIKASI
-let currentRole = null;
-let currentUsername = '';
+let currentRole = null[cite: 1];
+let currentUsername = ''[cite: 1];
 let currentToken = '';
 
-let tempImageList = [];
-let tempMasterPhotosAdd = [];
-let tempMasterPhotosEdit = [];
-let tempMasterDocAdd = null;
-let tempMasterDocEdit = null;
+let tempImageList = [][cite: 1];
+let tempMasterPhotosAdd = [][cite: 1];
+let tempMasterPhotosEdit = [][cite: 1];
+let tempMasterDocAdd = null[cite: 1];
+let tempMasterDocEdit = null[cite: 1];
 
-let activeLightboxPhotos = [];
-let activeLightboxIndex = 0;
+let activeLightboxPhotos = [][cite: 1];
+let activeLightboxIndex = 0[cite: 1];
 
-let statusFilter = 'ALL';
-let searchQuery = '';
-let unitSortBy = 'DATE_DESC';
+let statusFilter = 'ALL'[cite: 1];
+let searchQuery = ''[cite: 1];
+let unitSortBy = 'DATE_DESC'[cite: 1];
 
-let historyFilter = 'ALL';
-let historySearchQuery = '';
-let historySortBy = 'DATE_DESC';
+let historyFilter = 'ALL'[cite: 1];
+let historySearchQuery = ''[cite: 1];
+let historySortBy = 'DATE_DESC'[cite: 1];
 
-let products = [];
-let selectedProduct = '';
-let masterNcrList = [];
-let productFollowUps = {};
+let products = [][cite: 1];
+let selectedProduct = ''[cite: 1];
+let masterNcrList = [][cite: 1];
+let productFollowUps = {}[cite: 1];
 let users = [];
 
 // ================= HELPER KEAMANAN (ANTI-XSS), DEBOUNCE & SORTING =================
@@ -68,7 +68,7 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#39;')[cite: 1];
 }
 
 function debounce(fn, delay = 250) {
@@ -84,85 +84,85 @@ function getTodayIsoDate() {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}`[cite: 1];
 }
 
 function formatDisplayDate(dateStr) {
-  if (!dateStr) return '-';
+  if (!dateStr) return '-'[cite: 1];
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })[cite: 1];
   }
   const cleanStr = String(dateStr).split(' 00:00:00')[0].split(' GMT')[0];
   if (cleanStr && cleanStr !== 'Invalid Date' && cleanStr !== '-') {
-    return cleanStr;
+    return cleanStr[cite: 1];
   }
-  return dateStr;
+  return dateStr[cite: 1];
 }
 
 function sortNcrItems(list, sortMode) {
-  const copy = [...list];
+  const copy = [...list][cite: 1];
   copy.sort((a, b) => {
     if (sortMode === 'DATE_DESC') {
       const cmp = String(b.rawDate || '').localeCompare(String(a.rawDate || ''));
-      return cmp !== 0 ? cmp : (Number(b.id) - Number(a.id));
+      return cmp !== 0 ? cmp : (Number(b.id) - Number(a.id))[cite: 1];
     }
     if (sortMode === 'DATE_ASC') {
       const cmp = String(a.rawDate || '').localeCompare(String(b.rawDate || ''));
-      return cmp !== 0 ? cmp : (Number(a.id) - Number(b.id));
+      return cmp !== 0 ? cmp : (Number(a.id) - Number(b.id))[cite: 1];
     }
     if (sortMode === 'PLATFORM_ASC') {
-      const cmp = String(a.platform || '').localeCompare(String(b.platform || ''), 'id', { numeric: true, sensitivity: 'base' });
-      return cmp !== 0 ? cmp : String(a.title || '').localeCompare(String(b.title || ''), 'id', { numeric: true, sensitivity: 'base' });
+      const cmp = String(a.platform || '').localeCompare(String(b.platform || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
+      return cmp !== 0 ? cmp : String(a.title || '').localeCompare(String(b.title || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
     }
     if (sortMode === 'PLATFORM_DESC') {
-      const cmp = String(b.platform || '').localeCompare(String(a.platform || ''), 'id', { numeric: true, sensitivity: 'base' });
-      return cmp !== 0 ? cmp : String(b.title || '').localeCompare(String(a.title || ''), 'id', { numeric: true, sensitivity: 'base' });
+      const cmp = String(b.platform || '').localeCompare(String(a.platform || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
+      return cmp !== 0 ? cmp : String(b.title || '').localeCompare(String(a.title || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
     }
     if (sortMode === 'NO_ASC') {
-      return String(a.no || '').localeCompare(String(b.no || ''), 'id', { numeric: true, sensitivity: 'base' });
+      return String(a.no || '').localeCompare(String(b.no || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
     }
     if (sortMode === 'NO_DESC') {
-      return String(b.no || '').localeCompare(String(a.no || ''), 'id', { numeric: true, sensitivity: 'base' });
+      return String(b.no || '').localeCompare(String(a.no || ''), 'id', { numeric: true, sensitivity: 'base' })[cite: 1];
     }
     return 0;
   });
-  return copy;
+  return copy[cite: 1];
 }
 
 function updateSortIndicatorsUI() {
-  const histDateInd = document.getElementById('sort-ind-hist-date');
-  const histPlatInd = document.getElementById('sort-ind-hist-platform');
-  const unitDateInd = document.getElementById('sort-ind-unit-date');
-  const unitPlatInd = document.getElementById('sort-ind-unit-platform');
+  const histDateInd = document.getElementById('sort-ind-hist-date')[cite: 1];
+  const histPlatInd = document.getElementById('sort-ind-hist-platform')[cite: 1];
+  const unitDateInd = document.getElementById('sort-ind-unit-date')[cite: 1];
+  const unitPlatInd = document.getElementById('sort-ind-unit-platform')[cite: 1];
 
   if (histDateInd && histPlatInd) {
-    histDateInd.className = 'sort-indicator';
-    histPlatInd.className = 'sort-indicator';
-    histDateInd.textContent = '↕';
-    histPlatInd.textContent = '↕';
+    histDateInd.className = 'sort-indicator'[cite: 1];
+    histPlatInd.className = 'sort-indicator'[cite: 1];
+    histDateInd.textContent = '↕'[cite: 1];
+    histPlatInd.textContent = '↕'[cite: 1];
 
     if (historySortBy === 'DATE_DESC') { histDateInd.textContent = '↓'; histDateInd.classList.add('active'); }
     else if (historySortBy === 'DATE_ASC') { histDateInd.textContent = '↑'; histDateInd.classList.add('active'); }
     else if (historySortBy === 'NO_ASC') { histDateInd.textContent = 'A-Z'; histDateInd.classList.add('active'); }
     else if (historySortBy === 'NO_DESC') { histDateInd.textContent = 'Z-A'; histDateInd.classList.add('active'); }
     else if (historySortBy === 'PLATFORM_ASC') { histPlatInd.textContent = 'A-Z ↑'; histPlatInd.classList.add('active'); }
-    else if (historySortBy === 'PLATFORM_DESC') { histPlatInd.textContent = 'Z-A ↓'; histPlatInd.classList.add('active'); }
+    else if (historySortBy === 'PLATFORM_DESC') { histPlatInd.textContent = 'Z-A ↓'; histPlatInd.classList.add('active'); }[cite: 1]
   }
 
   if (unitDateInd && unitPlatInd) {
-    unitDateInd.className = 'sort-indicator';
-    unitPlatInd.className = 'sort-indicator';
-    unitDateInd.textContent = '↕';
-    unitPlatInd.textContent = '↕';
+    unitDateInd.className = 'sort-indicator'[cite: 1];
+    unitPlatInd.className = 'sort-indicator'[cite: 1];
+    unitDateInd.textContent = '↕'[cite: 1];
+    unitPlatInd.textContent = '↕'[cite: 1];
 
     if (unitSortBy === 'DATE_DESC') { unitDateInd.textContent = '↓'; unitDateInd.classList.add('active'); }
     else if (unitSortBy === 'DATE_ASC') { unitDateInd.textContent = '↑'; unitDateInd.classList.add('active'); }
     else if (unitSortBy === 'NO_ASC') { unitDateInd.textContent = 'A-Z'; unitDateInd.classList.add('active'); }
     else if (unitSortBy === 'NO_DESC') { unitDateInd.textContent = 'Z-A'; unitDateInd.classList.add('active'); }
     else if (unitSortBy === 'PLATFORM_ASC') { unitPlatInd.textContent = 'A-Z ↑'; unitPlatInd.classList.add('active'); }
-    else if (unitSortBy === 'PLATFORM_DESC') { unitPlatInd.textContent = 'Z-A ↓'; unitPlatInd.classList.add('active'); }
+    else if (unitSortBy === 'PLATFORM_DESC') { unitPlatInd.textContent = 'Z-A ↓'; unitPlatInd.classList.add('active'); }[cite: 1]
   }
 }
 
@@ -173,7 +173,7 @@ window.toggleTableSort = function(view, column) {
     } else if (column === 'PLATFORM') {
       historySortBy = (historySortBy === 'PLATFORM_ASC') ? 'PLATFORM_DESC' : 'PLATFORM_ASC';
     }
-    const sel = document.getElementById('sort-history');
+    const sel = document.getElementById('sort-history')[cite: 1];
     if (sel) sel.value = historySortBy;
     renderHistoryView();
   } else if (view === 'unit') {
@@ -182,14 +182,14 @@ window.toggleTableSort = function(view, column) {
     } else if (column === 'PLATFORM') {
       unitSortBy = (unitSortBy === 'PLATFORM_ASC') ? 'PLATFORM_DESC' : 'PLATFORM_ASC';
     }
-    const sel = document.getElementById('sort-unit');
+    const sel = document.getElementById('sort-unit')[cite: 1];
     if (sel) sel.value = unitSortBy;
     renderNcrTable();
-  }
+  }[cite: 1]
 };
 
 function normalizeNcrItem(item) {
-  if (!item) return item;
+  if (!item) return item[cite: 1];
   let platform = item.platform || '';
   let title = item.title || '';
 
@@ -202,7 +202,7 @@ function normalizeNcrItem(item) {
       platform = item.part;
       title = item.part;
     }
-  }
+  }[cite: 1]
 
   let rawDate = item.rawDate || '';
   if (!rawDate && item.date) {
@@ -234,14 +234,39 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
+// ================= STATUS JARINGAN REAL-TIME =================
+function updateNetworkStatusUI(isOnline) {
+  const modeBadge = document.getElementById('storage-mode-badge');
+  const btnRefresh = document.getElementById('btn-refresh-cloud');
+  if (!modeBadge) return;
+
+  if (!isCloudConfigured() || !isOnline) {
+    modeBadge.innerHTML = '<span class="dot" style="background:var(--slate-400)"></span> Offline (Lokal)';
+    modeBadge.className = 'badge badge-archived hide-on-small-mobile';
+  } else {
+    modeBadge.innerHTML = '<span class="dot"></span> Cloud';
+    modeBadge.className = 'badge badge-closed hide-on-small-mobile';
+    if (btnRefresh) btnRefresh.classList.remove('hidden');
+  }
+}
+
+window.addEventListener('offline', function() {
+  updateNetworkStatusUI(false);
+});
+
+window.addEventListener('online', function() {
+  updateNetworkStatusUI(true);
+  syncFromCloud();
+});
+
 // ================= SINKRONISASI CLOUD, LOKAL & ANTREAN OFFLINE =================
 function isCloudConfigured() {
-  return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
+  return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"))[cite: 1];
 }
 
 function showCloudLoading(show, text) {
-  const el = document.getElementById('cloud-loading');
-  const txt = document.getElementById('cloud-loading-text');
+  const el = document.getElementById('cloud-loading')[cite: 1];
+  const txt = document.getElementById('cloud-loading-text')[cite: 1];
   if (text && txt) txt.textContent = text;
   if (!el) return;
   if (show) el.classList.remove('hidden');
@@ -253,21 +278,21 @@ function saveToLocalStorage() {
     const lightMasterList = (masterNcrList || []).map(item => ({
       ...item,
       gdriveFileData: item.gdriveLink ? '' : (item.gdriveFileData || '')
-    }));
+    }))[cite: 1];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
       products,
       users,
       masterNcrList: lightMasterList,
       productFollowUps
-    }));
+    }))[cite: 1];
   } catch (e) {
-    console.warn('LocalStorage penuh:', e);
+    console.warn('LocalStorage penuh:', e)[cite: 1];
   }
 }
 
 function loadFromLocalStorage() {
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY)[cite: 1];
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed.products)) products = parsed.products;
@@ -280,7 +305,7 @@ function loadFromLocalStorage() {
       productFollowUps = parsed.productFollowUps;
     }
   } catch (e) {
-    console.warn('Gagal membaca LocalStorage:', e);
+    console.warn('Gagal membaca LocalStorage:', e)[cite: 1];
   }
 }
 
@@ -349,25 +374,16 @@ function mergeCloudMasterWithLocalExtras(cloudList) {
   return (cloudList || []).map(cloudItem => normalizeNcrItem({
     ...cloudItem,
     gdriveFileData: ''
-  }));
+  }))[cite: 1];
 }
 
 async function syncFromCloud() {
-  const modeBadge = document.getElementById('storage-mode-badge');
-  const btnRefresh = document.getElementById('btn-refresh-cloud');
-
   loadFromLocalStorage();
 
   if (!isCloudConfigured()) {
-    modeBadge.textContent = 'Lokal';
-    modeBadge.className = 'badge badge-archived hide-on-small-mobile';
-    btnRefresh.classList.add('hidden');
+    updateNetworkStatusUI(false);
     return;
   }
-
-  modeBadge.innerHTML = '<span class="dot"></span> Cloud';
-  modeBadge.className = 'badge badge-closed hide-on-small-mobile';
-  btnRefresh.classList.remove('hidden');
 
   await processOfflineQueue();
 
@@ -376,6 +392,7 @@ async function syncFromCloud() {
     const res = await fetch(GAS_API_URL);
     const json = await res.json();
     if (json.status === 'success' && json.data) {
+      updateNetworkStatusUI(true);
       products = json.data.products || [];
       users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
       masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
@@ -391,6 +408,7 @@ async function syncFromCloud() {
     }
   } catch (err) {
     console.error('Gagal memuat dari Cloud:', err);
+    updateNetworkStatusUI(false);
   } finally {
     showCloudLoading(false);
   }
@@ -416,6 +434,7 @@ async function sendActionToBackend(payload, loadingText) {
     });
     const json = await res.json();
     if (json.status === 'success' && json.data) {
+      updateNetworkStatusUI(true);
       products = json.data.products || [];
       users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
       masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
@@ -433,6 +452,7 @@ async function sendActionToBackend(payload, loadingText) {
       await syncFromCloud();
     }
   } catch (err) {
+    updateNetworkStatusUI(false);
     saveToOfflineQueue(fullPayload);
     alert('Jaringan terputus. Data Anda tersimpan di perangkat dan akan disinkronkan nanti.');
   } finally {
@@ -440,7 +460,8 @@ async function sendActionToBackend(payload, loadingText) {
   }
 }
 
-document.getElementById('btn-refresh-cloud').addEventListener('click', syncFromCloud);
+// Inisialisasi Tombol Refresh Cloud
+document.getElementById('btn-refresh-cloud').addEventListener('click', syncFromCloud)[cite: 1];
 
 function getPhotosArray(followUp) {
   if (!followUp) return [];
@@ -450,10 +471,10 @@ function getPhotosArray(followUp) {
 }
 
 // ================= SIDEBAR & NAVIGASI =================
-const appLayout = document.getElementById('app-view');
-const btnHamburger = document.getElementById('btn-hamburger');
-const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-const btnCloseSidebarMobile = document.getElementById('btn-close-sidebar-mobile');
+const appLayout = document.getElementById('app-view')[cite: 1];
+const btnHamburger = document.getElementById('btn-hamburger')[cite: 1];
+const sidebarBackdrop = document.getElementById('sidebar-backdrop')[cite: 1];
+const btnCloseSidebarMobile = document.getElementById('btn-close-sidebar-mobile')[cite: 1];
 
 function toggleSidebar() {
   if (window.innerWidth <= 768) {
@@ -467,9 +488,9 @@ function closeMobileSidebar() {
   appLayout.classList.remove('mobile-sidebar-open');
 }
 
-btnHamburger.addEventListener('click', toggleSidebar);
-sidebarBackdrop.addEventListener('click', closeMobileSidebar);
-btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
+btnHamburger.addEventListener('click', toggleSidebar)[cite: 1];
+sidebarBackdrop.addEventListener('click', closeMobileSidebar)[cite: 1];
+btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar)[cite: 1];
 
 document.getElementById('form-login').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -525,8 +546,8 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   localStorage.removeItem('qc_active_token');
 
   closeMobileSidebar();
-  document.getElementById('app-view').classList.add('hidden');
-  document.getElementById('login-view').classList.remove('hidden');
+  document.getElementById('app-view').classList.add('hidden')[cite: 1];
+  document.getElementById('login-view').classList.remove('hidden')[cite: 1];
 });
 
 ['history', 'ncr', 'users'].forEach(tabName => {
@@ -551,7 +572,7 @@ document.getElementById('product-select').addEventListener('change', function(e)
   selectedProduct = e.target.value;
   updateProductStatusUI();
   renderNcrTable();
-});
+})[cite: 1];
 
 document.querySelectorAll('#unit-filter-pills .pill-btn').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -560,12 +581,12 @@ document.querySelectorAll('#unit-filter-pills .pill-btn').forEach(btn => {
     statusFilter = this.getAttribute('data-filter');
     renderNcrTable();
   });
-});
+})[cite: 1];
 
 document.getElementById('sort-unit').addEventListener('change', function(e) {
   unitSortBy = e.target.value;
   renderNcrTable();
-});
+})[cite: 1];
 
 // Input pencarian unit dengan debounce
 document.getElementById('search-ncr').addEventListener('input', debounce(function(e) {
@@ -580,12 +601,12 @@ document.querySelectorAll('#history-filter-pills .pill-btn').forEach(btn => {
     historyFilter = this.getAttribute('data-hfilter');
     renderHistoryView();
   });
-});
+})[cite: 1];
 
 document.getElementById('sort-history').addEventListener('change', function(e) {
   historySortBy = e.target.value;
   renderHistoryView();
-});
+})[cite: 1];
 
 // Input pencarian history dengan debounce
 document.getElementById('search-history').addEventListener('input', debounce(function(e) {
@@ -593,23 +614,23 @@ document.getElementById('search-history').addEventListener('input', debounce(fun
   renderHistoryView();
 }, 250));
 
-document.getElementById('btn-toggle-archive').addEventListener('click', toggleProductStatus);
-document.getElementById('btn-delete-product').addEventListener('click', deleteSelectedProduct);
+document.getElementById('btn-toggle-archive').addEventListener('click', toggleProductStatus)[cite: 1];
+document.getElementById('btn-delete-product').addEventListener('click', deleteSelectedProduct)[cite: 1];
 document.getElementById('btn-add-product').addEventListener('click', function() {
   toggleModal('modal-add-product', true);
-});
-document.getElementById('btn-add-ncr').addEventListener('click', openAddNcrModal);
+})[cite: 1];
+document.getElementById('btn-add-ncr').addEventListener('click', openAddNcrModal)[cite: 1];
 document.getElementById('btn-open-add-user').addEventListener('click', function() {
   toggleModal('modal-add-user', true);
-});
+})[cite: 1];
 
-document.getElementById('btn-select-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ALL'));
-document.getElementById('btn-select-active').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ACTIVE'));
-document.getElementById('btn-unselect-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'NONE'));
+document.getElementById('btn-select-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ALL'))[cite: 1];
+document.getElementById('btn-select-active').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'ACTIVE'))[cite: 1];
+document.getElementById('btn-unselect-all').addEventListener('click', () => setProductChecklist('ncr-target-prod', 'NONE'))[cite: 1];
 
-document.getElementById('btn-edit-select-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ALL'));
-document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'));
-document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
+document.getElementById('btn-edit-select-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ALL'))[cite: 1];
+document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'))[cite: 1];
+document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'))[cite: 1];
 
 // LOGIN MASUK: SIMPAN KE LOCALSTORAGE (PERSISTEN LINTAS TAB)
 function enterApp(role, username, token) {
@@ -621,45 +642,48 @@ function enterApp(role, username, token) {
   localStorage.setItem('qc_active_user', currentUsername);
   localStorage.setItem('qc_active_token', currentToken);
 
-  document.getElementById('login-view').classList.add('hidden');
-  document.getElementById('app-view').classList.remove('hidden');
+  document.getElementById('login-view').classList.add('hidden')[cite: 1];
+  document.getElementById('app-view').classList.remove('hidden')[cite: 1];
 
-  const badge = document.getElementById('role-badge');
-  const navUsers = document.getElementById('nav-users');
-  const bnavUsers = document.getElementById('bnav-users');
-  const btnAddNcr = document.getElementById('btn-add-ncr');
-  const btnAddProduct = document.getElementById('btn-add-product');
-  const btnToggleArchive = document.getElementById('btn-toggle-archive');
-  const btnDeleteProduct = document.getElementById('btn-delete-product');
+  const badge = document.getElementById('role-badge')[cite: 1];
+  const navUsers = document.getElementById('nav-users')[cite: 1];
+  const bnavUsers = document.getElementById('bnav-users')[cite: 1];
+  const btnAddNcr = document.getElementById('btn-add-ncr')[cite: 1];
+  const btnAddProduct = document.getElementById('btn-add-product')[cite: 1];
+  const btnToggleArchive = document.getElementById('btn-toggle-archive')[cite: 1];
+  const btnDeleteProduct = document.getElementById('btn-delete-product')[cite: 1];
 
-  document.getElementById('sidebar-username').textContent = currentUsername;
-  document.getElementById('sidebar-avatar').textContent = currentUsername.substring(0, 2).toUpperCase();
+  document.getElementById('sidebar-username').textContent = currentUsername[cite: 1];
+  document.getElementById('sidebar-avatar').textContent = currentUsername.substring(0, 2).toUpperCase()[cite: 1];
 
   if (role === 'admin') {
-    badge.innerHTML = '<span class="dot" style="background:var(--indigo-500)"></span> ADMIN';
-    badge.className = 'badge badge-indigo';
-    document.getElementById('sidebar-role-text').textContent = 'Admin QC';
-    navUsers.classList.remove('hidden');
-    bnavUsers.classList.remove('hidden');
-    btnAddNcr.classList.remove('hidden');
-    btnAddProduct.classList.remove('hidden');
-    btnToggleArchive.classList.remove('hidden');
-    btnDeleteProduct.classList.remove('hidden');
+    badge.innerHTML = '<span class="dot" style="background:var(--indigo-500)"></span> ADMIN'[cite: 1];
+    badge.className = 'badge badge-indigo'[cite: 1];
+    document.getElementById('sidebar-role-text').textContent = 'Admin QC'[cite: 1];
+    navUsers.classList.remove('hidden')[cite: 1];
+    bnavUsers.classList.remove('hidden')[cite: 1];
+    btnAddNcr.classList.remove('hidden')[cite: 1];
+    btnAddProduct.classList.remove('hidden')[cite: 1];
+    btnToggleArchive.classList.remove('hidden')[cite: 1];
+    btnDeleteProduct.classList.remove('hidden')[cite: 1];
   } else {
-    badge.innerHTML = '<span class="dot" style="background:var(--emerald-500)"></span> INSPECTOR';
-    badge.className = 'badge badge-closed';
-    document.getElementById('sidebar-role-text').textContent = 'Inspector';
-    navUsers.classList.add('hidden');
-    bnavUsers.classList.add('hidden');
-    btnAddNcr.classList.add('hidden');
-    btnAddProduct.classList.add('hidden');
-    btnToggleArchive.classList.add('hidden');
-    btnDeleteProduct.classList.add('hidden');
+    badge.innerHTML = '<span class="dot" style="background:var(--emerald-500)"></span> INSPECTOR'[cite: 1];
+    badge.className = 'badge badge-closed'[cite: 1];
+    document.getElementById('sidebar-role-text').textContent = 'Inspector'[cite: 1];
+    navUsers.classList.add('hidden')[cite: 1];
+    bnavUsers.classList.add('hidden')[cite: 1];
+    btnAddNcr.classList.add('hidden')[cite: 1];
+    btnAddProduct.classList.add('hidden')[cite: 1];
+    btnToggleArchive.classList.add('hidden')[cite: 1];
+    btnDeleteProduct.classList.add('hidden')[cite: 1];
   }
 
-  switchTab('history');
+  switchTab('history')[cite: 1];
   renderProductDropdown();
   renderAllViews();
+
+  // Sinkronisasi cloud setiap membuka sesi
+  syncFromCloud();
 }
 
 function renderAllViews() {
@@ -667,13 +691,13 @@ function renderAllViews() {
   renderHistoryView();
   renderNcrTable();
   renderUserTable();
-  document.getElementById('nav-history-badge').textContent = masterNcrList.length;
-  document.getElementById('bnav-history-badge').textContent = masterNcrList.length;
+  document.getElementById('nav-history-badge').textContent = masterNcrList.length[cite: 1];
+  document.getElementById('bnav-history-badge').textContent = masterNcrList.length[cite: 1];
 }
 
-// RENDER DROPDOWN PRODUK DENGAN URUTAN A-Z (NATURAL SORT)
+// RENDER DROPDOWN PRODUK DENGAN URUTAN A-Z (NATURAL ALPHANUMERIC)
 function renderProductDropdown() {
-  const select = document.getElementById('product-select');
+  const select = document.getElementById('product-select')[cite: 1];
   select.innerHTML = '';
 
   if (products.length === 0) {
@@ -692,7 +716,6 @@ function renderProductDropdown() {
     selectedProduct = products[products.length - 1].name;
   }
 
-  // 1. Urutkan A-Z secara natural (Aktif di atas, Arsip di bawah)
   const sortedProducts = [...products].sort((a, b) => {
     if (a.status !== b.status) {
       return a.status === 'active' ? -1 : 1;
@@ -703,7 +726,6 @@ function renderProductDropdown() {
     });
   });
 
-  // 2. Render opsi hasil pengurutan
   sortedProducts.forEach(prod => {
     const opt = document.createElement('option');
     opt.value = prod.name;
@@ -717,49 +739,49 @@ function renderProductDropdown() {
 }
 
 function updateProductStatusUI() {
-  const prodObj = products.find(p => p.name === selectedProduct);
-  const btnToggle = document.getElementById('btn-toggle-archive');
-  const btnDelete = document.getElementById('btn-delete-product');
-  const statName = document.getElementById('stat-product-name');
-  const statState = document.getElementById('stat-product-state');
+  const prodObj = products.find(p => p.name === selectedProduct)[cite: 1];
+  const btnToggle = document.getElementById('btn-toggle-archive')[cite: 1];
+  const btnDelete = document.getElementById('btn-delete-product')[cite: 1];
+  const statName = document.getElementById('stat-product-name')[cite: 1];
+  const statState = document.getElementById('stat-product-state')[cite: 1];
 
   if (!prodObj) {
-    statName.textContent = 'Belum Ada';
-    statState.innerHTML = '<span class="badge badge-archived">Kosong</span>';
-    btnToggle.classList.add('hidden');
-    btnDelete.classList.add('hidden');
+    statName.textContent = 'Belum Ada'[cite: 1];
+    statState.innerHTML = '<span class="badge badge-archived">Kosong</span>'[cite: 1];
+    btnToggle.classList.add('hidden')[cite: 1];
+    btnDelete.classList.add('hidden')[cite: 1];
     return;
   }
 
-  statName.textContent = prodObj.name;
+  statName.textContent = prodObj.name[cite: 1];
 
   if (prodObj.status === 'archived') {
-    statState.innerHTML = '<span class="badge badge-archived">Arsip</span>';
-    btnToggle.innerHTML = HEROICONS.lockOpen + ' <span>Aktifkan</span>';
-    btnToggle.className = 'btn btn-outline';
+    statState.innerHTML = '<span class="badge badge-archived">Arsip</span>'[cite: 1];
+    btnToggle.innerHTML = HEROICONS.lockOpen + ' <span>Aktifkan</span>'[cite: 1];
+    btnToggle.className = 'btn btn-outline'[cite: 1];
   } else {
-    statState.innerHTML = '<span class="badge badge-closed"><span class="dot"></span> Aktif</span>';
-    btnToggle.innerHTML = HEROICONS.lockClosed + ' <span>Arsipkan</span>';
-    btnToggle.className = 'btn btn-amber-soft';
+    statState.innerHTML = '<span class="badge badge-closed"><span class="dot"></span> Aktif</span>'[cite: 1];
+    btnToggle.innerHTML = HEROICONS.lockClosed + ' <span>Arsipkan</span>'[cite: 1];
+    btnToggle.className = 'btn btn-amber-soft'[cite: 1];
   }
 
   if (currentRole === 'admin') {
-    btnToggle.classList.remove('hidden');
-    btnDelete.classList.remove('hidden');
+    btnToggle.classList.remove('hidden')[cite: 1];
+    btnDelete.classList.remove('hidden')[cite: 1];
   } else {
-    btnToggle.classList.add('hidden');
-    btnDelete.classList.add('hidden');
+    btnToggle.classList.add('hidden')[cite: 1];
+    btnDelete.classList.add('hidden')[cite: 1];
   }
 }
 
 async function toggleProductStatus() {
-  const prodObj = products.find(p => p.name === selectedProduct);
+  const prodObj = products.find(p => p.name === selectedProduct)[cite: 1];
   if (!prodObj) return;
   if (prodObj.status === 'active') {
     if (!confirm('Arsipkan unit "' + selectedProduct + '"?')) return;
-    prodObj.status = 'archived';
+    prodObj.status = 'archived'[cite: 1];
   } else {
-    prodObj.status = 'active';
+    prodObj.status = 'active'[cite: 1];
   }
   renderProductDropdown();
   renderAllViews();
@@ -772,7 +794,7 @@ async function toggleProductStatus() {
 }
 
 async function deleteSelectedProduct() {
-  const prodObj = products.find(p => p.name === selectedProduct);
+  const prodObj = products.find(p => p.name === selectedProduct)[cite: 1];
   if (!prodObj) return;
 
   const targetName = prodObj.name;
@@ -780,17 +802,17 @@ async function deleteSelectedProduct() {
     return;
   }
 
-  products = products.filter(p => p.name !== targetName);
+  products = products.filter(p => p.name !== targetName)[cite: 1];
 
   masterNcrList.forEach(ncr => {
     if (Array.isArray(ncr.assignedProducts)) {
-      ncr.assignedProducts = ncr.assignedProducts.filter(pName => pName !== targetName);
+      ncr.assignedProducts = ncr.assignedProducts.filter(pName => pName !== targetName)[cite: 1];
     }
   });
 
   Object.keys(productFollowUps).forEach(key => {
     if (key.startsWith(targetName + '_')) {
-      delete productFollowUps[key];
+      delete productFollowUps[key][cite: 1];
     }
   });
 
@@ -806,30 +828,30 @@ async function deleteSelectedProduct() {
 
 document.getElementById('form-add-product').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const name = document.getElementById('new-product-name').value.replace(/,/g, ' ').trim();
-  const inherit = document.getElementById('inherit-ncr').checked;
+  const name = document.getElementById('new-product-name').value.replace(/,/g, ' ').trim()[cite: 1];
+  const inherit = document.getElementById('inherit-ncr').checked[cite: 1];
 
   if (!name) return;
 
   if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    alert('Nama unit sudah ada!');
+    alert('Nama unit sudah ada!')[cite: 1];
     return;
   }
 
-  const lastActiveProd = [...products].reverse().find(p => p.status === 'active');
+  const lastActiveProd = [...products].reverse().find(p => p.status === 'active')[cite: 1];
   const lastActiveName = lastActiveProd ? lastActiveProd.name : null;
 
-  products.push({ name: name, status: 'active' });
+  products.push({ name: name, status: 'active' })[cite: 1];
 
   if (inherit) {
     masterNcrList.forEach(ncr => {
       if (lastActiveName) {
         if (ncr.assignedProducts.includes(lastActiveName) || ncr.assignedProducts.length === 0) {
-          if (!ncr.assignedProducts.includes(name)) ncr.assignedProducts.push(name);
+          if (!ncr.assignedProducts.includes(name)) ncr.assignedProducts.push(name)[cite: 1];
         }
       } else {
         if (!ncr.assignedProducts.includes(name)) {
-          ncr.assignedProducts.push(name);
+          ncr.assignedProducts.push(name)[cite: 1];
         }
       }
     });
@@ -840,8 +862,8 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
   renderAllViews();
 
   e.target.reset();
-  document.getElementById('inherit-ncr').checked = true;
-  toggleModal('modal-add-product', false);
+  document.getElementById('inherit-ncr').checked = true[cite: 1];
+  toggleModal('modal-add-product', false)[cite: 1];
 
   await sendActionToBackend({
     action: 'ADD_PRODUCT',
@@ -852,13 +874,13 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
 });
 
 function getProductIndex(prodName) {
-  return products.findIndex(p => p.name === prodName);
+  return products.findIndex(p => p.name === prodName)[cite: 1];
 }
 
 function buildThumbnailsHtml(photos, prodIdx, ncrId) {
-  if (!photos || photos.length === 0) return '';
+  if (!photos || photos.length === 0) return ''[cite: 1];
   const maxVisible = 3;
-  let html = '<div class="multi-thumb-group">';
+  let html = '<div class="multi-thumb-group">'[cite: 1];
   photos.slice(0, maxVisible).forEach((src, idx) => {
     html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')">';
   });
@@ -866,15 +888,15 @@ function buildThumbnailsHtml(photos, prodIdx, ncrId) {
     const extra = photos.length - maxVisible;
     html += '<div class="thumb-more-badge" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + maxVisible + ')">+' + extra + '</div>';
   }
-  html += '</div>';
+  html += '</div>'[cite: 1];
   return html;
 }
 
 function buildMasterPhotosHtml(ncr) {
   const photos = ncr.masterPhotos || [];
-  if (photos.length === 0) return '';
+  if (photos.length === 0) return ''[cite: 1];
   const maxVisible = 3;
-  let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
+  let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">'[cite: 1];
   photos.slice(0, maxVisible).forEach((src, idx) => {
     html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')">';
   });
@@ -882,26 +904,26 @@ function buildMasterPhotosHtml(ncr) {
     const extra = photos.length - maxVisible;
     html += '<div class="thumb-more-badge" onclick="openMasterLightbox(' + ncr.id + ', ' + maxVisible + ')">+' + extra + '</div>';
   }
-  html += '</div></div>';
+  html += '</div></div>'[cite: 1];
   return html;
 }
 
 function buildGdriveDocHtml(ncr) {
   if (ncr.gdriveLink) {
     return '<div><a href="' + escapeHtml(ncr.gdriveLink) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' +
-      HEROICONS.docText + ' <span>File GDrive</span></a></div>';
+      HEROICONS.docText + ' <span>File GDrive</span></a></div>'[cite: 1];
   }
   if (ncr.gdriveFileData) {
     const fileName = ncr.gdriveFileName || 'File_NCR';
     return '<div><a href="' + escapeHtml(ncr.gdriveFileData) + '" download="' + escapeHtml(fileName) + '" class="gdrive-folder-link">' +
-      HEROICONS.docText + ' <span>Unduh File</span></a></div>';
+      HEROICONS.docText + ' <span>Unduh File</span></a></div>'[cite: 1];
   }
-  return '';
+  return ''[cite: 1];
 }
 
 // ================= RENDER HISTORY NCR =================
 function renderHistoryView() {
-  const tbody = document.getElementById('history-table-body');
+  const tbody = document.getElementById('history-table-body')[cite: 1];
   tbody.innerHTML = '';
   updateSortIndicatorsUI();
 
@@ -922,14 +944,14 @@ function renderHistoryView() {
   let totalOpenInstances = totalInstances - totalClosedInstances;
   let globalRate = totalInstances > 0 ? Math.round((totalClosedInstances / totalInstances) * 100) : 0;
 
-  document.getElementById('hist-stat-master').textContent = totalMaster;
-  document.getElementById('hist-stat-instances').textContent = totalInstances;
-  document.getElementById('hist-stat-open').textContent = totalOpenInstances;
-  document.getElementById('hist-stat-closed').textContent = totalClosedInstances;
-  document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai';
+  document.getElementById('hist-stat-master').textContent = totalMaster[cite: 1];
+  document.getElementById('hist-stat-instances').textContent = totalInstances[cite: 1];
+  document.getElementById('hist-stat-open').textContent = totalOpenInstances[cite: 1];
+  document.getElementById('hist-stat-closed').textContent = totalClosedInstances[cite: 1];
+  document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai'[cite: 1];
 
   if (masterNcrList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada data NCR.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada data NCR.</td></tr>'[cite: 1];
     return;
   }
 
@@ -963,7 +985,7 @@ function renderHistoryView() {
   const sortedHistory = sortNcrItems(filteredHistory, historySortBy);
 
   if (sortedHistory.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>'[cite: 1];
     return;
   }
 
@@ -981,7 +1003,7 @@ function renderHistoryView() {
           (currentRole === 'admin' ? '<button type="button" class="link-action-btn" onclick="openEditNcrModal(' + item.id + ')">Pilih Unit &rarr;</button>' : '') +
         '</div>';
     } else {
-      unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">';
+      unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">'[cite: 1];
       item.assignedProducts.forEach(prodName => {
         const prodIdx = getProductIndex(prodName);
         const prodObj = products[prodIdx];
@@ -1028,7 +1050,7 @@ function renderHistoryView() {
             '</div>';
         }
       });
-      unitCardsHtml += '</div></div>';
+      unitCardsHtml += '</div></div>'[cite: 1];
     }
 
     const totalAssigned = item.assignedProducts.length;
@@ -1089,19 +1111,19 @@ function renderHistoryView() {
 
 // ================= RENDER MONITORING PER UNIT =================
 function renderNcrTable() {
-  const tbody = document.getElementById('ncr-table-body');
+  const tbody = document.getElementById('ncr-table-body')[cite: 1];
   tbody.innerHTML = '';
   updateSortIndicatorsUI();
 
   if (products.length === 0 || !selectedProduct) {
-    document.getElementById('stat-total-ncr').textContent = 0;
-    document.getElementById('stat-open-ncr').textContent = 0;
-    document.getElementById('stat-closed-ncr').textContent = 0;
-    document.getElementById('stat-progress-pct').textContent = '0% Selesai';
+    document.getElementById('stat-total-ncr').textContent = 0[cite: 1];
+    document.getElementById('stat-open-ncr').textContent = 0[cite: 1];
+    document.getElementById('stat-closed-ncr').textContent = 0[cite: 1];
+    document.getElementById('stat-progress-pct').textContent = '0% Selesai'[cite: 1];
     tbody.innerHTML =
       '<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--slate-500);">' +
         'Belum ada unit dipilih. Anda tetap bisa langsung klik <b>Tambah NCR</b> atau buat <b>Unit Baru</b>.' +
-      '</td></tr>';
+      '</td></tr>'[cite: 1];
     return;
   }
 
@@ -1118,10 +1140,10 @@ function renderNcrTable() {
   let openCount = totalCount - closedCount;
   let pct = totalCount > 0 ? Math.round((closedCount / totalCount) * 100) : 0;
 
-  document.getElementById('stat-total-ncr').textContent = totalCount;
-  document.getElementById('stat-open-ncr').textContent = openCount;
-  document.getElementById('stat-closed-ncr').textContent = closedCount;
-  document.getElementById('stat-progress-pct').textContent = pct + '% Selesai';
+  document.getElementById('stat-total-ncr').textContent = totalCount[cite: 1];
+  document.getElementById('stat-open-ncr').textContent = openCount[cite: 1];
+  document.getElementById('stat-closed-ncr').textContent = closedCount[cite: 1];
+  document.getElementById('stat-progress-pct').textContent = pct + '% Selesai'[cite: 1];
 
   const displayedNcr = allProductNcr.filter(item => {
     const key = selectedProduct + '_' + item.id;
@@ -1346,7 +1368,7 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
     return;
   }
 
-  // Urutkan checklist unit secara A-Z
+  // Urutkan checklist unit secara natural A-Z
   const sortedProducts = [...products].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
     return String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' });
@@ -1703,49 +1725,49 @@ window.deleteNcr = async function(id) {
 };
 
 function switchTab(tab) {
-  const secHistory = document.getElementById('section-history');
-  const secNcr = document.getElementById('section-ncr');
-  const secUsers = document.getElementById('section-users');
+  const secHistory = document.getElementById('section-history')[cite: 1];
+  const secNcr = document.getElementById('section-ncr')[cite: 1];
+  const secUsers = document.getElementById('section-users')[cite: 1];
 
-  const navHistory = document.getElementById('nav-history');
-  const navNcr = document.getElementById('nav-ncr');
-  const navUsers = document.getElementById('nav-users');
+  const navHistory = document.getElementById('nav-history')[cite: 1];
+  const navNcr = document.getElementById('nav-ncr')[cite: 1];
+  const navUsers = document.getElementById('nav-users')[cite: 1];
 
-  const bnavHistory = document.getElementById('bnav-history');
-  const bnavNcr = document.getElementById('bnav-ncr');
-  const bnavUsers = document.getElementById('bnav-users');
+  const bnavHistory = document.getElementById('bnav-history')[cite: 1];
+  const bnavNcr = document.getElementById('bnav-ncr')[cite: 1];
+  const bnavUsers = document.getElementById('bnav-users')[cite: 1];
 
-  const pageTitle = document.getElementById('page-title');
+  const pageTitle = document.getElementById('page-title')[cite: 1];
 
-  secHistory.classList.add('hidden');
-  secNcr.classList.add('hidden');
-  secUsers.classList.add('hidden');
+  secHistory.classList.add('hidden')[cite: 1];
+  secNcr.classList.add('hidden')[cite: 1];
+  secUsers.classList.add('hidden')[cite: 1];
 
-  navHistory.classList.remove('active');
-  navNcr.classList.remove('active');
-  navUsers.classList.remove('active');
+  navHistory.classList.remove('active')[cite: 1];
+  navNcr.classList.remove('active')[cite: 1];
+  navUsers.classList.remove('active')[cite: 1];
 
-  if (bnavHistory) bnavHistory.classList.remove('active');
-  if (bnavNcr) bnavNcr.classList.remove('active');
-  if (bnavUsers) bnavUsers.classList.remove('active');
+  if (bnavHistory) bnavHistory.classList.remove('active')[cite: 1];
+  if (bnavNcr) bnavNcr.classList.remove('active')[cite: 1];
+  if (bnavUsers) bnavUsers.classList.remove('active')[cite: 1];
 
   if (tab === 'history') {
-    secHistory.classList.remove('hidden');
-    navHistory.classList.add('active');
-    if (bnavHistory) bnavHistory.classList.add('active');
-    pageTitle.textContent = 'History NCR';
+    secHistory.classList.remove('hidden')[cite: 1];
+    navHistory.classList.add('active')[cite: 1];
+    if (bnavHistory) bnavHistory.classList.add('active')[cite: 1];
+    pageTitle.textContent = 'History NCR'[cite: 1];
     renderHistoryView();
   } else if (tab === 'ncr') {
-    secNcr.classList.remove('hidden');
-    navNcr.classList.add('active');
-    if (bnavNcr) bnavNcr.classList.add('active');
-    pageTitle.textContent = 'Monitoring per Unit';
+    secNcr.classList.remove('hidden')[cite: 1];
+    navNcr.classList.add('active')[cite: 1];
+    if (bnavNcr) bnavNcr.classList.add('active')[cite: 1];
+    pageTitle.textContent = 'Monitoring per Unit'[cite: 1];
     renderNcrTable();
   } else {
-    secUsers.classList.remove('hidden');
-    navUsers.classList.add('active');
-    if (bnavUsers) bnavUsers.classList.add('active');
-    pageTitle.textContent = 'Kelola User';
+    secUsers.classList.remove('hidden')[cite: 1];
+    navUsers.classList.add('active')[cite: 1];
+    if (bnavUsers) bnavUsers.classList.add('active')[cite: 1];
+    pageTitle.textContent = 'Kelola User'[cite: 1];
   }
 }
 
@@ -1986,11 +2008,11 @@ window.toggleModal = function(modalId, show) {
   else el.classList.add('hidden');
 };
 
-// ================= INITIALIZATION & MULTI-TAB SYNC =================
+// ================= INITIALIZATION, MULTI-TAB SYNC & PROTEKSI =================
 
 // 1. PEMULIHAN SESI OTOMATIS SAAT WEB / TAB DIBUKA
 window.addEventListener('DOMContentLoaded', function() {
-  // Update tahun hak cipta secara otomatis
+  // Update tahun copyright otomatis
   const currentYear = new Date().getFullYear();
   document.querySelectorAll('.current-year').forEach(el => {
     el.textContent = currentYear;
@@ -2003,6 +2025,9 @@ window.addEventListener('DOMContentLoaded', function() {
 
   if (savedRole && savedUser && savedToken) {
     enterApp(savedRole, savedUser, savedToken);
+  } else {
+    // Sinkronisasi data awal untuk tamu jika belum login
+    syncFromCloud();
   }
 });
 
@@ -2014,7 +2039,6 @@ window.addEventListener('storage', function(e) {
     const user = localStorage.getItem('qc_active_user');
 
     if (!token) {
-      // Jika logout dilakukan di tab sebelah, tab ini otomatis keluar
       currentRole = null;
       currentUsername = '';
       currentToken = '';
@@ -2022,7 +2046,6 @@ window.addEventListener('storage', function(e) {
       document.getElementById('app-view').classList.add('hidden');
       document.getElementById('login-view').classList.remove('hidden');
     } else if (token !== currentToken || user !== currentUsername) {
-      // Jika login akun baru dilakukan di tab sebelah, tab ini otomatis sinkron
       enterApp(role, user, token);
     }
   }
