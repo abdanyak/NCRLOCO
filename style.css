@@ -1,10 +1,4 @@
 :root {
-  /* Palet Warna Utama INKA & UI */
-  --inka-red: #C8102E;
-  --inka-red-dark: #A00D24;
-  --inka-black: #000000;
-  --inka-surface: #0f172a;
-  
   --slate-50: #f8fafc;
   --slate-100: #f1f5f9;
   --slate-200: #e2e8f0;
@@ -15,25 +9,21 @@
   --slate-700: #334155;
   --slate-800: #1e293b;
   --slate-900: #0f172a;
-  
   --indigo-50: #eef2ff;
   --indigo-100: #e0e7ff;
   --indigo-500: #6366f1;
-  --indigo-600: #C8102E; /* Disesuaikan ke nuansa Merah INKA */
-  --indigo-700: #A00D24;
-  
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
   --emerald-50: #ecfdf5;
   --emerald-100: #d1fae5;
   --emerald-500: #10b981;
   --emerald-600: #059669;
   --emerald-700: #047857;
-  
   --rose-50: #fff1f2;
   --rose-100: #ffe4e6;
-  --rose-500: #C8102E;
-  --rose-600: #A00D24;
-  --rose-700: #800A1C;
-  
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+  --rose-700: #be123c;
   --amber-50: #fffbeb;
   --amber-100: #fef3c7;
   --amber-500: #f59e0b;
@@ -62,7 +52,7 @@ body {
 .mb-0 { margin-bottom: 0 !important; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
-.text-rose { color: var(--inka-red) !important; }
+.text-rose { color: var(--rose-600) !important; }
 .text-emerald { color: var(--emerald-600) !important; }
 .text-muted { color: var(--slate-400); }
 
@@ -70,7 +60,7 @@ body {
 .cloud-loading {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(2px);
   z-index: 300;
   display: flex;
@@ -93,8 +83,8 @@ body {
 .spinner {
   width: 22px;
   height: 22px;
-  border: 3px solid rgba(200, 16, 46, 0.2);
-  border-top-color: var(--inka-red);
+  border: 3px solid var(--indigo-100);
+  border-top-color: var(--indigo-600);
   border-radius: 50%;
   flex-shrink: 0;
   animation: spin 0.75s linear infinite;
@@ -122,8 +112,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background-color: var(--inka-black);
-  background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(15, 23, 42, 0.85)), url('UGL2.jpg');
+  background-color: var(--slate-900);
+  background-image: linear-gradient(rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.72)), url('UGL2.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -134,16 +124,14 @@ body {
   width: 100%;
   max-width: 400px;
   border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .login-header {
-  background: var(--inka-black);
+  background: var(--slate-900);
   padding: 28px 20px 24px;
   text-align: center;
-  border-bottom: 3px solid var(--inka-red);
 }
 
 .login-title { color: #fff; font-size: 20px; font-weight: 800; }
@@ -153,19 +141,17 @@ body {
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  /* Gradien Merah ke Hitam ala Tailwind */
-  background: linear-gradient(135deg, #C8102E 0%, #111111 100%);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 10px;
-  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.4);
 }
 
 .login-body { padding: 24px 20px; }
 
-/* ================= LAYOUT & SIDEBAR (Nuansa Hitam & Merah INKA) ================= */
+/* ================= LAYOUT & SIDEBAR ================= */
 .admin-layout {
   display: flex;
   min-height: 100vh;
@@ -175,14 +161,13 @@ body {
 
 .sidebar {
   width: 250px;
-  background: var(--inka-black);
+  background: var(--slate-900);
   color: #fff;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .admin-layout.sidebar-collapsed .sidebar {
@@ -192,7 +177,7 @@ body {
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(2px);
   z-index: 45;
   opacity: 0;
@@ -207,7 +192,6 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: #000000;
 }
 
 .sidebar-brand-left { display: flex; align-items: center; gap: 10px; }
@@ -216,18 +200,15 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  /* Gradien Merah INKA */
-  background: linear-gradient(135deg, #C8102E 0%, #800A1C 100%);
+  background: var(--indigo-600);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 13px;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(200, 16, 46, 0.4);
 }
 
-.sidebar-brand-title { font-weight: 800; font-size: 15px; color: #fff; }
+.sidebar-brand-title { font-weight: 800; font-size: 15px; }
 .sidebar-brand-sub { font-size: 11px; color: var(--slate-400); }
 
 .sidebar-close-mobile {
@@ -256,7 +237,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--slate-400);
   padding: 0 10px;
   margin-bottom: 4px;
 }
@@ -275,18 +256,11 @@ body {
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s ease;
 }
 
 .nav-item-left { display: flex; align-items: center; gap: 10px; }
 .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
-
-/* Menu Aktif dengan Gradien Merah INKA ala Tailwind */
-.nav-item.active { 
-  background: linear-gradient(135deg, #C8102E 0%, #990C23 100%); 
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.35);
-}
+.nav-item.active { background: var(--indigo-600); color: #fff; }
 
 .nav-counter {
   font-size: 11px;
@@ -300,7 +274,7 @@ body {
 .sidebar-footer {
   padding: 14px 16px;
   border-top: 1px solid rgba(255,255,255,0.08);
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.2);
 }
 
 .user-mini-info { display: flex; align-items: center; gap: 10px; }
@@ -311,14 +285,13 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #334155, #1e293b);
+  background: var(--slate-700);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
 }
 
 .main-area {
@@ -342,7 +315,6 @@ body {
   top: 0;
   z-index: 20;
   gap: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .topbar-left, .topbar-right {
@@ -362,7 +334,7 @@ body {
 .topbar-title {
   font-size: 17px;
   font-weight: 800;
-  color: var(--inka-black);
+  color: var(--slate-900);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -388,11 +360,17 @@ body {
   border-color: var(--slate-300);
 }
 
+/* OPTIMASI DESKTOP: Memanfaatkan lebar layar penuh dengan ruang tepi proporsional */
 .content-wrapper {
   padding: 24px 28px 36px;
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
+}
+
+@media (min-width: 1600px) {
+  .topbar { padding: 0 36px; }
+  .content-wrapper { padding: 28px 36px 40px; }
 }
 
 /* ================= MOBILE BOTTOM NAV ================= */
@@ -403,9 +381,9 @@ body {
   left: 0;
   right: 0;
   height: 60px;
-  background: var(--inka-black);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  border-top: 1px solid var(--slate-200);
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.05);
   z-index: 35;
   justify-content: space-around;
   align-items: center;
@@ -416,7 +394,7 @@ body {
   height: 100%;
   border: none;
   background: transparent;
-  color: var(--slate-400);
+  color: var(--slate-500);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -427,8 +405,7 @@ body {
   cursor: pointer;
 }
 
-.bnav-item.active { color: #ffffff; }
-.bnav-item.active .bnav-icon-wrap { color: var(--inka-red); }
+.bnav-item.active { color: var(--indigo-600); }
 
 .bnav-icon-wrap {
   position: relative;
@@ -441,7 +418,7 @@ body {
   position: absolute;
   top: -5px;
   right: -12px;
-  background: var(--inka-red);
+  background: var(--indigo-600);
   color: #fff;
   font-size: 9.5px;
   font-weight: 800;
@@ -462,20 +439,12 @@ body {
   border-radius: 12px;
   padding: 18px 20px;
   border: 1px solid var(--slate-200);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  border-left: 4px solid var(--slate-300);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px -3px rgba(0, 0, 0, 0.06);
-  border-left-color: var(--inka-red);
 }
 
 .stat-text-wrap {
@@ -493,9 +462,9 @@ body {
   flex-shrink: 0;
 }
 
-.icon-box-indigo { background: rgba(200, 16, 46, 0.1); color: var(--inka-red); }
+.icon-box-indigo { background: var(--indigo-50); color: var(--indigo-600); }
 .icon-box-slate { background: var(--slate-100); color: var(--slate-700); }
-.icon-box-rose { background: rgba(200, 16, 46, 0.08); color: var(--inka-red); }
+.icon-box-rose { background: var(--rose-50); color: var(--rose-600); }
 .icon-box-emerald { background: var(--emerald-50); color: var(--emerald-600); }
 
 .stat-label {
@@ -508,7 +477,7 @@ body {
 .stat-value {
   font-size: 24px;
   font-weight: 800;
-  color: var(--inka-black);
+  color: var(--slate-900);
   line-height: 1.2;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -557,7 +526,7 @@ body {
 .panel-title {
   font-size: 16px;
   font-weight: 800;
-  color: var(--inka-black);
+  color: var(--slate-900);
 }
 
 .panel-desc {
@@ -595,7 +564,6 @@ body {
   padding: 0 12px;
   font-size: 13.5px;
   font-weight: 700;
-  border-color: var(--slate-300);
 }
 
 .toolbar-action-wrap {
@@ -666,7 +634,7 @@ body {
   height: 38px;
 }
 
-/* ================= FORMS & TOMBOL DENGAN GRADIEN TAILWIND ================= */
+/* ================= FORMS & BUTTONS ================= */
 .form-group { margin-bottom: 14px; }
 
 .form-row-2col {
@@ -693,8 +661,7 @@ label {
   width: 19px;
   height: 19px;
   border-radius: 5px;
-  /* Nomor langkah menggunakan merah INKA */
-  background: var(--inka-red);
+  background: var(--indigo-600);
   color: #fff;
   font-size: 11px;
   font-weight: 800;
@@ -721,12 +688,11 @@ textarea {
   color: var(--slate-800);
   background: #fff;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--inka-red);
-  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.15);
+  border-color: var(--indigo-600);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 .gdrive-input-stack {
@@ -751,13 +717,12 @@ input:focus, select:focus, textarea:focus {
 .link-danger-btn {
   background: none;
   border: none;
-  color: var(--inka-red);
+  color: var(--rose-600);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
-/* Tombol Dasar */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -765,55 +730,28 @@ input:focus, select:focus, textarea:focus {
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  padding: 0 16px;
+  padding: 0 14px;
   height: 38px;
   border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.btn:active {
-  transform: scale(0.98);
 }
 
 .btn-full { width: 100%; height: 42px; }
 .btn-sm { padding: 0 10px; height: 32px; font-size: 12px; border-radius: 7px; }
 
-/* TOMBOL UTAMA DENGAN GRADIEN ALA TAILWIND (Merah INKA to Deep Maroon) */
-.btn-indigo {
-  background: linear-gradient(135deg, #C8102E 0%, #990C23 100%);
-  color: #fff;
-  border: none;
-  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.3);
-}
-.btn-indigo:hover {
-  background: linear-gradient(135deg, #B00100 0%, #800A1C 100%);
-  box-shadow: 0 6px 16px rgba(200, 16, 46, 0.4);
-}
+.btn-indigo { background: var(--indigo-600); color: #fff; }
+.btn-indigo:hover { background: var(--indigo-700); }
 
-/* Tombol Sukses dengan Gradien Emerald */
-.btn-emerald {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
-  border: none;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-.btn-emerald:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-}
+.btn-emerald { background: var(--emerald-600); color: #fff; }
+.btn-emerald:hover { background: var(--emerald-700); }
 
 .btn-emerald-soft {
   background: var(--emerald-50);
   color: var(--emerald-700);
   border-color: var(--emerald-100);
-}
-.btn-emerald-soft:hover {
-  background: var(--emerald-100);
 }
 
 .btn-outline {
@@ -821,19 +759,11 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--slate-300);
   color: var(--slate-700);
 }
-.btn-outline:hover {
-  background: var(--slate-50);
-  border-color: var(--slate-400);
-  color: var(--slate-900);
-}
 
 .btn-rose-soft {
   background: var(--rose-50);
-  color: var(--inka-red);
+  color: var(--rose-600);
   border-color: var(--rose-100);
-}
-.btn-rose-soft:hover {
-  background: var(--rose-100);
 }
 
 .btn-amber-soft {
@@ -841,16 +771,13 @@ input:focus, select:focus, textarea:focus {
   color: var(--amber-700);
   border-color: var(--amber-100);
 }
-.btn-amber-soft:hover {
-  background: var(--amber-100);
-}
 
 /* ================= BADGES & PILLS ================= */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 3px 8px;
   font-size: 11px;
   font-weight: 700;
   border-radius: 9999px;
@@ -865,14 +792,14 @@ input:focus, select:focus, textarea:focus {
   flex-shrink: 0;
 }
 
-.badge-open { background: var(--rose-50); color: var(--inka-red); border: 1px solid var(--rose-100); }
-.badge-open .dot { background: var(--inka-red); }
+.badge-open { background: var(--rose-50); color: var(--rose-700); border: 1px solid var(--rose-100); }
+.badge-open .dot { background: var(--rose-500); }
 
 .badge-closed { background: var(--emerald-50); color: var(--emerald-700); border: 1px solid var(--emerald-100); }
 .badge-closed .dot { background: var(--emerald-500); }
 
 .badge-archived { background: var(--slate-100); color: var(--slate-600); border: 1px solid var(--slate-200); }
-.badge-indigo { background: rgba(200, 16, 46, 0.08); color: var(--inka-red); border: 1px solid rgba(200, 16, 46, 0.15); }
+.badge-indigo { background: var(--indigo-50); color: var(--indigo-700); border: 1px solid var(--indigo-100); }
 
 .pill-group {
   display: inline-flex;
@@ -891,13 +818,12 @@ input:focus, select:focus, textarea:focus {
   color: var(--slate-600);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .pill-btn.active {
-  background: var(--inka-black);
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  background: #fff;
+  color: var(--slate-900);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
 /* ================= STATUS PER UNIT (MULTI-GRID DESKTOP) ================= */
@@ -937,11 +863,11 @@ input:focus, select:focus, textarea:focus {
   margin-top: 5px;
   padding: 3px 7px;
   border-radius: 5px;
-  background: rgba(200, 16, 46, 0.06);
-  border: 1px solid rgba(200, 16, 46, 0.12);
+  background: var(--indigo-50);
+  border: 1px solid var(--indigo-100);
   font-size: 11px;
   font-weight: 600;
-  color: var(--inka-red);
+  color: var(--indigo-700);
   text-decoration: none;
   max-width: 100%;
 }
@@ -952,9 +878,9 @@ input:focus, select:focus, textarea:focus {
   gap: 4px;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--inka-red);
-  background: rgba(200, 16, 46, 0.06);
-  border: 1px solid rgba(200, 16, 46, 0.12);
+  color: var(--indigo-700);
+  background: var(--indigo-50);
+  border: 1px solid var(--indigo-100);
   padding: 2px 8px;
   border-radius: 6px;
   margin-bottom: 5px;
@@ -965,7 +891,7 @@ input:focus, select:focus, textarea:focus {
 .issue-title-text {
   font-size: 14px;
   font-weight: 700;
-  color: var(--inka-black);
+  color: var(--slate-900);
   margin-bottom: 4px;
   line-height: 1.35;
   word-break: break-word;
@@ -1032,7 +958,7 @@ th.sortable-th {
 
 th.sortable-th:hover {
   background: var(--slate-100);
-  color: var(--inka-black);
+  color: var(--slate-900);
 }
 
 .th-sort-inner {
@@ -1053,8 +979,8 @@ th.sortable-th:hover {
 }
 
 .sort-indicator.active {
-  color: var(--inka-red);
-  background: rgba(200, 16, 46, 0.08);
+  color: var(--indigo-600);
+  background: var(--indigo-50);
 }
 
 td {
@@ -1070,31 +996,68 @@ td {
 tbody tr:hover td { background: #f8fafc; }
 tbody tr:last-child td { border-bottom: none; }
 
+/* Proporsi Kolom Desktop (Mencegah Overlap / Tumpang Tindih) */
 @media (min-width: 769px) {
+  /* 1. Tabel History NCR (4 Kolom) */
   #section-history table th:nth-child(1),
-  #section-history table td:nth-child(1) { width: 17%; min-width: 185px; }
+  #section-history table td:nth-child(1) {
+    width: 17%;
+    min-width: 185px;
+  }
   #section-history table th:nth-child(2),
-  #section-history table td:nth-child(2) { width: 34%; min-width: 280px; }
+  #section-history table td:nth-child(2) {
+    width: 34%;
+    min-width: 280px;
+  }
   #section-history table th:nth-child(3),
-  #section-history table td:nth-child(3) { width: 14%; min-width: 155px; }
+  #section-history table td:nth-child(3) {
+    width: 14%;
+    min-width: 155px;
+  }
   #section-history table th:nth-child(4),
-  #section-history table td:nth-child(4) { width: 35%; min-width: 300px; }
+  #section-history table td:nth-child(4) {
+    width: 35%;
+    min-width: 300px;
+  }
 
+  /* 2. Tabel Monitoring per Unit (7 Kolom) */
   #section-ncr table th:nth-child(1),
-  #section-ncr table td:nth-child(1) { width: 13%; min-width: 150px; }
+  #section-ncr table td:nth-child(1) {
+    width: 13%;
+    min-width: 150px;
+  }
   #section-ncr table th:nth-child(2),
-  #section-ncr table td:nth-child(2) { width: 16%; min-width: 170px; }
+  #section-ncr table td:nth-child(2) {
+    width: 16%;
+    min-width: 170px;
+  }
   #section-ncr table th:nth-child(3),
-  #section-ncr table td:nth-child(3) { width: 25%; min-width: 240px; }
+  #section-ncr table td:nth-child(3) {
+    width: 25%;
+    min-width: 240px;
+  }
   #section-ncr table th:nth-child(4),
-  #section-ncr table td:nth-child(4) { width: 8%; min-width: 95px; }
+  #section-ncr table td:nth-child(4) {
+    width: 8%;
+    min-width: 95px;
+  }
   #section-ncr table th:nth-child(5),
-  #section-ncr table td:nth-child(5) { width: 10%; min-width: 115px; }
+  #section-ncr table td:nth-child(5) {
+    width: 10%;
+    min-width: 115px;
+  }
   #section-ncr table th:nth-child(6),
-  #section-ncr table td:nth-child(6) { width: 16%; min-width: 195px; }
+  #section-ncr table td:nth-child(6) {
+    width: 16%;
+    min-width: 195px;
+  }
   #section-ncr table th:nth-child(7),
-  #section-ncr table td:nth-child(7) { width: 12%; min-width: 165px; }
+  #section-ncr table td:nth-child(7) {
+    width: 12%;
+    min-width: 165px;
+  }
 
+  /* 3. Tabel Kelola User (4 Kolom) */
   #section-users table th:nth-child(1),
   #section-users table td:nth-child(1) { width: 32%; }
   #section-users table th:nth-child(2),
@@ -1134,9 +1097,9 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .android-upload-btn.gallery-btn {
-  border-color: var(--inka-red);
-  background: rgba(200, 16, 46, 0.05);
-  color: var(--inka-red);
+  border-color: var(--indigo-500);
+  background: var(--indigo-50);
+  color: var(--indigo-700);
 }
 
 .upload-btn-title { font-size: 12.5px; font-weight: 700; }
@@ -1171,9 +1134,9 @@ tbody tr:last-child td { border-bottom: none; }
   width: 40px;
   height: 40px;
   border-radius: 6px;
-  background: rgba(200, 16, 46, 0.08);
-  color: var(--inka-red);
-  border: 1px solid rgba(200, 16, 46, 0.15);
+  background: var(--indigo-50);
+  color: var(--indigo-700);
+  border: 1px solid var(--indigo-100);
   font-size: 11px;
   font-weight: 800;
   display: inline-flex;
@@ -1195,7 +1158,7 @@ tbody tr:last-child td { border-bottom: none; }
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--slate-200);
-  background: var(--inka-black);
+  background: var(--slate-900);
 }
 
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
@@ -1219,7 +1182,7 @@ tbody tr:last-child td { border-bottom: none; }
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(200, 16, 46, 0.95);
+  background: rgba(225, 29, 72, 0.95);
   color: #fff;
   border: none;
   font-size: 11px;
@@ -1234,7 +1197,7 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(15, 23, 42, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1281,14 +1244,14 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-title {
   font-size: 15.5px;
   font-weight: 800;
-  color: var(--inka-black);
+  color: var(--slate-900);
   word-break: break-word;
 }
 
 .upload-ncr-subtitle {
   font-size: 13px;
   font-weight: 700;
-  color: var(--inka-red);
+  color: var(--indigo-600);
   margin-bottom: 12px;
   word-break: break-word;
 }
@@ -1339,7 +1302,7 @@ tbody tr:last-child td { border-bottom: none; }
 .link-action-btn {
   background: none;
   border: none;
-  color: var(--inka-red);
+  color: var(--indigo-600);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -1368,7 +1331,7 @@ tbody tr:last-child td { border-bottom: none; }
 /* ================= LIGHTBOX ================= */
 .lightbox-stage {
   position: relative;
-  background: var(--inka-black);
+  background: var(--slate-900);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -1394,7 +1357,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 .lightbox-counter-text {
   font-size: 11.5px;
-  color: var(--inka-red);
+  color: var(--indigo-600);
   font-weight: 700;
 }
 
@@ -1406,7 +1369,7 @@ tbody tr:last-child td { border-bottom: none; }
   height: 34px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
-  color: var(--inka-black);
+  color: var(--slate-900);
   border: none;
   cursor: pointer;
   display: flex;
@@ -1434,14 +1397,14 @@ tbody tr:last-child td { border-bottom: none; }
   opacity: 0.55;
 }
 .lightbox-thumb-item.active {
-  border-color: var(--inka-red);
+  border-color: var(--indigo-600);
   opacity: 1;
 }
 
 .lightbox-note-text {
   margin-top: 10px;
   font-size: 13px;
-  color: var(--inka-black);
+  color: var(--slate-800);
   font-weight: 600;
   word-break: break-word;
 }
@@ -1543,7 +1506,6 @@ tbody tr:last-child td { border-bottom: none; }
 
   table.mobile-card-table tbody td[data-label]::before {
     content: attr(data-label);
-    display: card;
     display: block;
     font-size: 10.5px;
     font-weight: 800;
