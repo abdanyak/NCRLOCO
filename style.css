@@ -56,7 +56,7 @@ body {
 .text-emerald { color: var(--emerald-600) !important; }
 .text-muted { color: var(--slate-400); }
 
-/* ================= OVERLAY LOADING ================= -->
+/* ================= OVERLAY LOADING ================= */
 .cloud-loading {
   position: fixed;
   inset: 0;
@@ -788,12 +788,12 @@ input:focus, select:focus, textarea:focus {
 
 /* ================= PERBAIKAN STATUS PER UNIT NUMPUK KE BAWAH (SCROLLABLE CONTAINER) ================= */
 .history-unit-scroll-box {
-  max-height: 210px; /* Ditinggikan sedikit agar 2 kartu tampil utuh dan pas */
+  max-height: 210px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;          /* Jarak antar kartu agar tidak berhimpitan */
-  padding: 2px 4px 6px 2px; /* Memberikan ruang napas di atas dan bawah */
+  gap: 8px;
+  padding: 2px 4px 6px 2px;
 }
 
 .history-unit-list {
