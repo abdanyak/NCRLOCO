@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * QC PORTAL — MONITORING & HISTORY NCR
- * File: app.js (Versi Lengkap Terintegrasi: Tahap 1, 2, & 3)
+ * File: app.js (Full Update: LocalStorage Session, Multi-Tab Sync, & Auto-Sort A-Z)
  * ============================================================================
  */
 
@@ -440,7 +440,6 @@ async function sendActionToBackend(payload, loadingText) {
   }
 }
 
-syncFromCloud();
 document.getElementById('btn-refresh-cloud').addEventListener('click', syncFromCloud);
 
 function getPhotosArray(followUp) {
@@ -515,13 +514,16 @@ document.getElementById('form-login').addEventListener('submit', async function(
   }
 });
 
+// LOGOUT: BERSIHKAN LOCALSTORAGE
 document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
   currentUsername = '';
   currentToken = '';
-  sessionStorage.removeItem('qc_active_role');
-  sessionStorage.removeItem('qc_active_user');
-  sessionStorage.removeItem('qc_active_token');
+
+  localStorage.removeItem('qc_active_role');
+  localStorage.removeItem('qc_active_user');
+  localStorage.removeItem('qc_active_token');
+
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
@@ -609,14 +611,15 @@ document.getElementById('btn-edit-select-all').addEventListener('click', () => s
 document.getElementById('btn-edit-select-active').addEventListener('click', () => setProductChecklist('edit-target-prod', 'ACTIVE'));
 document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
 
+// LOGIN MASUK: SIMPAN KE LOCALSTORAGE (PERSISTEN LINTAS TAB)
 function enterApp(role, username, token) {
   currentRole = role;
   currentUsername = username || role;
   currentToken = token || '';
 
-  sessionStorage.setItem('qc_active_role', currentRole);
-  sessionStorage.setItem('qc_active_user', currentUsername);
-  sessionStorage.setItem('qc_active_token', currentToken);
+  localStorage.setItem('qc_active_role', currentRole);
+  localStorage.setItem('qc_active_user', currentUsername);
+  localStorage.setItem('qc_active_token', currentToken);
 
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
@@ -668,6 +671,7 @@ function renderAllViews() {
   document.getElementById('bnav-history-badge').textContent = masterNcrList.length;
 }
 
+// RENDER DROPDOWN PRODUK DENGAN URUTAN A-Z (NATURAL SORT)
 function renderProductDropdown() {
   const select = document.getElementById('product-select');
   select.innerHTML = '';
@@ -688,20 +692,18 @@ function renderProductDropdown() {
     selectedProduct = products[products.length - 1].name;
   }
 
-  // 1. Buat salinan array dan urutkan A-Z secara natural (alphanumeric)
+  // 1. Urutkan A-Z secara natural (Aktif di atas, Arsip di bawah)
   const sortedProducts = [...products].sort((a, b) => {
-    // Unit [AKTIF] diposisikan di atas [ARSIP]
     if (a.status !== b.status) {
       return a.status === 'active' ? -1 : 1;
     }
-    // Urutkan nama unit secara A-Z (numeric: true agar angka 022 < 023 < 024)
     return String(a.name || '').localeCompare(String(b.name || ''), undefined, { 
       numeric: true, 
       sensitivity: 'base' 
     });
   });
 
-  // 2. Render opsi dari hasil yang sudah diurutkan
+  // 2. Render opsi hasil pengurutan
   sortedProducts.forEach(prod => {
     const opt = document.createElement('option');
     opt.value = prod.name;
@@ -1344,7 +1346,7 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
     return;
   }
 
-  // Urutkan checklist A-Z
+  // Urutkan checklist unit secara A-Z
   const sortedProducts = [...products].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
     return String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' });
@@ -1984,19 +1986,64 @@ window.toggleModal = function(modalId, show) {
   else el.classList.add('hidden');
 };
 
-// PEMULIHAN SESI LOGIN (TOKEN BASED)
+// ================= INITIALIZATION & MULTI-TAB SYNC =================
+
+// 1. PEMULIHAN SESI OTOMATIS SAAT WEB / TAB DIBUKA
 window.addEventListener('DOMContentLoaded', function() {
-// SET TAHUN COPYRIGHT OTOMATIS SESUAI TAHUN SISTEM SAAT INI
+  // Update tahun hak cipta secara otomatis
   const currentYear = new Date().getFullYear();
   document.querySelectorAll('.current-year').forEach(el => {
     el.textContent = currentYear;
   });
 
-  const savedRole = sessionStorage.getItem('qc_active_role');
-  const savedUser = sessionStorage.getItem('qc_active_user');
-  const savedToken = sessionStorage.getItem('qc_active_token');
+  // Pulihkan sesi akun langsung dari localStorage
+  const savedRole = localStorage.getItem('qc_active_role');
+  const savedUser = localStorage.getItem('qc_active_user');
+  const savedToken = localStorage.getItem('qc_active_token');
 
   if (savedRole && savedUser && savedToken) {
     enterApp(savedRole, savedUser, savedToken);
+  }
+});
+
+// 2. SINKRONISASI SESI LINTAS TAB (MULTI-TAB SYNCHRONIZATION)
+window.addEventListener('storage', function(e) {
+  if (e.key === 'qc_active_token' || e.key === 'qc_active_user') {
+    const token = localStorage.getItem('qc_active_token');
+    const role = localStorage.getItem('qc_active_role');
+    const user = localStorage.getItem('qc_active_user');
+
+    if (!token) {
+      // Jika logout dilakukan di tab sebelah, tab ini otomatis keluar
+      currentRole = null;
+      currentUsername = '';
+      currentToken = '';
+      closeMobileSidebar();
+      document.getElementById('app-view').classList.add('hidden');
+      document.getElementById('login-view').classList.remove('hidden');
+    } else if (token !== currentToken || user !== currentUsername) {
+      // Jika login akun baru dilakukan di tab sebelah, tab ini otomatis sinkron
+      enterApp(role, user, token);
+    }
+  }
+});
+
+// 3. PROTEKSI PENCEGAHAN TAB TERTUTUP TIDAK SENGAJA
+window.addEventListener('beforeunload', function(e) {
+  let queue = [];
+  try {
+    queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch (err) {}
+
+  const isAddNcrOpen = !document.getElementById('modal-add-ncr').classList.contains('hidden');
+  const isUploadOpen = !document.getElementById('modal-upload-foto').classList.contains('hidden');
+  const isEditNcrOpen = !document.getElementById('modal-edit-ncr').classList.contains('hidden');
+
+  const hasUnsavedWork = isAddNcrOpen || isUploadOpen || isEditNcrOpen || queue.length > 0;
+
+  if (hasUnsavedWork) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
   }
 });
