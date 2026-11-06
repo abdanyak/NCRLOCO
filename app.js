@@ -2037,28 +2037,28 @@ function renderHistoryView() {
         const auditBtnHtml = buildAuditHistoryButtonHtml(prodIdx, item.id, followUp);
 
         if (isTrulyClosed) {
-            closedCount++;
-            // Membuat tombol GDrive lebih ringkas dan pas di ruang kosong
-            const driveLinkHtml = followUp.folderUrl
-              ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link" style="margin-top:4px; padding:2px 6px; font-size:10.5px;">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
-              : '';
+          closedCount++;
+          const driveLinkHtml = followUp.folderUrl
+            ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
+            : '';
 
-            unitCardsHtml +=
-              '<div class="history-unit-card is-closed">' +
-                '<div style="min-width:0; flex:1;">' +
-                  '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
-                    '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
-                    prodStateBadge +
-                    '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
-                  '</div>' +
-                  '<div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">' +
-                    '<span style="font-size:12px; color:var(--slate-600);">Sudah dicek</span>' +
-                    driveLinkHtml +
-                  '</div>' +
-                  (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
+          unitCardsHtml +=
+            '<div class="history-unit-card is-closed">' +
+              '<div style="min-width:0; flex:1;">' +
+                /* Nama produk dibuat memanjang ke samping tanpa terpotong */
+                '<div style="font-weight:700; font-size:13px; color:var(--slate-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px;">' + 
+                  escapeHtml(prodName) + ' ' + prodStateBadge + 
                 '</div>' +
-                buildThumbnailsHtml(photos, prodIdx, item.id) +
-              '</div>';
+                /* Badge status dan tombol GDrive berjajar rapi di bawah nama produk */
+                '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px;">' +
+                  '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
+                  driveLinkHtml +
+                '</div>' +
+                (auditBtnHtml ? `<div style="margin-top:4px;">${auditBtnHtml}</div>` : '') +
+              '</div>' +
+              buildThumbnailsHtml(photos, prodIdx, item.id) +
+            '</div>';
+  
         } else {
           const reopenNotice = followUp.reopenReason
             ? `<div class="reopen-audit-box"><b>Re-Open:</b> ${escapeHtml(followUp.reopenReason)}</div>`
@@ -2067,13 +2067,14 @@ function renderHistoryView() {
           unitCardsHtml +=
             '<div class="history-unit-card is-open">' +
               '<div style="min-width:0; flex:1;">' +
-                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
-                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
-                  prodStateBadge +
+                '<div style="font-weight:700; font-size:13px; color:var(--slate-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px;">' + 
+                  escapeHtml(prodName) + ' ' + prodStateBadge + 
+                '</div>' +
+                '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
                   '<span class="badge badge-open">OPEN</span>' +
                 '</div>' +
                 reopenNotice +
-                (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
+                (auditBtnHtml ? `<div style="margin-top:4px;">${auditBtnHtml}</div>` : '') +
               '</div>' +
             '</div>';
         }
