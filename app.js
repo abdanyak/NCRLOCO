@@ -3191,21 +3191,48 @@ window.deleteUser = async function(id) {
 window.toggleModal = function(modalId, show) {
   const el = document.getElementById(modalId);
   if (!el) return;
+  
   if (show) {
     lastFocusedElement = document.activeElement;
     el.classList.remove('hidden');
+    
+    // Jika modal lightbox dibuka, tambahkan state ke history browser agar tombol back HP menutup modal
+    if (modalId === 'modal-lightbox') {
+      if (!window.history.state || !window.history.state.lightboxOpen) {
+        window.history.pushState({ lightboxOpen: true }, '');
+      }
+    }
+
     const firstFocusable = el.querySelector('input:not([type="hidden"]), textarea, select, button');
     if (firstFocusable) {
       setTimeout(() => firstFocusable.focus(), 30);
     }
   } else {
     el.classList.add('hidden');
+    
+    // Jika modal lightbox ditutup dan berasal dari state history, sinkronkan history
+    if (modalId === 'modal-lightbox' && window.history.state && window.history.state.lightboxOpen) {
+      window.history.back();
+    }
+
     if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
       lastFocusedElement.focus();
       lastFocusedElement = null;
     }
   }
 };
+
+// Tangkap tombol back HP / browser untuk menutup modal lightbox alih-alih keluar aplikasi
+window.addEventListener('popstate', function(e) {
+  const lightboxModal = document.getElementById('modal-lightbox');
+  if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+    lightboxModal.classList.add('hidden');
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
+    }
+  }
+});
 
 document.addEventListener('keydown', function(e) {
   if (document.querySelector('.qc-dialog-backdrop')) return;
