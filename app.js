@@ -1939,11 +1939,7 @@ function renderHistoryView() {
   let totalClosedInstances = 0;
 
   masterNcrList.forEach(item => {
-  const sortedAssignedProds = [...item.assignedProducts].sort((a, b) => 
-  String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' })
-);
-
-sortedAssignedProds.forEach(prodName => {
+    item.assignedProducts.forEach(prodName => {
       totalInstances++;
       const key = prodName + '_' + item.id;
       const followUp = productFollowUps[key];
