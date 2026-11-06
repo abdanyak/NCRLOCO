@@ -797,6 +797,23 @@ function doPost(e) {
         else if (action === "DELETE_USER") {
             deleteRowByValue_(ss.getSheetByName(SHEETS.USERS), 0, payload.id);
         }
+        
+        // 10. EDIT PASSWORD USER
+        else if (action === "EDIT_USER_PASSWORD") {
+            const shUsers = ss.getSheetByName(SHEETS.USERS);
+            const userRows = shUsers.getDataRange().getValues();
+            const targetId = Number(payload.id);
+            const cleanUsername = String(payload.username || "").trim();
+            const newPlainPassword = String(payload.password || "").trim();
+
+            for (let i = 1; i < userRows.length; i++) {
+                if (Number(userRows[i][0]) === targetId) {
+                    const hashedNewPass = hashUserPassword_(cleanUsername, newPlainPassword);
+                    shUsers.getRange(i + 1, 3).setValue(hashedNewPass);
+                    break;
+                }
+            }
+        }
 
         const updatedData = getAllPortalData_();
         return ContentService.createTextOutput(JSON.stringify({ status: "success", data: updatedData }))
@@ -812,6 +829,8 @@ function doPost(e) {
         lock.releaseLock();
     }
 }
+
+
 
 // ================= PEMBACAAN DATA & SINKRONISASI REAL-TIME GOOGLE DRIVE =================
 function getAllPortalData_() {
