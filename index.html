@@ -810,7 +810,38 @@
       </div>
     </div>
   </div>
-
+<!-- ================= MODAL 7: EDIT USER ================= -->
+  <div id="modal-edit-user" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-edit-user">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="title-modal-edit-user" class="modal-title">Ganti Password User</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-edit-user', false)">✕</button>
+      </div>
+      <form id="form-edit-user">
+        <div class="modal-body">
+          <input type="hidden" id="edit-user-id">
+          <div class="form-group">
+            <label for="edit-username-display">Username</label>
+            <input type="text" id="edit-username-display" disabled style="background: var(--slate-100); font-weight: 700;">
+          </div>
+          <div class="form-group mb-0">
+            <label for="edit-password">Password Baru</label>
+            <div class="password-field-wrap">
+              <input type="password" id="edit-password" required autocomplete="new-password" placeholder="Masukkan password baru">
+              <button type="button" class="password-toggle-btn" onclick="toggleEditPasswordVisibility()" title="Lihat/Sembunyikan Password">
+                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-edit-user', false)">Batal</button>
+          <button type="submit" class="btn btn-indigo">Simpan Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <script src="app.js"></script>
 </body>
 </html>
