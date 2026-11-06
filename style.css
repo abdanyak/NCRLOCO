@@ -1706,6 +1706,25 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 768px) {
+  /* Membuat modal lightbox di HP muncul sebagai bottom sheet dari bawah ke atas */
+  #modal-lightbox.modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  #modal-lightbox .modal-panel.modal-lightbox-panel {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
   /* Di HP/Mobile, sembunyikan teks tulisan Cloud/Lokal, sisakan titik warna saja */
   .network-indicator-badge .network-text {
     display: none !important;
