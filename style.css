@@ -1691,7 +1691,13 @@ tbody tr:last-child td { border-bottom: none; }
   justify-content: flex-end;
   gap: 8px;
 }
-
+/* Indikator Cloud/Lokal Responsif */
+.network-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: help;
+}
 /* ================= RESPONSIF TABLET & MOBILE (MENYESUAIKAN) ================= */
 @media (max-width: 1100px) and (min-width: 769px) {
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1700,6 +1706,25 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 768px) {
+  /* Di HP/Mobile, sembunyikan teks tulisan Cloud/Lokal, sisakan titik warna saja */
+  .network-indicator-badge .network-text {
+    display: none !important;
+  }
+  
+  .network-indicator-badge {
+    padding: 6px 8px !important;
+    border-radius: 50% !important;
+    min-width: 28px;
+    height: 28px;
+    justify-content: center;
+  }
+
+  .network-indicator-badge .dot {
+    width: 9px !important;
+    height: 9px !important;
+    margin: 0 !important;
+  }
+  
   .sidebar {
     position: fixed;
     top: 0;
