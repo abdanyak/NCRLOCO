@@ -3092,11 +3092,23 @@ function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
   users.forEach(u => {
+    // Catatan: Karena password disimpan secara terenkripsi (hash SHA-256) di database, 
+    // sandi asli teks biasa tidak tersedia. Namun kita simpan placeholder terenkripsi 
+    // atau sediakan fitur Edit Password jika ingin menggantinya. 
+    // Jika Anda ingin menampilkan sandi teks biasa, backend perlu menyimpannya sebagai plaintext.
+    // Berikut adalah implementasi toggle masking password pada tabel:
     const maskedPass = '••••••••';
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + escapeHtml(u.username) + '</td>' +
-      '<td data-label="Password" style="font-family:monospace; color:var(--slate-500); letter-spacing:2px;">' + maskedPass + '</td>' +
+      '<td data-label="Password">' +
+        '<div style="display:inline-flex; align-items:center; gap:6px;">' +
+          '<span id="pass-text-' + u.id + '" style="font-family:monospace; color:var(--slate-500); letter-spacing:1px;" data-masked="' + maskedPass + '">••••••••</span>' +
+          '<button type="button" class="btn btn-outline btn-sm" style="padding:0 6px; height:26px;" onclick="toggleTablePassword(' + u.id + ', event)" title="Tampilkan/Sembunyikan Password">' +
+            HEROICONS.eye +
+          '</button>' +
+        '</div>' +
+      '</td>' +
       '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + escapeHtml(u.role.toUpperCase()) + '</span></td>' +
       '<td data-label="Aksi" class="text-right">' +
         '<div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end; gap:6px;">' +
@@ -3107,6 +3119,19 @@ function renderUserTable() {
     tbody.appendChild(tr);
   });
 }
+
+window.toggleTablePassword = function(userId, event) {
+  const spanEl = document.getElementById('pass-text-' + userId);
+  const btnEl = event.currentTarget;
+  if (!spanEl) return;
+
+  // Mengingat password di database di-hash (SHA-256) demi keamanan tingkat lanjut, 
+  // teks sandi asli tidak dikirim ke klien demi mencegah kebocoran data. 
+  // Namun, jika Anda menggunakan fitur Edit Pass di sebelah kanan, 
+  // Anda bisa langsung mengganti password lama dengan yang baru.
+  // Jika ingin menampilkan teks sandi asli, pastikan backend Anda menyimpannya sebagai plaintext.
+  showToast("Untuk keamanan sistem, password dienkripsi secara aman (SHA-256). Gunakan tombol 'Edit Pass' di sebelah kanan untuk mereset sandi user jika lupa.", "info", 4500);
+};
 
 document.getElementById('form-add-user').addEventListener('submit', async function(e) {
   e.preventDefault();
