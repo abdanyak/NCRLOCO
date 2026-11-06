@@ -1242,7 +1242,10 @@ async function syncFromCloud(silent = false) {
   if (alreadyUpdatedFromQueue) return;
 
   isSyncingFromCloud = true;
+
+  // HANYA MUNCULKAN LOADING JIKA TIDAK SILENT (misal saat manual klik tombol Sync)
   if (!silent) showCloudLoading(true, 'Memuat & memverifikasi data Cloud...');
+
   try {
     const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
     const json = await res.json();
@@ -1273,6 +1276,7 @@ async function syncFromCloud(silent = false) {
     updateNetworkStatusUI(false);
   } finally {
     isSyncingFromCloud = false;
+    // HANYA TUTUP LOADING JIKA SEBELUMNYA MUNCUL
     if (!silent) showCloudLoading(false);
   }
 }
