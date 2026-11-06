@@ -2047,7 +2047,7 @@ function renderHistoryView() {
                   '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
                 '</div>' +
                 '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
-                  escapeHtml(followUp.note || 'OK') +
+                'Sudah dicek' +
                 '</div>' +
                 driveLinkHtml +
                 (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
