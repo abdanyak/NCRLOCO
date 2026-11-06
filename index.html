@@ -9,32 +9,34 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>QC Portal — Monitoring & History NCR</title>
 
+  <!-- PWA MANIFEST & ICONS -->
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <!-- GOOGLE FONTS (SINGLE CLEAN LOAD) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- MAIN STYLESHEET (SINGLE CLEAN LOAD) -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <!-- OVERLAY LOADING -->
-  <div id="cloud-loading" class="cloud-loading hidden" role="status" aria-live="polite">
+  <div id="cloud-loading" class="cloud-loading hidden" role="status" aria-live="polite" aria-busy="true">
     <div class="cloud-loading-box">
-      <div class="spinner"></div>
+      <div class="spinner" aria-hidden="true"></div>
       <div id="cloud-loading-text" class="cloud-loading-text">Menyimpan data...</div>
     </div>
   </div>
-
-  <!-- CONTAINER TOAST NOTIFICATION (NON-BLOCKING) -->
-  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <!-- ================= 1. HALAMAN LOGIN ================= -->
   <div id="login-view" class="login-wrapper">
     <div class="login-card">
       <div class="login-header">
-        <div class="brand-icon">
+        <div class="brand-icon" aria-hidden="true">
           <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
           </svg>
@@ -51,19 +53,11 @@
           </div>
           <div class="form-group">
             <label for="password">Password</label>
-            <div class="password-input-wrap">
-              <input type="password" id="password" required autocomplete="current-password" placeholder="Password">
-              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Tampilkan atau sembunyikan password" title="Lihat/Sembunyikan Password">
-                <svg class="icon-sm eye-open" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-              </button>
-            </div>
+            <input type="password" id="password" required autocomplete="current-password" placeholder="Password">
           </div>
           <button type="submit" class="btn btn-indigo btn-full">
             <span>Masuk</span>
-            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
             </svg>
           </button>
@@ -78,19 +72,19 @@
   <!-- ================= 2. HALAMAN DASHBOARD UTAMA ================= -->
   <div id="app-view" class="admin-layout hidden">
 
-    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
     <!-- SIDEBAR KIRI -->
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand">
         <div class="sidebar-brand-left">
-          <div class="sidebar-brand-logo">QC</div>
+          <div class="sidebar-brand-logo" aria-hidden="true">QC</div>
           <div>
             <div class="sidebar-brand-title">NCR Portal</div>
           </div>
         </div>
-        <button type="button" id="btn-close-sidebar-mobile" class="sidebar-close-mobile" title="Tutup" aria-label="Tutup Menu">
-          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button type="button" id="btn-close-sidebar-mobile" class="sidebar-close-mobile" title="Tutup Menu" aria-label="Tutup Menu Navigasi">
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         </button>
@@ -101,7 +95,7 @@
 
         <button type="button" id="nav-history" class="nav-item active">
           <div class="nav-item-left">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
             </svg>
             <span>History NCR</span>
@@ -111,7 +105,7 @@
 
         <button type="button" id="nav-ncr" class="nav-item">
           <div class="nav-item-left">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
             </svg>
             <span>Monitoring per Unit</span>
@@ -120,7 +114,7 @@
 
         <button type="button" id="nav-users" class="nav-item hidden">
           <div class="nav-item-left">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
             </svg>
             <span>Kelola User</span>
@@ -131,7 +125,7 @@
       <div class="sidebar-footer">
         <div class="user-mini-card">
           <div class="user-mini-info">
-            <div id="sidebar-avatar" class="avatar-circle">AD</div>
+            <div id="sidebar-avatar" class="avatar-circle" aria-hidden="true">AD</div>
             <div>
               <div id="sidebar-username" class="sidebar-user-name">admin</div>
               <div id="sidebar-role-text" class="sidebar-user-role">Admin</div>
@@ -148,8 +142,8 @@
     <div class="main-area">
       <header class="topbar">
         <div class="topbar-left">
-          <button type="button" id="btn-hamburger" class="hamburger-btn" title="Menu" aria-label="Buka atau tutup navigasi">
-            <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button type="button" id="btn-hamburger" class="hamburger-btn" title="Buka/Tutup Menu" aria-label="Buka atau tutup menu navigasi">
+            <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
@@ -162,14 +156,14 @@
 
         <div class="topbar-right">
           <span id="storage-mode-badge" class="badge badge-archived hide-on-small-mobile">Lokal</span>
-          <button type="button" id="btn-refresh-cloud" class="btn btn-outline btn-sm hidden" title="Sync Data">
-            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button type="button" id="btn-refresh-cloud" class="btn btn-outline btn-sm hidden" title="Sync Data" aria-label="Sinkronkan data dari Cloud">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
             <span class="hide-on-small-mobile">Sync</span>
           </button>
-          <button type="button" id="btn-logout" class="btn btn-rose-soft btn-sm">
-            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button type="button" id="btn-logout" class="btn btn-rose-soft btn-sm" title="Keluar Sesi" aria-label="Keluar dari akun">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
             </svg>
             <span class="hide-on-small-mobile">Keluar</span>
@@ -189,7 +183,7 @@
                 <div id="hist-stat-master" class="stat-value">0</div>
                 <div class="stat-sub">Terdaftar</div>
               </div>
-              <div class="stat-icon icon-box-indigo">
+              <div class="stat-icon icon-box-indigo" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
@@ -202,7 +196,7 @@
                 <div id="hist-stat-instances" class="stat-value">0</div>
                 <div class="stat-sub">Semua Unit</div>
               </div>
-              <div class="stat-icon icon-box-slate">
+              <div class="stat-icon icon-box-slate" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
@@ -215,7 +209,7 @@
                 <div id="hist-stat-open" class="stat-value text-rose">0</div>
                 <div class="stat-sub">Belum Selesai</div>
               </div>
-              <div class="stat-icon icon-box-rose">
+              <div class="stat-icon icon-box-rose" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -228,7 +222,7 @@
                 <div id="hist-stat-closed" class="stat-value text-emerald">0</div>
                 <div id="hist-stat-rate" class="stat-sub">0% Selesai</div>
               </div>
-              <div class="stat-icon icon-box-emerald">
+              <div class="stat-icon icon-box-emerald" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -244,7 +238,7 @@
               </div>
               <div class="toolbar-action-wrap">
                 <button type="button" id="btn-add-ncr" class="btn btn-indigo btn-mobile-full hidden">
-                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                   <span>Tambah NCR</span>
@@ -254,14 +248,14 @@
 
             <div class="filter-bar">
               <div class="filter-group">
-                <div class="pill-group" id="history-filter-pills">
+                <div class="pill-group" id="history-filter-pills" role="group" aria-label="Filter Status History NCR">
                   <button type="button" class="pill-btn active" data-hfilter="ALL">Semua</button>
                   <button type="button" class="pill-btn" data-hfilter="INCOMPLETE">OPEN</button>
                   <button type="button" class="pill-btn" data-hfilter="COMPLETE">CLOSED</button>
                 </div>
 
                 <div class="sort-select-wrap">
-                  <select id="sort-history" class="sort-select" title="Urutkan Data History">
+                  <select id="sort-history" class="sort-select" title="Urutkan Data History" aria-label="Urutkan Data History">
                     <option value="DATE_DESC">Urut: Tanggal Terbaru</option>
                     <option value="DATE_ASC">Urut: Tanggal Terlama</option>
                     <option value="PLATFORM_ASC">Urut: Platform (A-Z)</option>
@@ -273,10 +267,10 @@
               </div>
 
               <div class="search-input-wrap search-history-wrap">
-                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-                <input type="text" id="search-history" placeholder="Cari NCR, platform, title, unit...">
+                <input type="text" id="search-history" placeholder="Cari NCR, platform, title, unit..." aria-label="Cari di History NCR">
               </div>
             </div>
 
@@ -284,13 +278,13 @@
               <table class="mobile-card-table">
                 <thead>
                   <tr>
-                    <th class="sortable-th" tabindex="0" role="button" onclick="toggleTableSort('history', 'DATE')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTableSort('history', 'DATE');}" title="Klik untuk urutkan Tanggal">
+                    <th class="sortable-th" onclick="toggleTableSort('history', 'DATE')" title="Klik untuk urutkan Tanggal">
                       <div class="th-sort-inner">
                         <span>No. NCR & Tanggal</span>
                         <span id="sort-ind-hist-date" class="sort-indicator active">↓</span>
                       </div>
                     </th>
-                    <th class="sortable-th" tabindex="0" role="button" onclick="toggleTableSort('history', 'PLATFORM')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTableSort('history', 'PLATFORM');}" title="Klik untuk urutkan Platform A-Z">
+                    <th class="sortable-th" onclick="toggleTableSort('history', 'PLATFORM')" title="Klik untuk urutkan Platform A-Z">
                       <div class="th-sort-inner">
                         <span>Platform, Title & Deskripsi</span>
                         <span id="sort-ind-hist-platform" class="sort-indicator">↕</span>
@@ -316,7 +310,7 @@
                 <div id="stat-product-name" class="stat-value stat-value-unit">Belum Ada</div>
                 <div id="stat-product-state" class="stat-sub">-</div>
               </div>
-              <div class="stat-icon icon-box-indigo">
+              <div class="stat-icon icon-box-indigo" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
                 </svg>
@@ -329,7 +323,7 @@
                 <div id="stat-total-ncr" class="stat-value">0</div>
                 <div class="stat-sub">Di Unit Ini</div>
               </div>
-              <div class="stat-icon icon-box-slate">
+              <div class="stat-icon icon-box-slate" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                 </svg>
@@ -342,7 +336,7 @@
                 <div id="stat-open-ncr" class="stat-value text-rose">0</div>
                 <div class="stat-sub">Belum Foto</div>
               </div>
-              <div class="stat-icon icon-box-rose">
+              <div class="stat-icon icon-box-rose" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
@@ -355,7 +349,7 @@
                 <div id="stat-closed-ncr" class="stat-value text-emerald">0</div>
                 <div id="stat-progress-pct" class="stat-sub">0% Selesai</div>
               </div>
-              <div class="stat-icon icon-box-emerald">
+              <div class="stat-icon icon-box-emerald" aria-hidden="true">
                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -366,18 +360,18 @@
           <div class="panel-card">
             <div class="panel-toolbar panel-toolbar-aligned">
               <div class="unit-selector-group">
-                <span class="unit-selector-label">Unit Produk:</span>
+                <label for="product-select" class="unit-selector-label">Unit Produk:</label>
                 <div class="unit-selector-controls">
-                  <select id="product-select" class="product-select-input"></select>
+                  <select id="product-select" class="product-select-input" aria-label="Pilih Unit Produk"></select>
                   <button type="button" id="btn-add-product" class="btn btn-outline hidden">
-                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                     <span>Unit Baru</span>
                   </button>
                   <button type="button" id="btn-toggle-archive" class="btn btn-amber-soft hidden"></button>
                   <button type="button" id="btn-delete-product" class="btn btn-rose-soft hidden" title="Hapus Unit">
-                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                     </svg>
                     <span>Hapus Unit</span>
@@ -388,14 +382,14 @@
 
             <div class="filter-bar">
               <div class="filter-group">
-                <div class="pill-group" id="unit-filter-pills">
+                <div class="pill-group" id="unit-filter-pills" role="group" aria-label="Filter Status Unit">
                   <button type="button" class="pill-btn active" data-filter="ALL">Semua</button>
                   <button type="button" class="pill-btn" data-filter="OPEN">OPEN</button>
                   <button type="button" class="pill-btn" data-filter="CLOSED">CLOSED</button>
                 </div>
 
                 <div class="sort-select-wrap">
-                  <select id="sort-unit" class="sort-select" title="Urutkan Data Unit">
+                  <select id="sort-unit" class="sort-select" title="Urutkan Data Unit" aria-label="Urutkan Data Unit">
                     <option value="DATE_DESC">Urut: Tanggal Terbaru</option>
                     <option value="DATE_ASC">Urut: Tanggal Terlama</option>
                     <option value="PLATFORM_ASC">Urut: Platform (A-Z)</option>
@@ -407,10 +401,10 @@
               </div>
 
               <div class="search-input-wrap search-unit-wrap">
-                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="icon-sm search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-                <input type="text" id="search-ncr" placeholder="Cari NCR, platform, title...">
+                <input type="text" id="search-ncr" placeholder="Cari NCR, platform, title..." aria-label="Cari NCR pada unit ini">
               </div>
             </div>
 
@@ -418,13 +412,13 @@
               <table class="mobile-card-table">
                 <thead>
                   <tr>
-                    <th class="sortable-th" tabindex="0" role="button" onclick="toggleTableSort('unit', 'DATE')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTableSort('unit', 'DATE');}" title="Klik untuk urutkan Tanggal">
+                    <th class="sortable-th" onclick="toggleTableSort('unit', 'DATE')" title="Klik untuk urutkan Tanggal">
                       <div class="th-sort-inner">
                         <span>No. NCR & Tanggal</span>
                         <span id="sort-ind-unit-date" class="sort-indicator active">↓</span>
                       </div>
                     </th>
-                    <th class="sortable-th" tabindex="0" role="button" onclick="toggleTableSort('unit', 'PLATFORM')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTableSort('unit', 'PLATFORM');}" title="Klik untuk urutkan Platform A-Z">
+                    <th class="sortable-th" onclick="toggleTableSort('unit', 'PLATFORM')" title="Klik untuk urutkan Platform A-Z">
                       <div class="th-sort-inner">
                         <span>Platform & Title</span>
                         <span id="sort-ind-unit-platform" class="sort-indicator">↕</span>
@@ -453,7 +447,7 @@
               </div>
               <div class="toolbar-action-wrap">
                 <button type="button" id="btn-open-add-user" class="btn btn-indigo btn-mobile-full">
-                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                   <span>Tambah User</span>
@@ -480,10 +474,10 @@
       </main>
 
       <!-- ================= BOTTOM NAV MOBILE ================= -->
-      <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+      <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Navigasi Bawah Mobile">
         <button type="button" id="bnav-history" class="bnav-item active">
           <div class="bnav-icon-wrap">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
             </svg>
             <span id="bnav-history-badge" class="bnav-badge">0</span>
@@ -493,7 +487,7 @@
 
         <button type="button" id="bnav-ncr" class="bnav-item">
           <div class="bnav-icon-wrap">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
             </svg>
           </div>
@@ -502,7 +496,7 @@
 
         <button type="button" id="bnav-users" class="bnav-item hidden">
           <div class="bnav-icon-wrap">
-            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
             </svg>
           </div>
@@ -513,11 +507,11 @@
   </div>
 
   <!-- ================= MODAL 1: TAMBAH UNIT PRODUK ================= -->
-  <div id="modal-add-product" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-add-product">
+  <div id="modal-add-product" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-add-product">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="title-add-product" class="modal-title">Tambah Unit Produk</h3>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-product', false)" aria-label="Tutup">✕</button>
+        <h3 id="title-modal-add-product" class="modal-title">Tambah Unit Produk</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-add-product', false)">✕</button>
       </div>
       <form id="form-add-product">
         <div class="modal-body">
@@ -539,24 +533,24 @@
   </div>
 
   <!-- ================= MODAL 2: TAMBAH NCR BARU ================= -->
-  <div id="modal-add-ncr" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-add-ncr">
+  <div id="modal-add-ncr" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-add-ncr">
     <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
-        <h3 id="title-add-ncr" class="modal-title">Tambah NCR</h3>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-ncr', false)" aria-label="Tutup">✕</button>
+        <h3 id="title-modal-add-ncr" class="modal-title">Tambah NCR</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-add-ncr', false)">✕</button>
       </div>
       <form id="form-add-ncr">
         <div class="modal-body">
           <div class="form-group">
-            <label><span class="step-num">1</span> No. NCR & Tanggal</label>
+            <label for="ncr-no"><span class="step-num">1</span> No. NCR & Tanggal</label>
             <div class="form-row-2col">
               <input type="text" id="ncr-no" required placeholder="No. NCR (Misal: NCR-001)">
-              <input type="date" id="ncr-date" required>
+              <input type="date" id="ncr-date" required aria-label="Tanggal NCR">
             </div>
           </div>
 
           <div class="form-group">
-            <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
+            <label for="ncr-gdrive-link"><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
             <div class="gdrive-input-stack">
               <input type="url" id="ncr-gdrive-link" placeholder="Tempel Link GDrive (https://...)">
               <div class="file-upload-inline">
@@ -624,26 +618,26 @@
   </div>
 
   <!-- ================= MODAL 3: EDIT NCR ================= -->
-  <div id="modal-edit-ncr" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-edit-ncr">
+  <div id="modal-edit-ncr" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-edit-ncr">
     <div class="modal-panel modal-panel-lg">
       <div class="modal-header">
-        <h3 id="title-edit-ncr" class="modal-title">Edit NCR</h3>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-edit-ncr', false)" aria-label="Tutup">✕</button>
+        <h3 id="title-modal-edit-ncr" class="modal-title">Edit NCR</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-edit-ncr', false)">✕</button>
       </div>
       <form id="form-edit-ncr">
         <div class="modal-body">
           <input type="hidden" id="edit-ncr-id">
 
           <div class="form-group">
-            <label><span class="step-num">1</span> No. NCR & Tanggal</label>
+            <label for="edit-ncr-no"><span class="step-num">1</span> No. NCR & Tanggal</label>
             <div class="form-row-2col">
               <input type="text" id="edit-ncr-no" required placeholder="No. NCR">
-              <input type="date" id="edit-ncr-date" required>
+              <input type="date" id="edit-ncr-date" required aria-label="Tanggal NCR">
             </div>
           </div>
 
           <div class="form-group">
-            <label><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
+            <label for="edit-ncr-gdrive-link"><span class="step-num">2</span> Upload File GDrive NCR <span class="label-optional">(Opsional)</span></label>
             <div class="gdrive-input-stack">
               <input type="url" id="edit-ncr-gdrive-link" placeholder="Link GDrive (https://...)">
               <div class="file-upload-inline">
@@ -711,11 +705,11 @@
   </div>
 
   <!-- ================= MODAL 4: UPLOAD BUKTI INSPECTOR ================= -->
-  <div id="modal-upload-foto" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-upload-foto">
+  <div id="modal-upload-foto" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-upload-foto">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="title-upload-foto" class="modal-title">Upload Bukti Foto</h3>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-upload-foto', false)" aria-label="Tutup">✕</button>
+        <h3 id="title-modal-upload-foto" class="modal-title">Upload Bukti Foto</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-upload-foto', false)">✕</button>
       </div>
       <form id="form-upload-foto">
         <div class="modal-body">
@@ -760,29 +754,21 @@
   </div>
 
   <!-- ================= MODAL 5: TAMBAH USER ================= -->
-  <div id="modal-add-user" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-add-user">
+  <div id="modal-add-user" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-add-user">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="title-add-user" class="modal-title">Tambah User</h3>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-add-user', false)" aria-label="Tutup">✕</button>
+        <h3 id="title-modal-add-user" class="modal-title">Tambah User</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-add-user', false)">✕</button>
       </div>
       <form id="form-add-user">
         <div class="modal-body">
           <div class="form-group">
             <label for="new-username">Username</label>
-            <input type="text" id="new-username" required placeholder="Username baru">
+            <input type="text" id="new-username" required autocomplete="off" placeholder="Username baru">
           </div>
           <div class="form-group">
             <label for="new-password">Password</label>
-            <div class="password-input-wrap">
-              <input type="password" id="new-password" required placeholder="Password">
-              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-password', this)" aria-label="Tampilkan atau sembunyikan password" title="Lihat/Sembunyikan Password">
-                <svg class="icon-sm eye-open" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-              </button>
-            </div>
+            <input type="password" id="new-password" required autocomplete="new-password" placeholder="Password">
           </div>
           <div class="form-group mb-0">
             <label for="new-role">Role</label>
@@ -806,58 +792,21 @@
       <div class="modal-header">
         <div style="min-width:0; flex:1;">
           <h3 id="lightbox-title" class="modal-title">Detail Foto</h3>
-          <div id="lightbox-counter" class="lightbox-counter-text"></div>
+          <div id="lightbox-counter" class="lightbox-counter-text" aria-live="polite"></div>
         </div>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-lightbox', false)" aria-label="Tutup Galeri">✕</button>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup galeri foto" onclick="toggleModal('modal-lightbox', false)">✕</button>
       </div>
       <div class="modal-body text-center">
         <div id="lightbox-stage" class="lightbox-stage">
-          <button type="button" id="lightbox-prev" class="lightbox-nav-btn lightbox-nav-prev" onclick="stepLightbox(-1)" aria-label="Foto Sebelumnya">&#10094;</button>
-          <img id="lightbox-img" src="" class="lightbox-main-img" alt="Foto NCR">
-          <button type="button" id="lightbox-next" class="lightbox-nav-btn lightbox-nav-next" onclick="stepLightbox(1)" aria-label="Foto Berikutnya">&#10095;</button>
+          <button type="button" id="lightbox-prev" class="lightbox-nav-btn lightbox-nav-prev" aria-label="Foto sebelumnya" onclick="stepLightbox(-1)">&#10094;</button>
+          <img id="lightbox-img" src="" class="lightbox-main-img" alt="Foto Bukti NCR">
+          <button type="button" id="lightbox-next" class="lightbox-nav-btn lightbox-nav-next" aria-label="Foto berikutnya" onclick="stepLightbox(1)">&#10095;</button>
         </div>
-        <div class="swipe-hint-mobile">Geser kiri/kanan atau gunakan tombol panah keyboard</div>
+        <div class="swipe-hint-mobile">Geser kiri/kanan atau gunakan tombol panah untuk ganti foto</div>
 
         <div id="lightbox-thumbs" class="lightbox-thumbs"></div>
         <p id="lightbox-note" class="lightbox-note-text"></p>
         <p id="lightbox-meta" class="lightbox-meta-text"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL 7: RIWAYAT AUDIT / RE-OPEN NCR ================= -->
-  <div id="modal-audit-history" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="audit-modal-title" onclick="toggleModal('modal-audit-history', false)">
-    <div class="modal-panel modal-panel-lg" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <div style="min-width:0; flex:1;">
-          <h3 id="audit-modal-title" class="modal-title">Riwayat Audit & Re-Open NCR</h3>
-          <p id="audit-modal-subtitle" class="panel-desc" style="margin-top:2px;"></p>
-        </div>
-        <button type="button" class="btn btn-outline btn-sm" onclick="toggleModal('modal-audit-history', false)" aria-label="Tutup Riwayat">✕</button>
-      </div>
-      <div id="audit-modal-body" class="modal-body"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="toggleModal('modal-audit-history', false)">Tutup</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL 8: CUSTOM CONFIRM / PROMPT DIALOG ================= -->
-  <div id="modal-custom-dialog" class="modal-backdrop hidden" style="z-index: 260;" role="alertdialog" aria-modal="true" aria-labelledby="custom-dialog-title">
-    <div class="modal-panel custom-dialog-panel" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3 id="custom-dialog-title" class="modal-title">Konfirmasi</h3>
-      </div>
-      <div class="modal-body">
-        <p id="custom-dialog-message" class="custom-dialog-message"></p>
-        <div id="custom-dialog-input-wrap" class="form-group mb-0 hidden" style="margin-top:12px;">
-          <label id="custom-dialog-input-label" for="custom-dialog-input">Alasan / Catatan</label>
-          <input type="text" id="custom-dialog-input" placeholder="Tulis alasan...">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="custom-dialog-cancel" class="btn btn-outline">Batal</button>
-        <button type="button" id="custom-dialog-confirm" class="btn btn-indigo">Ya, Lanjutkan</button>
       </div>
     </div>
   </div>
