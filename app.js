@@ -1,7 +1,8 @@
 /**
  * ============================================================================
  * QC PORTAL — MONITORING & HISTORY NCR
- * File: app.js (Fixed: Robust Login, Auto-Detect Deploy Error, Offline Fallback)
+ * File: app.js (Audited & Fixed: IndexedDB, Sequential Image Processing,
+ *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security)
  * ============================================================================
  */
 
@@ -13,6 +14,11 @@ const IMAGE_MAX_WIDTH = 1280;
 const IMAGE_JPEG_QUALITY = 0.75;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
+const OFFLINE_AUTH_CACHE_KEY = 'qc_ncr_offline_auth_v1';
+const IDB_NAME = 'qc_ncr_idb_v1';
+const IDB_VERSION = 1;
+const IDB_STORE_STATE = 'portal_state';
+const IDB_STORE_QUEUE = 'offline_queue';
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -21,10 +27,13 @@ const HEROICONS = {
   wrench: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:2px; color:var(--indigo-600);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" /></svg>',
   pencil: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>',
   trash: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>',
+  unlink: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.181 8.68a4.503 4.503 0 0 1 1.903 6.405m-9.768-2.782L3.56 14.06a4.5 4.5 0 0 0 6.364 6.365l3.129-3.129m5.614-5.615 1.757-1.757a4.5 4.5 0 0 0-6.364-6.365l-4.5 4.5c-.258.26-.479.541-.661.84m1.903 6.405a4.495 4.495 0 0 1-1.242-.88 4.483 4.483 0 0 1-1.062-1.683m6.587 2.345 5.907 5.907m-5.907-5.907L8.898 8.898M2.991 2.99 8.898 8.9" /></svg>',
   camera: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" /></svg>',
   eye: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>',
+  eyeSlash: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>',
   checkBadge: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
   arrowPath: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>',
+  clockHistory: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
   archiveBox: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>',
   lockClosed: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>',
   lockOpen: '<svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>',
@@ -45,6 +54,7 @@ let tempMasterDocEdit = null;
 
 let activeLightboxPhotos = [];
 let activeLightboxIndex = 0;
+let lastFocusedElement = null;
 
 let statusFilter = 'ALL';
 let searchQuery = '';
@@ -60,7 +70,456 @@ let masterNcrList = [];
 let productFollowUps = {};
 let users = [];
 
-// ================= HELPER KEAMANAN (ANTI-XSS), DEBOUNCE & SORTING =================
+// ================= 1. INDEXEDDB ENGINE (FIX #1: BATAS 5MB LOCALSTORAGE) =================
+let idbPromise = null;
+
+function openPortalIndexedDB() {
+  if (idbPromise) return idbPromise;
+  idbPromise = new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error('IndexedDB tidak didukung di browser ini.'));
+      return;
+    }
+    const req = window.indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE_STATE)) {
+        db.createObjectStore(IDB_STORE_STATE);
+      }
+      if (!db.objectStoreNames.contains(IDB_STORE_QUEUE)) {
+        db.createObjectStore(IDB_STORE_QUEUE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = function(e) {
+      resolve(e.target.result);
+    };
+    req.onerror = function(e) {
+      reject(e.target.error);
+    };
+  });
+  return idbPromise;
+}
+
+async function idbSetState(key, value) {
+  try {
+    const db = await openPortalIndexedDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE_STATE, 'readwrite');
+      tx.objectStore(IDB_STORE_STATE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('Fallback ke localStorage karena IndexedDB gagal:', err);
+    return false;
+  }
+}
+
+async function idbGetState(key) {
+  try {
+    const db = await openPortalIndexedDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE_STATE, 'readonly');
+      const req = tx.objectStore(IDB_STORE_STATE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+async function idbGetOfflineQueue() {
+  try {
+    const db = await openPortalIndexedDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE_QUEUE, 'readonly');
+      const req = tx.objectStore(IDB_STORE_QUEUE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    try {
+      return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+}
+
+async function idbReplaceOfflineQueue(items) {
+  try {
+    const db = await openPortalIndexedDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE_QUEUE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE_QUEUE);
+      store.clear();
+      (items || []).forEach(item => store.put(item));
+      tx.oncomplete = () => {
+        localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String((items || []).length));
+        resolve(true);
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    try {
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(items || []));
+      localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String((items || []).length));
+    } catch (e) {
+      console.error('Gagal menyimpan antrean offline:', e);
+    }
+    return false;
+  }
+}
+
+// ================= 2. SISTEM TOAST & CUSTOM DIALOG NON-BLOCKING (FIX #14) =================
+function injectAuditEnhancementStyles() {
+  if (document.getElementById('qc-audit-injected-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'qc-audit-injected-styles';
+  style.textContent = `
+    /* Toast Container */
+    .qc-toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: min(380px, calc(100vw - 32px));
+      pointer-events: none;
+    }
+    .qc-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35);
+      border-left: 4px solid #3b82f6;
+      animation: qcToastIn 0.22s ease-out;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .qc-toast.toast-success { border-left-color: #10b981; }
+    .qc-toast.toast-error { border-left-color: #f43f5e; }
+    .qc-toast.toast-warning { border-left-color: #f59e0b; }
+    @keyframes qcToastIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Custom Confirm / Prompt Dialog */
+    .qc-dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(2px);
+      z-index: 9500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .qc-dialog-box {
+      background: #ffffff;
+      border-radius: 14px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--slate-200);
+      overflow: hidden;
+      animation: qcToastIn 0.18s ease-out;
+    }
+    .qc-dialog-header {
+      padding: 16px 18px 8px;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--slate-900);
+    }
+    .qc-dialog-body {
+      padding: 0 18px 16px;
+      font-size: 13.5px;
+      color: var(--slate-600);
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+    .qc-dialog-input {
+      margin-top: 10px;
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--slate-300);
+      border-radius: 8px;
+      font-size: 16px !important;
+    }
+    .qc-dialog-footer {
+      padding: 12px 18px;
+      background: var(--slate-50);
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Password Toggle Wrapper (Fix #10) */
+    .password-field-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .password-field-wrap input {
+      padding-right: 42px !important;
+      width: 100%;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--slate-500);
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .password-toggle-btn:hover {
+      background: var(--slate-100);
+      color: var(--slate-800);
+    }
+
+    /* Audit Trail Badge & Box (Fix #12) */
+    .reopen-audit-box {
+      margin-top: 6px;
+      padding: 6px 9px;
+      border-radius: 7px;
+      background: var(--amber-50);
+      border: 1px solid var(--amber-100);
+      font-size: 11.5px;
+      color: var(--amber-700);
+    }
+    .audit-history-btn {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--slate-100);
+      border: 1px solid var(--slate-300);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-700);
+      cursor: pointer;
+    }
+    .audit-history-btn:hover {
+      background: var(--slate-200);
+    }
+    .audit-log-item {
+      padding: 10px 12px;
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      background: var(--slate-50);
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    /* Fix #4 & #5 & #8 (Mobile iOS Auto-Zoom, Safe Area Bottom Nav, Empty Cell) */
+    @media (max-width: 768px) {
+      input[type="text"], input[type="password"], input[type="url"], input[type="date"], select, textarea {
+        font-size: 16px !important;
+      }
+      .mobile-bottom-nav {
+        height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      }
+      .content-wrapper {
+        padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      table.mobile-card-table tbody td.empty-table-cell {
+        text-align: center !important;
+        padding: 24px 12px !important;
+      }
+      table.mobile-card-table tbody td.empty-table-cell::before {
+        display: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function getToastContainer() {
+  let container = document.getElementById('qc-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'qc-toast-container';
+    container.className = 'qc-toast-container';
+    container.setAttribute('aria-live', 'polite');
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function showToast(message, type = 'info', duration = 3500) {
+  injectAuditEnhancementStyles();
+  const container = getToastContainer();
+  const toast = document.createElement('div');
+  toast.className = `qc-toast toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.2s ease';
+    setTimeout(() => toast.remove(), 220);
+  }, duration);
+}
+
+function showDialogModal({
+  title = 'Konfirmasi',
+  message = '',
+  confirmText = 'Ya, Lanjutkan',
+  cancelText = 'Batal',
+  showCancel = true,
+  variant = 'indigo',
+  showInput = false,
+  inputPlaceholder = ''
+}) {
+  injectAuditEnhancementStyles();
+  return new Promise(resolve => {
+    const prevFocus = document.activeElement;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'qc-dialog-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    const btnClass = variant === 'rose' ? 'btn-rose-soft' : (variant === 'amber' ? 'btn-amber-soft' : 'btn-indigo');
+
+    backdrop.innerHTML = `
+      <div class="qc-dialog-box" onclick="event.stopPropagation()">
+        <div class="qc-dialog-header">${escapeHtml(title)}</div>
+        <div class="qc-dialog-body">
+          <div>${escapeHtml(message)}</div>
+          ${showInput ? `<input type="text" id="qc-dialog-prompt-input" class="qc-dialog-input" placeholder="${escapeHtml(inputPlaceholder)}">` : ''}
+        </div>
+        <div class="qc-dialog-footer">
+          ${showCancel ? `<button type="button" id="qc-dialog-cancel" class="btn btn-outline">${escapeHtml(cancelText)}</button>` : ''}
+          <button type="button" id="qc-dialog-confirm" class="btn ${btnClass}">${escapeHtml(confirmText)}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    const inputEl = backdrop.querySelector('#qc-dialog-prompt-input');
+    const confirmBtn = backdrop.querySelector('#qc-dialog-confirm');
+    const cancelBtn = backdrop.querySelector('#qc-dialog-cancel');
+
+    function cleanup(result) {
+      document.removeEventListener('keydown', onKeyDown, true);
+      backdrop.remove();
+      if (prevFocus && typeof prevFocus.focus === 'function') {
+        prevFocus.focus();
+      }
+      resolve(result);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        cleanup(showInput ? null : false);
+      } else if (e.key === 'Enter' && (!showInput || document.activeElement === inputEl)) {
+        e.preventDefault();
+        e.stopPropagation();
+        cleanup(showInput ? (inputEl ? inputEl.value.trim() : '') : true);
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown, true);
+
+    confirmBtn.addEventListener('click', () => {
+      cleanup(showInput ? (inputEl ? inputEl.value.trim() : '') : true);
+    });
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => cleanup(showInput ? null : false));
+    }
+    backdrop.addEventListener('click', () => {
+      if (showCancel) cleanup(showInput ? null : false);
+    });
+
+    setTimeout(() => {
+      if (inputEl) inputEl.focus();
+      else confirmBtn.focus();
+    }, 20);
+  });
+}
+
+function showConfirm(message, title = 'Konfirmasi Tindakan', variant = 'indigo', confirmText = 'Ya, Lanjutkan') {
+  return showDialogModal({
+    title,
+    message,
+    confirmText,
+    cancelText: 'Batal',
+    showCancel: true,
+    variant,
+    showInput: false
+  });
+}
+
+function showAlert(message, title = 'Informasi Sistem') {
+  return showDialogModal({
+    title,
+    message,
+    confirmText: 'Mengerti',
+    showCancel: false,
+    variant: 'indigo',
+    showInput: false
+  });
+}
+
+// ================= 3. FITUR TOGGLE PASSWORD (FIX #10) =================
+function initPasswordToggles() {
+  injectAuditEnhancementStyles();
+  ['password', 'new-password'].forEach(inputId => {
+    const input = document.getElementById(inputId);
+    if (!input || input.parentElement.classList.contains('password-field-wrap')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'password-field-wrap';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'password-toggle-btn';
+    toggleBtn.setAttribute('aria-label', 'Tampilkan atau sembunyikan password');
+    toggleBtn.title = 'Lihat / Sembunyikan Password';
+    toggleBtn.innerHTML = HEROICONS.eye;
+
+    toggleBtn.addEventListener('click', function() {
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      toggleBtn.innerHTML = isPass ? HEROICONS.eyeSlash : HEROICONS.eye;
+      input.focus();
+    });
+
+    wrapper.appendChild(toggleBtn);
+  });
+}
+
+// ================= 4. HELPER KEAMANAN (ANTI-XSS, HASH SHA-256), DEBOUNCE & SORTING =================
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -69,6 +528,63 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+async function computeSha256Hex(text) {
+  if (window.crypto && window.crypto.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  // Fallback sederhana jika bukan secure context
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'fallback_' + Math.abs(hash);
+}
+
+async function cacheAuthorizedCredentialHash(username, password, role, token) {
+  try {
+    const hash = await computeSha256Hex(`${username.toLowerCase()}::${password}`);
+    const cacheMap = JSON.parse(localStorage.getItem(OFFLINE_AUTH_CACHE_KEY) || '{}');
+    cacheMap[username.toLowerCase()] = {
+      hash,
+      username,
+      role,
+      token,
+      updatedAt: Date.now()
+    };
+    localStorage.setItem(OFFLINE_AUTH_CACHE_KEY, JSON.stringify(cacheMap));
+  } catch (e) {
+    console.warn('Gagal menyimpan cache otentikasi offline:', e);
+  }
+}
+
+async function verifyOfflineCredentialHash(username, password) {
+  try {
+    const cacheMap = JSON.parse(localStorage.getItem(OFFLINE_AUTH_CACHE_KEY) || '{}');
+    const entry = cacheMap[username.toLowerCase()];
+    if (!entry) return null;
+    const candidateHash = await computeSha256Hex(`${username.toLowerCase()}::${password}`);
+    if (candidateHash === entry.hash) {
+      return entry;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function sanitizeUsersList(rawUsers) {
+  if (!Array.isArray(rawUsers)) return [];
+  return rawUsers.map(u => ({
+    id: Number(u.id),
+    username: String(u.username || '').trim(),
+    role: String(u.role || 'inspector').trim()
+  }));
 }
 
 function debounce(fn, delay = 250) {
@@ -252,14 +768,16 @@ function updateNetworkStatusUI(isOnline) {
 
 window.addEventListener('offline', function() {
   updateNetworkStatusUI(false);
+  showToast('Koneksi terputus. Beralih ke penyimpanan Offline (IndexedDB).', 'warning');
 });
 
 window.addEventListener('online', function() {
   updateNetworkStatusUI(true);
+  showToast('Koneksi kembali terhubung. Menyinkronkan data...', 'info');
   syncFromCloud();
 });
 
-// ================= SINKRONISASI CLOUD, LOKAL & ANTREAN OFFLINE =================
+// ================= SINKRONISASI CLOUD, INDEXEDDB & ANTREAN OFFLINE =================
 function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
@@ -273,30 +791,67 @@ function showCloudLoading(show, text) {
   else el.classList.add('hidden');
 }
 
-function saveToLocalStorage() {
+async function saveToLocalStorage() {
+  users = sanitizeUsersList(users);
+
+  // 1. Simpan state penuh (termasuk foto Base64 offline) ke IndexedDB (Tanpa limit 5MB)
+  await idbSetState(LOCAL_STORAGE_KEY, {
+    products,
+    users,
+    masterNcrList,
+    productFollowUps
+  });
+
+  // 2. Simpan versi ringan (tanpa Base64 berat) ke localStorage sebagai cadangan cepat
   try {
     const lightMasterList = (masterNcrList || []).map(item => ({
       ...item,
-      gdriveFileData: item.gdriveLink ? '' : (item.gdriveFileData || '')
+      gdriveFileData: '',
+      masterPhotos: (item.masterPhotos || []).filter(p => !String(p).startsWith('data:'))
     }));
+    const lightFollowUps = {};
+    Object.keys(productFollowUps || {}).forEach(k => {
+      const f = productFollowUps[k];
+      if (!f) return;
+      lightFollowUps[k] = {
+        ...f,
+        photos: (f.photos || []).filter(p => !String(p).startsWith('data:'))
+      };
+    });
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
       products,
       users,
       masterNcrList: lightMasterList,
-      productFollowUps
+      productFollowUps: lightFollowUps
     }));
   } catch (e) {
-    console.warn('LocalStorage penuh:', e);
+    console.warn('Cache metadata localStorage penuh, data utama tetap aman di IndexedDB:', e);
   }
 }
 
-function loadFromLocalStorage() {
+async function loadFromLocalStorage() {
+  // Prioritaskan membaca dari IndexedDB
+  const idbData = await idbGetState(LOCAL_STORAGE_KEY);
+  if (idbData && typeof idbData === 'object') {
+    if (Array.isArray(idbData.products)) products = idbData.products;
+    if (Array.isArray(idbData.users) && idbData.users.length > 0) users = sanitizeUsersList(idbData.users);
+    if (Array.isArray(idbData.masterNcrList)) {
+      masterNcrList = idbData.masterNcrList;
+      normalizeAllMasterNcr();
+    }
+    if (idbData.productFollowUps && typeof idbData.productFollowUps === 'object') {
+      productFollowUps = idbData.productFollowUps;
+    }
+    return;
+  }
+
+  // Fallback ke localStorage jika IndexedDB kosong
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed.products)) products = parsed.products;
-    if (Array.isArray(parsed.users) && parsed.users.length > 0) users = parsed.users;
+    if (Array.isArray(parsed.users) && parsed.users.length > 0) users = sanitizeUsersList(parsed.users);
     if (Array.isArray(parsed.masterNcrList)) {
       masterNcrList = parsed.masterNcrList;
       normalizeAllMasterNcr();
@@ -309,31 +864,21 @@ function loadFromLocalStorage() {
   }
 }
 
-function saveToOfflineQueue(payload) {
-  try {
-    let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-    queue.push({
-      id: Date.now(),
-      payload: payload,
-      timestamp: new Date().toISOString()
-    });
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-  } catch (e) {
-    console.error('Gagal menyimpan ke antrean offline:', e);
-  }
+async function saveToOfflineQueue(payload) {
+  const queue = await idbGetOfflineQueue();
+  queue.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    payload: payload,
+    timestamp: new Date().toISOString()
+  });
+  await idbReplaceOfflineQueue(queue);
 }
 
 async function processOfflineQueue() {
   if (!isCloudConfigured()) return;
 
-  let queue = [];
-  try {
-    queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-  } catch (e) {
-    return;
-  }
-
-  if (queue.length === 0) return;
+  const queue = await idbGetOfflineQueue();
+  if (!queue || queue.length === 0) return;
 
   showCloudLoading(true, `Menyinkronkan ${queue.length} data tertunda...`);
 
@@ -352,10 +897,10 @@ async function processOfflineQueue() {
       const json = await res.json();
 
       if (json.status === 'success') {
-        // Berhasil dikirim, dikeluarkan dari antrean
+        // Berhasil dikirim
       } else if (json.status === 'auth_error') {
         remainingQueue = remainingQueue.concat(queue.slice(i));
-        alert(json.message || 'Sesi Anda telah berakhir. Sinkronisasi tertunda.');
+        showToast(json.message || 'Sesi Anda telah berakhir. Sinkronisasi tertunda.', 'error');
         document.getElementById('btn-logout').click();
         break;
       } else {
@@ -367,7 +912,10 @@ async function processOfflineQueue() {
     }
   }
 
-  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+  await idbReplaceOfflineQueue(remainingQueue);
+  if (remainingQueue.length === 0 && queue.length > 0) {
+    showToast(`${queue.length} data offline berhasil disinkronkan ke Cloud.`, 'success');
+  }
 }
 
 function mergeCloudMasterWithLocalExtras(cloudList) {
@@ -377,8 +925,33 @@ function mergeCloudMasterWithLocalExtras(cloudList) {
   }));
 }
 
+function mergeCloudFollowUpsWithLocalAudit(cloudFollowUps) {
+  const merged = {};
+  const source = cloudFollowUps || {};
+  Object.keys(source).forEach(key => {
+    const localPrev = productFollowUps[key];
+    const cloudEntry = source[key];
+    merged[key] = {
+      ...cloudEntry,
+      history: Array.isArray(cloudEntry.history)
+        ? cloudEntry.history
+        : (localPrev && Array.isArray(localPrev.history) ? localPrev.history : []),
+      reopenedBy: cloudEntry.reopenedBy || (localPrev ? localPrev.reopenedBy : ''),
+      reopenedAt: cloudEntry.reopenedAt || (localPrev ? localPrev.reopenedAt : ''),
+      reopenReason: cloudEntry.reopenReason || (localPrev ? localPrev.reopenReason : '')
+    };
+  });
+  // Pertahankan entri yang di-Reopen secara lokal (status OPEN tapi punya riwayat audit)
+  Object.keys(productFollowUps || {}).forEach(key => {
+    if (!merged[key] && productFollowUps[key] && Array.isArray(productFollowUps[key].history) && productFollowUps[key].history.length > 0) {
+      merged[key] = productFollowUps[key];
+    }
+  });
+  return merged;
+}
+
 async function syncFromCloud() {
-  loadFromLocalStorage();
+  await loadFromLocalStorage();
 
   if (!isCloudConfigured()) {
     updateNetworkStatusUI(false);
@@ -394,15 +967,16 @@ async function syncFromCloud() {
     if (json.status === 'success' && json.data) {
       updateNetworkStatusUI(true);
       products = json.data.products || [];
-      users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
+      users = (json.data.users && json.data.users.length > 0) ? sanitizeUsersList(json.data.users) : users;
       masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
-      productFollowUps = json.data.productFollowUps || {};
+      productFollowUps = mergeCloudFollowUpsWithLocalAudit(json.data.productFollowUps || {});
+
       if (products.length > 0 && !products.some(p => p.name === selectedProduct)) {
         selectedProduct = products[products.length - 1].name;
       } else if (products.length === 0) {
         selectedProduct = '';
       }
-      saveToLocalStorage();
+      await saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
     }
@@ -415,7 +989,7 @@ async function syncFromCloud() {
 }
 
 async function sendActionToBackend(payload, loadingText) {
-  saveToLocalStorage();
+  await saveToLocalStorage();
   if (!isCloudConfigured()) return;
 
   const fullPayload = {
@@ -436,25 +1010,26 @@ async function sendActionToBackend(payload, loadingText) {
     if (json.status === 'success' && json.data) {
       updateNetworkStatusUI(true);
       products = json.data.products || [];
-      users = (json.data.users && json.data.users.length > 0) ? json.data.users : users;
+      users = (json.data.users && json.data.users.length > 0) ? sanitizeUsersList(json.data.users) : users;
       masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
-      productFollowUps = json.data.productFollowUps || {};
-      saveToLocalStorage();
+      productFollowUps = mergeCloudFollowUpsWithLocalAudit(json.data.productFollowUps || {});
+      await saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
 
-      processOfflineQueue();
+      showToast('Data berhasil disimpan ke Cloud.', 'success');
+      await processOfflineQueue();
     } else if (json.status === 'auth_error') {
-      alert(json.message || 'Sesi Anda telah berakhir. Silakan login kembali.');
+      showToast(json.message || 'Sesi Anda telah berakhir. Silakan login kembali.', 'error');
       document.getElementById('btn-logout').click();
     } else if (json.status === 'error') {
-      alert('Error Server: ' + json.message);
+      await showAlert('Error Server: ' + json.message, 'Gagal Menyimpan');
       await syncFromCloud();
     }
   } catch (err) {
     updateNetworkStatusUI(false);
-    saveToOfflineQueue(fullPayload);
-    alert('Jaringan terputus. Data Anda tersimpan di perangkat dan akan disinkronkan nanti.');
+    await saveToOfflineQueue(fullPayload);
+    showToast('Jaringan terputus. Data disimpan di IndexedDB perangkat & akan disinkronkan saat online.', 'warning', 4500);
   } finally {
     showCloudLoading(false);
   }
@@ -492,15 +1067,14 @@ btnHamburger.addEventListener('click', toggleSidebar);
 sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
 
-
-// ================= FUNGSI LOGIN (DENGAN DETEKSI ERROR DEPLOY & FALLBACK) =================
+// ================= FUNGSI LOGIN (FIX #3: TANPA HARDCODED BACKDOOR) =================
 document.getElementById('form-login').addEventListener('submit', async function(e) {
   e.preventDefault();
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value.trim();
 
   if (!isCloudConfigured()) {
-    alert('URL Server Cloud belum dikonfigurasi.');
+    await showAlert('URL Server Cloud belum dikonfigurasi.', 'Konfigurasi Server');
     return;
   }
 
@@ -517,9 +1091,12 @@ document.getElementById('form-login').addEventListener('submit', async function(
     });
     const json = await res.json();
 
-    // 1. DETEKSI JIKA GOOGLE APPS SCRIPT BELUM DI-DEPLOY SEBAGAI NEW VERSION
+    // Deteksi jika Google Apps Script belum di-deploy sebagai New Version
     if (json.status === 'success' && !json.user) {
-      alert("❌ INFO SISTEM:\nGoogle Apps Script belum diperbarui (Masih menggunakan versi lama).\n\nSolusi: Buka Apps Script > klik 'Deploy' > 'Manage deployments' > Edit (ikon pensil) > ubah Version menjadi 'New version' > klik Deploy.");
+      await showAlert(
+        "Google Apps Script belum diperbarui (Masih menggunakan versi lama).\n\nSolusi: Buka Apps Script > klik 'Deploy' > 'Manage deployments' > Edit (ikon pensil) > ubah Version menjadi 'New version' > klik Deploy.",
+        "Info Sistem Deployment"
+      );
       showCloudLoading(false);
       return;
     }
@@ -527,33 +1104,40 @@ document.getElementById('form-login').addEventListener('submit', async function(
     if (json.status === 'success' && json.user) {
       if (json.data) {
         products = json.data.products || [];
-        users = json.data.users || [];
+        users = sanitizeUsersList(json.data.users || []);
         masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
-        productFollowUps = json.data.productFollowUps || {};
-        saveToLocalStorage();
+        productFollowUps = mergeCloudFollowUpsWithLocalAudit(json.data.productFollowUps || {});
+        await saveToLocalStorage();
       }
+      // Simpan hash SHA-256 kredensial sah untuk mengizinkan akses saat offline di perangkat ini
+      await cacheAuthorizedCredentialHash(json.user.username, p, json.user.role, json.user.token);
+
       document.getElementById('form-login').reset();
+      showToast(`Selamat datang, ${json.user.username}!`, 'success');
       enterApp(json.user.role, json.user.username, json.user.token);
     } else {
-      alert(json.message || 'Username atau Password salah!');
+      showToast(json.message || 'Username atau Password salah!', 'error');
     }
   } catch (err) {
-    console.warn("Koneksi ke server terputus atau diblokir browser. Masuk mode darurat...", err);
-    
-    // 2. FALLBACK LOKAL DARURAT (Jika CORS diblokir file:/// atau offline total)
-    if (u === 'admin' && p === '123') {
-      alert("⚠️ Server tidak dapat dijangkau. Anda masuk ke Mode Lokal/Offline menggunakan sandi darurat.");
+    console.warn("Koneksi ke server terputus. Memeriksa cache kredensial offline...", err);
+
+    const cachedAuth = await verifyOfflineCredentialHash(u, p);
+    if (cachedAuth) {
+      showToast('Server tidak terjangkau. Masuk ke Mode Offline menggunakan sesi terenkripsi terakhir.', 'warning', 4500);
       document.getElementById('form-login').reset();
-      enterApp('admin', 'admin', 'offline_admin_token_' + Date.now());
+      enterApp(cachedAuth.role, cachedAuth.username, cachedAuth.token);
     } else {
-      alert("❌ Gagal terhubung ke server.\n\nPastikan internet menyala. Jika Anda membuka file ini dengan klik 2x (file:///), browser akan memblokir sistem login. Harap gunakan Live Server/Hosting.");
+      await showAlert(
+        "Tidak dapat terhubung ke server dan akun belum pernah terverifikasi di perangkat ini.\n\nPastikan koneksi internet aktif dan buka aplikasi melalui HTTP/HTTPS Server (bukan klik 2x file:/// secara langsung).",
+        "Gagal Terhubung ke Server"
+      );
     }
   } finally {
     showCloudLoading(false);
   }
 });
 
-// LOGOUT: BERSIHKAN LOCALSTORAGE
+// LOGOUT: BERSIHKAN SESI AKTIF
 document.getElementById('btn-logout').addEventListener('click', function() {
   currentRole = null;
   currentUsername = '';
@@ -566,6 +1150,7 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
+  showToast('Anda telah keluar dari sesi.', 'info');
 });
 
 ['history', 'ncr', 'users'].forEach(tabName => {
@@ -606,7 +1191,6 @@ document.getElementById('sort-unit').addEventListener('change', function(e) {
   renderNcrTable();
 });
 
-// Input pencarian unit dengan debounce
 document.getElementById('search-ncr').addEventListener('input', debounce(function(e) {
   searchQuery = e.target.value.toLowerCase().trim();
   renderNcrTable();
@@ -626,7 +1210,6 @@ document.getElementById('sort-history').addEventListener('change', function(e) {
   renderHistoryView();
 });
 
-// Input pencarian history dengan debounce
 document.getElementById('search-history').addEventListener('input', debounce(function(e) {
   historySearchQuery = e.target.value.toLowerCase().trim();
   renderHistoryView();
@@ -700,7 +1283,6 @@ function enterApp(role, username, token) {
   renderProductDropdown();
   renderAllViews();
 
-  // Sinkronisasi cloud setiap membuka sesi
   syncFromCloud();
 }
 
@@ -738,9 +1320,9 @@ function renderProductDropdown() {
     if (a.status !== b.status) {
       return a.status === 'active' ? -1 : 1;
     }
-    return String(a.name || '').localeCompare(String(b.name || ''), undefined, { 
-      numeric: true, 
-      sensitivity: 'base' 
+    return String(a.name || '').localeCompare(String(b.name || ''), undefined, {
+      numeric: true,
+      sensitivity: 'base'
     });
   });
 
@@ -796,7 +1378,8 @@ async function toggleProductStatus() {
   const prodObj = products.find(p => p.name === selectedProduct);
   if (!prodObj) return;
   if (prodObj.status === 'active') {
-    if (!confirm('Arsipkan unit "' + selectedProduct + '"?')) return;
+    const ok = await showConfirm(`Arsipkan unit "${selectedProduct}"?`, 'Arsipkan Unit', 'amber', 'Ya, Arsipkan');
+    if (!ok) return;
     prodObj.status = 'archived';
   } else {
     prodObj.status = 'active';
@@ -816,9 +1399,13 @@ async function deleteSelectedProduct() {
   if (!prodObj) return;
 
   const targetName = prodObj.name;
-  if (!confirm('Hapus unit "' + targetName + '"? Data NCR tetap aman.')) {
-    return;
-  }
+  const ok = await showConfirm(
+    `Hapus unit "${targetName}" beserta status pengecekannya?\nMaster NCR pada unit lain tetap aman.`,
+    'Hapus Unit Produk',
+    'rose',
+    'Ya, Hapus Unit'
+  );
+  if (!ok) return;
 
   products = products.filter(p => p.name !== targetName);
 
@@ -852,7 +1439,7 @@ document.getElementById('form-add-product').addEventListener('submit', async fun
   if (!name) return;
 
   if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    alert('Nama unit sudah ada!');
+    showToast('Nama unit sudah terdaftar!', 'error');
     return;
   }
 
@@ -895,16 +1482,17 @@ function getProductIndex(prodName) {
   return products.findIndex(p => p.name === prodName);
 }
 
+// THUMBNAIL DENGAN DUKUNGAN KEYBOARD ACCESSIBILITY (FIX #13)
 function buildThumbnailsHtml(photos, prodIdx, ncrId) {
   if (!photos || photos.length === 0) return '';
   const maxVisible = 3;
   let html = '<div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + idx + ')">';
+    html += `<img src="${escapeHtml(src)}" class="thumb-img" role="button" tabindex="0" alt="Bukti Foto ${idx + 1}" onclick="openLightboxByIndex(${prodIdx}, ${ncrId}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightboxByIndex(${prodIdx}, ${ncrId}, ${idx});}">`;
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
-    html += '<div class="thumb-more-badge" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', ' + maxVisible + ')">+' + extra + '</div>';
+    html += `<div class="thumb-more-badge" role="button" tabindex="0" onclick="openLightboxByIndex(${prodIdx}, ${ncrId}, ${maxVisible})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightboxByIndex(${prodIdx}, ${ncrId}, ${maxVisible});}">+${extra}</div>`;
   }
   html += '</div>';
   return html;
@@ -916,11 +1504,11 @@ function buildMasterPhotosHtml(ncr) {
   const maxVisible = 3;
   let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    html += '<img src="' + escapeHtml(src) + '" class="thumb-img" onclick="openMasterLightbox(' + ncr.id + ', ' + idx + ')">';
+    html += `<img src="${escapeHtml(src)}" class="thumb-img" role="button" tabindex="0" alt="Foto Master ${idx + 1}" onclick="openMasterLightbox(${ncr.id}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMasterLightbox(${ncr.id}, ${idx});}">`;
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
-    html += '<div class="thumb-more-badge" onclick="openMasterLightbox(' + ncr.id + ', ' + maxVisible + ')">+' + extra + '</div>';
+    html += `<div class="thumb-more-badge" role="button" tabindex="0" onclick="openMasterLightbox(${ncr.id}, ${maxVisible})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMasterLightbox(${ncr.id}, ${maxVisible});}">+${extra}</div>`;
   }
   html += '</div></div>';
   return html;
@@ -939,7 +1527,93 @@ function buildGdriveDocHtml(ncr) {
   return '';
 }
 
-// ================= RENDER HISTORY NCR =================
+// HELPER AUDIT TRAIL RE-OPEN (FIX #12)
+function buildAuditHistoryButtonHtml(prodIdx, ncrId, followUp) {
+  const historyList = (followUp && Array.isArray(followUp.history)) ? followUp.history : [];
+  if (historyList.length === 0) return '';
+  return `<button type="button" class="audit-history-btn" onclick="openAuditHistoryModal(${prodIdx}, ${ncrId})">${HEROICONS.clockHistory} <span>Riwayat Re-Open (${historyList.length}x)</span></button>`;
+}
+
+window.openAuditHistoryModal = function(prodIdx, ncrId) {
+  injectAuditEnhancementStyles();
+  const prodObj = products[prodIdx];
+  if (!prodObj) return;
+  const prodName = prodObj.name;
+  const ncr = masterNcrList.find(i => i.id === ncrId);
+  const key = prodName + '_' + ncrId;
+  const followUp = productFollowUps[key];
+  const historyList = (followUp && Array.isArray(followUp.history)) ? followUp.history : [];
+  if (historyList.length === 0) return;
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'qc-dialog-backdrop';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+
+  let itemsHtml = '';
+  historyList.slice().reverse().forEach((entry, idx) => {
+    const entryNum = historyList.length - idx;
+    const photoCount = Array.isArray(entry.photos) ? entry.photos.length : 0;
+    itemsHtml += `
+      <div class="audit-log-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span class="badge badge-indigo">Verifikasi #${entryNum}</span>
+          <span style="font-size:11px; color:var(--slate-500);">${escapeHtml(entry.updatedAt || '-')}</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--slate-800); margin-top:5px;">
+          <b>Inspector:</b> ${escapeHtml(entry.inspector || '-')} • <b>Catatan:</b> "${escapeHtml(entry.note || '-')}"
+        </div>
+        <div style="font-size:11.5px; color:var(--amber-700); margin-top:4px; background:var(--amber-50); padding:4px 7px; border-radius:5px;">
+          <b>Di-Reopen oleh:</b> ${escapeHtml(entry.reopenedBy || 'Admin')} (${escapeHtml(entry.reopenedAt || '-')})<br>
+          <b>Alasan:</b> ${escapeHtml(entry.reopenReason || 'Verifikasi ulang')}
+        </div>
+        ${photoCount > 0 ? `<div style="margin-top:6px;"><button type="button" class="btn btn-outline btn-sm" onclick="openAuditPhotosLightbox(${prodIdx}, ${ncrId}, ${historyList.length - 1 - idx})">${HEROICONS.eye} <span>Lihat ${photoCount} Foto Bukti Lama</span></button></div>` : ''}
+      </div>
+    `;
+  });
+
+  backdrop.innerHTML = `
+    <div class="qc-dialog-box" style="max-width:480px;" onclick="event.stopPropagation()">
+      <div class="qc-dialog-header">Riwayat Audit & Re-Open — ${escapeHtml(prodName)}</div>
+      <div class="qc-dialog-body" style="max-height:65vh; overflow-y:auto;">
+        <div style="font-size:12px; color:var(--slate-500); margin-bottom:8px;">${escapeHtml(ncr ? ncr.no + ' — ' + ncr.title : '')}</div>
+        ${itemsHtml}
+      </div>
+      <div class="qc-dialog-footer">
+        <button type="button" id="qc-audit-close" class="btn btn-indigo">Tutup</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  const closeBtn = backdrop.querySelector('#qc-audit-close');
+  closeBtn.addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', () => backdrop.remove());
+  closeBtn.focus();
+};
+
+window.openAuditPhotosLightbox = function(prodIdx, ncrId, historyIdx) {
+  const prodObj = products[prodIdx];
+  if (!prodObj) return;
+  const key = prodObj.name + '_' + ncrId;
+  const followUp = productFollowUps[key];
+  if (!followUp || !Array.isArray(followUp.history) || !followUp.history[historyIdx]) return;
+  const entry = followUp.history[historyIdx];
+  const photos = Array.isArray(entry.photos) ? entry.photos : [];
+  if (photos.length === 0) return;
+
+  activeLightboxPhotos = photos;
+  activeLightboxIndex = 0;
+
+  document.getElementById('lightbox-title').textContent = `[ARSIP RE-OPEN] ${prodObj.name}`;
+  document.getElementById('lightbox-note').textContent = `Catatan Lama: "${entry.note || '-'}" (Alasan Re-Open: ${entry.reopenReason || '-'})`;
+  document.getElementById('lightbox-meta').textContent = `Inspector: ${entry.inspector || '-'} • ${entry.updatedAt || '-'}`;
+
+  updateLightboxSlide();
+  toggleModal('modal-lightbox', true);
+};
+
+// ================= RENDER HISTORY NCR (FIX #8 & #12) =================
 function renderHistoryView() {
   const tbody = document.getElementById('history-table-body');
   tbody.innerHTML = '';
@@ -969,7 +1643,7 @@ function renderHistoryView() {
   document.getElementById('hist-stat-rate').textContent = globalRate + '% Selesai';
 
   if (masterNcrList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada data NCR.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-table-cell" style="text-align:center; padding: 30px; color: var(--slate-400);">Belum ada data NCR.</td></tr>';
     return;
   }
 
@@ -1003,7 +1677,7 @@ function renderHistoryView() {
   const sortedHistory = sortNcrItems(filteredHistory, historySortBy);
 
   if (sortedHistory.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-table-cell" style="text-align:center; padding: 28px; color: var(--slate-400);">Data tidak ditemukan.</td></tr>';
     return;
   }
 
@@ -1030,8 +1704,9 @@ function renderHistoryView() {
           : '';
 
         const key = prodName + '_' + item.id;
-        const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '' };
+        const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '', history: [] };
         const photos = getPhotosArray(followUp);
+        const auditBtnHtml = buildAuditHistoryButtonHtml(prodIdx, item.id, followUp);
 
         if (followUp.status === 'CLOSED') {
           closedCount++;
@@ -1051,10 +1726,15 @@ function renderHistoryView() {
                   escapeHtml(followUp.note || 'OK') +
                 '</div>' +
                 driveLinkHtml +
+                (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
               '</div>' +
               buildThumbnailsHtml(photos, prodIdx, item.id) +
             '</div>';
         } else {
+          const reopenNotice = followUp.reopenReason
+            ? `<div class="reopen-audit-box"><b>Re-Open:</b> ${escapeHtml(followUp.reopenReason)}</div>`
+            : '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>';
+
           unitCardsHtml +=
             '<div class="history-unit-card is-open">' +
               '<div style="min-width:0; flex:1;">' +
@@ -1063,7 +1743,8 @@ function renderHistoryView() {
                   prodStateBadge +
                   '<span class="badge badge-open">OPEN</span>' +
                 '</div>' +
-                '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>' +
+                reopenNotice +
+                (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
               '</div>' +
             '</div>';
         }
@@ -1088,7 +1769,7 @@ function renderHistoryView() {
     const adminQuickEditHtml = currentRole === 'admin'
       ? '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">' +
           '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
-          '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteNcr(' + item.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button>' +
+          '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteNcr(' + item.id + ')">' + HEROICONS.trash + ' <span>Hapus Master</span></button>' +
         '</div>'
       : '';
 
@@ -1105,7 +1786,7 @@ function renderHistoryView() {
 
     const tr = document.createElement('tr');
     tr.innerHTML =
-      '<td>' +
+      '<td data-label="No. NCR & Tanggal">' +
         '<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
           '<span style="font-size:10.5px; font-weight:800; color:var(--indigo-600); background:var(--indigo-50); padding:2px 6px; border-radius:4px;">#' + displayOrderNum + '</span>' +
           globalStatusBadge +
@@ -1127,7 +1808,7 @@ function renderHistoryView() {
   });
 }
 
-// ================= RENDER MONITORING PER UNIT =================
+// ================= RENDER MONITORING PER UNIT (FIX #8, #11, #12) =================
 function renderNcrTable() {
   const tbody = document.getElementById('ncr-table-body');
   tbody.innerHTML = '';
@@ -1139,7 +1820,7 @@ function renderNcrTable() {
     document.getElementById('stat-closed-ncr').textContent = 0;
     document.getElementById('stat-progress-pct').textContent = '0% Selesai';
     tbody.innerHTML =
-      '<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--slate-500);">' +
+      '<tr><td colspan="7" class="empty-table-cell" style="text-align:center; padding: 30px; color: var(--slate-500);">' +
         'Belum ada unit dipilih. Anda tetap bisa langsung klik <b>Tambah NCR</b> atau buat <b>Unit Baru</b>.' +
       '</td></tr>';
     return;
@@ -1178,7 +1859,7 @@ function renderNcrTable() {
   const sortedNcr = sortNcrItems(displayedNcr, unitSortBy);
 
   if (sortedNcr.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + escapeHtml(selectedProduct) + '</b>.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-table-cell" style="text-align:center; padding: 28px; color: var(--slate-400);">Tidak ada NCR pada unit <b>' + escapeHtml(selectedProduct) + '</b>.</td></tr>';
     return;
   }
 
@@ -1186,14 +1867,20 @@ function renderNcrTable() {
 
   sortedNcr.forEach(item => {
     const key = selectedProduct + '_' + item.id;
-    const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '' };
+    const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '', history: [] };
     const photos = getPhotosArray(followUp);
     const isClosed = followUp.status === 'CLOSED';
+    const auditBtnHtml = buildAuditHistoryButtonHtml(currentProdIdx, item.id, followUp);
+
+    const reopenInfoHtml = (!isClosed && followUp.reopenReason)
+      ? `<div class="reopen-audit-box"><b>Di-Reopen:</b> ${escapeHtml(followUp.reopenReason)}</div>`
+      : '';
 
     const statusBadge = !isClosed
-      ? '<span class="badge badge-open">OPEN</span>'
+      ? '<span class="badge badge-open">OPEN</span>' + reopenInfoHtml + (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '')
       : '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
-        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + escapeHtml(followUp.updatedAt) + '</div>' : '');
+        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + escapeHtml(followUp.updatedAt) + '</div>' : '') +
+        (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
 
     const driveFolderBtn = followUp.folderUrl
       ? '<div><a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a></div>'
@@ -1204,7 +1891,7 @@ function renderNcrTable() {
           buildThumbnailsHtml(photos, currentProdIdx, item.id) +
           '<div style="flex:1; min-width:110px;">' +
             '<div style="font-size:12.5px; color:var(--slate-700); font-weight:600;">' + escapeHtml(followUp.note) + '</div>' +
-            '<div style="font-size:11.5px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:3px;" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">Galeri (' + photos.length + ') &rarr;</div>' +
+            '<div style="font-size:11.5px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:3px;" role="button" tabindex="0" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0);}">Galeri (' + photos.length + ') &rarr;</div>' +
             driveFolderBtn +
           '</div>' +
         '</div>'
@@ -1212,6 +1899,7 @@ function renderNcrTable() {
 
     const targetBadgeHtml = '<span class="badge badge-indigo">' + item.assignedProducts.length + ' Unit</span>';
 
+    // FIX #11: Di Monitoring Unit, tombol "Hapus" diganti menjadi "Lepas Unit" agar tidak menghapus Master NCR milik unit lain
     let actionBtn = '';
     if (currentRole === 'admin') {
       actionBtn =
@@ -1219,9 +1907,9 @@ function renderNcrTable() {
           (isClosed
             ? '<button type="button" class="btn btn-emerald-soft btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' + HEROICONS.eye + ' <span>Bukti</span></button>' +
               '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
-            : '') +
-          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
-          '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteNcr(' + item.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button>' +
+            : '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' + HEROICONS.camera + ' <span>Verifikasi</span></button>') +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')" title="Edit Master NCR">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
+          '<button type="button" class="btn btn-rose-soft btn-sm" onclick="unassignNcrFromUnit(' + item.id + ')" title="Lepas NCR hanya dari unit ini">' + HEROICONS.unlink + ' <span>Lepas Unit</span></button>' +
         '</div>';
     } else {
       if (!isClosed) {
@@ -1243,7 +1931,7 @@ function renderNcrTable() {
 
     const tr = document.createElement('tr');
     tr.innerHTML =
-      '<td>' +
+      '<td data-label="No. NCR & Tanggal">' +
         '<div style="font-weight:800; font-size:14.5px; color:var(--slate-900);">' + escapeHtml(item.no) + '</div>' +
         '<div style="font-size:12px; color:var(--slate-500); margin-top:2px;">' + HEROICONS.calendar + escapeHtml(item.date) + '</div>' +
         buildGdriveDocHtml(item) +
@@ -1259,26 +1947,101 @@ function renderNcrTable() {
       '<td data-label="Cakupan">' + targetBadgeHtml + '</td>' +
       '<td data-label="Status">' + statusBadge + '</td>' +
       '<td data-label="Bukti Inspector">' + photoCell + '</td>' +
-      '<td class="text-right">' + actionBtn + '</td>';
+      '<td data-label="Aksi" class="text-right">' + actionBtn + '</td>';
     tbody.appendChild(tr);
   });
 }
 
-window.reopenUnitNcr = async function(ncrId) {
-  if (confirm('Ubah status kembali menjadi OPEN pada "' + selectedProduct + '"?')) {
-    const key = selectedProduct + '_' + ncrId;
-    delete productFollowUps[key];
-    renderAllViews();
+// FIX #11: LEPAS NCR DARI UNIT SAAT INI TANPA MENGHAPUS MASTER NCR GLOBAL
+window.unassignNcrFromUnit = async function(ncrId) {
+  const ncr = masterNcrList.find(item => item.id === ncrId);
+  if (!ncr || !selectedProduct) return;
 
-    await sendActionToBackend({
-      action: 'REOPEN_NCR',
-      productName: selectedProduct,
-      ncrId: ncrId
-    }, 'Mereset status...');
-  }
+  const ok = await showConfirm(
+    `Lepaskan NCR "${ncr.no}" dari unit "${selectedProduct}"?\n\nData NCR pada unit lain dan di Master History tetap tersimpan.`,
+    'Lepas NCR dari Unit',
+    'amber',
+    'Ya, Lepas dari Unit Ini'
+  );
+  if (!ok) return;
+
+  ncr.assignedProducts = (ncr.assignedProducts || []).filter(p => p !== selectedProduct);
+  const key = selectedProduct + '_' + ncrId;
+  delete productFollowUps[key];
+
+  renderAllViews();
+
+  await sendActionToBackend({
+    action: 'EDIT_NCR',
+    ...ncr,
+    gdriveFileData: ''
+  }, `Melepas NCR dari ${selectedProduct}...`);
 };
 
-// ================= LIGHTBOX GALERI FOTO =================
+// FIX #12: RE-OPEN NCR MENYIMPAN RIWAYAT SEBELUMNYA (AUDIT TRAIL)
+window.reopenUnitNcr = async function(ncrId) {
+  const reason = await showDialogModal({
+    title: `Re-Open NCR — ${selectedProduct}`,
+    message: `Ubah status kembali menjadi OPEN pada "${selectedProduct}"?\nBukti foto & catatan sebelumnya tetap tersimpan di Riwayat Audit.\n\nMasukkan alasan Re-Open:`,
+    confirmText: 'Re-Open NCR',
+    cancelText: 'Batal',
+    showCancel: true,
+    variant: 'amber',
+    showInput: true,
+    inputPlaceholder: 'Contoh: Baut masih kurang kencang / foto kurang jelas'
+  });
+
+  if (reason === null) return;
+  const finalReason = reason || 'Perlu verifikasi ulang oleh Inspector';
+
+  const key = selectedProduct + '_' + ncrId;
+  const prevFollowUp = productFollowUps[key];
+  const now = new Date();
+  const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  const prevHistory = (prevFollowUp && Array.isArray(prevFollowUp.history)) ? [...prevFollowUp.history] : [];
+  if (prevFollowUp && prevFollowUp.status === 'CLOSED') {
+    prevHistory.push({
+      status: 'CLOSED',
+      photos: getPhotosArray(prevFollowUp),
+      note: prevFollowUp.note || '',
+      inspector: prevFollowUp.inspector || '',
+      updatedAt: prevFollowUp.updatedAt || '',
+      folderUrl: prevFollowUp.folderUrl || '',
+      reopenedBy: currentUsername,
+      reopenedAt: timeStr,
+      reopenReason: finalReason
+    });
+  }
+
+  productFollowUps[key] = {
+    status: 'OPEN',
+    photos: [],
+    note: '',
+    inspector: '',
+    updatedAt: timeStr,
+    reopenedBy: currentUsername,
+    reopenedAt: timeStr,
+    reopenReason: finalReason,
+    folderUrl: prevFollowUp ? (prevFollowUp.folderUrl || '') : '',
+    history: prevHistory
+  };
+
+  renderAllViews();
+
+  await sendActionToBackend({
+    action: 'REOPEN_NCR',
+    productName: selectedProduct,
+    ncrId: ncrId,
+    reopenReason: finalReason,
+    reopenedBy: currentUsername,
+    reopenedAt: timeStr,
+    history: prevHistory
+  }, 'Mereset status & menyimpan audit trail...');
+};
+
+// ================= LIGHTBOX GALERI FOTO & KEYBOARD NAV (FIX #13) =================
 window.openLightboxByIndex = function(prodIdx, ncrId, startPhotoIndex) {
   const prodObj = products[prodIdx];
   if (!prodObj) return;
@@ -1349,8 +2112,17 @@ function updateLightboxSlide() {
     activeLightboxPhotos.forEach((src, idx) => {
       const img = document.createElement('img');
       img.src = src;
+      img.alt = `Thumbnail ${idx + 1}`;
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
       img.className = 'lightbox-thumb-item' + (idx === activeLightboxIndex ? ' active' : '');
       img.onclick = function() { selectLightboxSlide(idx); };
+      img.onkeydown = function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectLightboxSlide(idx);
+        }
+      };
       thumbsContainer.appendChild(img);
     });
   }
@@ -1386,7 +2158,6 @@ function renderProductChecklistHtml(containerId, inputName, selectedProdArray) {
     return;
   }
 
-  // Urutkan checklist unit secara natural A-Z
   const sortedProducts = [...products].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
     return String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' });
@@ -1454,7 +2225,7 @@ document.getElementById('ncr-gdrive-file').addEventListener('change', async func
   const file = this.files[0];
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    alert(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`);
+    showToast(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`, 'error');
     this.value = '';
     return;
   }
@@ -1464,7 +2235,7 @@ document.getElementById('ncr-gdrive-file').addEventListener('change', async func
     document.getElementById('ncr-gdrive-file-info').textContent = file.name;
     document.getElementById('btn-clear-ncr-file').classList.remove('hidden');
   } catch (err) {
-    alert('Gagal membaca file.');
+    showToast('Gagal membaca file dokumen.', 'error');
   }
 });
 
@@ -1480,7 +2251,7 @@ document.getElementById('edit-ncr-gdrive-file').addEventListener('change', async
   const file = this.files[0];
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    alert(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`);
+    showToast(`Ukuran file "${file.name}" terlalu besar! Maksimal ${MAX_FILE_SIZE_MB} MB.`, 'error');
     this.value = '';
     return;
   }
@@ -1490,7 +2261,7 @@ document.getElementById('edit-ncr-gdrive-file').addEventListener('change', async
     document.getElementById('edit-ncr-gdrive-file-info').textContent = file.name;
     document.getElementById('btn-clear-edit-ncr-file').classList.remove('hidden');
   } catch (err) {
-    alert('Gagal membaca file.');
+    showToast('Gagal membaca file dokumen.', 'error');
   }
 });
 
@@ -1502,18 +2273,23 @@ document.getElementById('btn-clear-edit-ncr-file').addEventListener('click', fun
   this.classList.add('hidden');
 });
 
+// FIX #7: PEMROSESAN FOTO SEKUENSIAL UNTUK MENCEGAH CRASH MEMORI (RAM SPIKE)
 async function handleMasterPhotoSelection(fileInputEl, mode) {
   const files = Array.from(fileInputEl.files || []);
   if (!files.length) return;
+  const counter = document.getElementById(mode === 'add' ? 'master-photo-counter' : 'edit-master-photo-counter');
+
   try {
-    const compressedList = await Promise.all(files.map(f => compressAndResizeImage(f)));
-    compressedList.forEach(item => {
-      if (mode === 'add') tempMasterPhotosAdd.push(item.dataUrl);
-      else tempMasterPhotosEdit.push(item.dataUrl);
-    });
+    for (let i = 0; i < files.length; i++) {
+      if (counter) counter.textContent = `Memproses ${i + 1}/${files.length}...`;
+      const compressed = await compressAndResizeImage(files[i]);
+      if (mode === 'add') tempMasterPhotosAdd.push(compressed.dataUrl);
+      else tempMasterPhotosEdit.push(compressed.dataUrl);
+    }
     renderMasterPhotoPreview(mode);
   } catch (err) {
-    alert('Gagal memproses foto.');
+    showToast('Gagal memproses sebagian foto.', 'error');
+    renderMasterPhotoPreview(mode);
   }
   fileInputEl.value = '';
 }
@@ -1531,35 +2307,41 @@ document.getElementById('edit-master-foto-gallery').addEventListener('change', f
   handleMasterPhotoSelection(this, 'edit');
 });
 
+// FIX #9: PENANGANAN CLIPBOARD PASTE AMAN DARI NULL/UNDEFINED
 async function handlePasteImageEvent(e, mode) {
-  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-  let hasImage = false;
+  const clipboardData = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+  if (!clipboardData || !clipboardData.items) return;
+
+  const items = Array.from(clipboardData.items);
+  const imageFiles = [];
   for (let i = 0; i < items.length; i++) {
-    if (items[i].type.indexOf('image') !== -1) {
+    if (items[i] && items[i].type && items[i].type.indexOf('image') !== -1) {
       const blob = items[i].getAsFile();
-      if (blob) {
-        hasImage = true;
-        try {
-          const compressed = await compressAndResizeImage(blob);
-          if (mode === 'add') {
-            tempMasterPhotosAdd.push(compressed.dataUrl);
-            renderMasterPhotoPreview('add');
-          } else if (mode === 'edit') {
-            tempMasterPhotosEdit.push(compressed.dataUrl);
-            renderMasterPhotoPreview('edit');
-          } else if (mode === 'followup') {
-            tempImageList.push(compressed);
-            renderUploadPreviewGrid();
-          }
-        } catch (err) {
-          console.warn('Gagal mem-paste gambar:', err);
-        }
-      }
+      if (blob) imageFiles.push(blob);
     }
   }
-  if (hasImage) {
-    e.preventDefault();
+
+  if (imageFiles.length === 0) return;
+  e.preventDefault();
+
+  for (let i = 0; i < imageFiles.length; i++) {
+    try {
+      const compressed = await compressAndResizeImage(imageFiles[i]);
+      if (mode === 'add') {
+        tempMasterPhotosAdd.push(compressed.dataUrl);
+        renderMasterPhotoPreview('add');
+      } else if (mode === 'edit') {
+        tempMasterPhotosEdit.push(compressed.dataUrl);
+        renderMasterPhotoPreview('edit');
+      } else if (mode === 'followup') {
+        tempImageList.push(compressed);
+        renderUploadPreviewGrid();
+      }
+    } catch (err) {
+      console.warn('Gagal mem-paste gambar:', err);
+    }
   }
+  showToast(`${imageFiles.length} foto berhasil ditempel dari clipboard.`, 'info', 2200);
 }
 
 document.getElementById('form-add-ncr').addEventListener('paste', function(e) {
@@ -1598,7 +2380,7 @@ function renderMasterPhotoPreview(mode) {
     div.className = 'preview-item';
     div.innerHTML =
       '<img src="' + escapeHtml(src) + '" alt="Foto ' + (idx + 1) + '">' +
-      '<button type="button" class="preview-remove-btn" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')">✕</button>';
+      '<button type="button" class="preview-remove-btn" aria-label="Hapus foto" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
 }
@@ -1608,7 +2390,7 @@ document.getElementById('form-add-ncr').addEventListener('submit', async functio
   const ncrNoInput = document.getElementById('ncr-no').value.trim();
 
   if (masterNcrList.some(item => item.no.toLowerCase() === ncrNoInput.toLowerCase())) {
-    alert('Nomor NCR "' + ncrNoInput + '" sudah terdaftar!');
+    showToast(`Nomor NCR "${ncrNoInput}" sudah terdaftar!`, 'error');
     return;
   }
 
@@ -1685,7 +2467,7 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
   const ncrNoInput = document.getElementById('edit-ncr-no').value.trim();
 
   if (masterNcrList.some(item => item.id !== ncrId && item.no.toLowerCase() === ncrNoInput.toLowerCase())) {
-    alert('Nomor NCR "' + ncrNoInput + '" sudah digunakan oleh NCR lain!');
+    showToast(`Nomor NCR "${ncrNoInput}" sudah digunakan oleh NCR lain!`, 'error');
     return;
   }
 
@@ -1726,20 +2508,28 @@ document.getElementById('form-edit-ncr').addEventListener('submit', async functi
 });
 
 window.deleteNcr = async function(id) {
-  if (confirm('Hapus NCR ini beserta riwayat pengecekannya?')) {
-    masterNcrList = masterNcrList.filter(item => item.id !== id);
-    Object.keys(productFollowUps).forEach(key => {
-      if (key.endsWith('_' + id)) {
-        delete productFollowUps[key];
-      }
-    });
-    renderAllViews();
+  const target = masterNcrList.find(item => item.id === id);
+  const label = target ? `${target.no} (${target.title})` : `ID ${id}`;
+  const ok = await showConfirm(
+    `Hapus Master NCR "${label}" secara permanen beserta seluruh riwayat pengecekannya di SEMUA unit?`,
+    'Hapus Master NCR Global',
+    'rose',
+    'Ya, Hapus Permanen'
+  );
+  if (!ok) return;
 
-    await sendActionToBackend({
-      action: 'DELETE_NCR',
-      id: id
-    }, 'Menghapus NCR...');
-  }
+  masterNcrList = masterNcrList.filter(item => item.id !== id);
+  Object.keys(productFollowUps).forEach(key => {
+    if (key.endsWith('_' + id)) {
+      delete productFollowUps[key];
+    }
+  });
+  renderAllViews();
+
+  await sendActionToBackend({
+    action: 'DELETE_NCR',
+    id: id
+  }, 'Menghapus Master NCR...');
 };
 
 function switchTab(tab) {
@@ -1789,13 +2579,15 @@ function switchTab(tab) {
   }
 }
 
-// ================= UPLOAD BUKTI INSPECTOR =================
+// ================= UPLOAD BUKTI INSPECTOR (FIX #7: HEMAT RAM DENGAN OBJECT URL) =================
 function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAGE_JPEG_QUALITY) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      const img = new Image();
-      img.onload = function() {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = function() {
+      URL.revokeObjectURL(objectUrl);
+      try {
         let width = img.width;
         let height = img.height;
 
@@ -1819,6 +2611,10 @@ function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAG
         ctx.drawImage(img, 0, 0, width, height);
 
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Bebaskan memori kanvas segera setelah kompresi selesai
+        canvas.width = 0;
+        canvas.height = 0;
+
         const base64Length = compressedDataUrl.split(',')[1].length;
         const sizeInKb = Math.round((base64Length * 3) / 4 / 1024);
 
@@ -1827,12 +2623,17 @@ function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAG
           sizeKb: sizeInKb,
           originalName: file.name || 'image.jpg'
         });
-      };
-      img.onerror = reject;
-      img.src = event.target.result;
+      } catch (err) {
+        reject(err);
+      }
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+
+    img.onerror = function(err) {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+
+    img.src = objectUrl;
   });
 }
 
@@ -1849,22 +2650,21 @@ window.openUploadModal = function(id) {
 };
 
 async function handleSelectedFiles(fileListElement) {
-  const files = Array.from(fileListElement.files);
+  const files = Array.from(fileListElement.files || []);
   if (!files.length) return;
 
   const counter = document.getElementById('upload-photo-counter');
-  counter.textContent = 'Memproses...';
 
   try {
-    const compressedResults = await Promise.all(
-      files.map(file => compressAndResizeImage(file))
-    );
-    compressedResults.forEach(item => {
-      tempImageList.push(item);
-    });
+    for (let i = 0; i < files.length; i++) {
+      counter.textContent = `Memproses ${i + 1}/${files.length}...`;
+      const compressedItem = await compressAndResizeImage(files[i]);
+      tempImageList.push(compressedItem);
+    }
     renderUploadPreviewGrid();
   } catch (err) {
-    alert('Gagal memproses gambar.');
+    showToast('Gagal memproses gambar.', 'error');
+    renderUploadPreviewGrid();
   }
 
   fileListElement.value = '';
@@ -1907,7 +2707,7 @@ function renderUploadPreviewGrid() {
     div.innerHTML =
       '<img src="' + escapeHtml(src) + '" alt="Preview">' +
       '<span class="preview-kb-badge">' + escapeHtml(kbText) + '</span>' +
-      '<button type="button" class="preview-remove-btn" onclick="removeTempPhoto(' + idx + ')">✕</button>';
+      '<button type="button" class="preview-remove-btn" aria-label="Hapus foto" onclick="removeTempPhoto(' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
 }
@@ -1915,7 +2715,7 @@ function renderUploadPreviewGrid() {
 document.getElementById('form-upload-foto').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (tempImageList.length === 0) {
-    alert('Pilih minimal 1 foto bukti!');
+    showToast('Pilih minimal 1 foto bukti pemeriksaan!', 'warning');
     return;
   }
 
@@ -1923,6 +2723,8 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
   const ncr = masterNcrList.find(item => item.id === id);
   const note = document.getElementById('foto-note').value.trim();
   const key = selectedProduct + '_' + id;
+  const prevFollowUp = productFollowUps[key];
+  const existingHistory = (prevFollowUp && Array.isArray(prevFollowUp.history)) ? prevFollowUp.history : [];
 
   const now = new Date();
   const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
@@ -1936,7 +2738,8 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
     note: note,
     inspector: currentUsername,
     updatedAt: timeStr,
-    folderUrl: ''
+    folderUrl: prevFollowUp ? (prevFollowUp.folderUrl || '') : '',
+    history: existingHistory
   };
 
   toggleModal('modal-upload-foto', false);
@@ -1949,22 +2752,23 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
     ncrNo: ncr ? ncr.no : ('NCR-' + id),
     note: note,
     inspector: currentUsername,
-    photos: compressedDataUrls
+    photos: compressedDataUrls,
+    history: existingHistory
   }, 'Mengunggah ' + compressedDataUrls.length + ' foto...');
 });
 
-// ================= KELOLA USER =================
+// ================= KELOLA USER (FIX #3 & #8) =================
 function renderUserTable() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
   users.forEach(u => {
-    const maskedPass = '••••••';
+    const maskedPass = '••••••••';
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + escapeHtml(u.username) + '</td>' +
       '<td data-label="Password" style="font-family:monospace; color:var(--slate-500); letter-spacing:2px;">' + maskedPass + '</td>' +
       '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + escapeHtml(u.role.toUpperCase()) + '</span></td>' +
-      '<td class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button></div></td>';
+      '<td data-label="Aksi" class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button></div></td>';
     tbody.appendChild(tr);
   });
 }
@@ -1976,7 +2780,7 @@ document.getElementById('form-add-user').addEventListener('submit', async functi
   const roleInput = document.getElementById('new-role').value;
 
   if (users.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
-    alert('Username sudah dipakai!');
+    showToast('Username sudah dipakai!', 'error');
     return;
   }
 
@@ -2005,11 +2809,12 @@ window.deleteUser = async function(id) {
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   if (targetUser.role === 'admin' && adminCount <= 1) {
-    alert('Admin utama tidak boleh dihapus!');
+    showToast('Admin utama tidak boleh dihapus!', 'error');
     return;
   }
 
-  if (!confirm('Hapus user "' + targetUser.username + '"?')) return;
+  const ok = await showConfirm(`Hapus akun user "${targetUser.username}"?`, 'Hapus User', 'rose', 'Ya, Hapus');
+  if (!ok) return;
 
   users = users.filter(u => u.id !== id);
   renderUserTable();
@@ -2020,21 +2825,109 @@ window.deleteUser = async function(id) {
   }, 'Menghapus user...');
 };
 
+// ================= MODAL & KEYBOARD ACCESSIBILITY (FIX #13) =================
 window.toggleModal = function(modalId, show) {
   const el = document.getElementById(modalId);
-  if (show) el.classList.remove('hidden');
-  else el.classList.add('hidden');
+  if (!el) return;
+  if (show) {
+    lastFocusedElement = document.activeElement;
+    el.classList.remove('hidden');
+    const firstFocusable = el.querySelector('input:not([type="hidden"]), textarea, select, button');
+    if (firstFocusable) {
+      setTimeout(() => firstFocusable.focus(), 30);
+    }
+  } else {
+    el.classList.add('hidden');
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
+    }
+  }
 };
 
-// ================= INITIALIZATION, MULTI-TAB SYNC & PROTEKSI =================
+document.addEventListener('keydown', function(e) {
+  // Jika ada dialog konfirmasi custom terbuka, biarkan handler dialog yang menangani
+  if (document.querySelector('.qc-dialog-backdrop')) return;
 
-// 1. PEMULIHAN SESI OTOMATIS SAAT WEB / TAB DIBUKA
-window.addEventListener('DOMContentLoaded', function() {
+  const lightboxModal = document.getElementById('modal-lightbox');
+  const isLightboxOpen = lightboxModal && !lightboxModal.classList.contains('hidden');
+
+  if (isLightboxOpen) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      toggleModal('modal-lightbox', false);
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      stepLightbox(-1);
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      stepLightbox(1);
+      return;
+    }
+  }
+
+  if (e.key === 'Escape') {
+    const openModals = [
+      'modal-upload-foto',
+      'modal-edit-ncr',
+      'modal-add-ncr',
+      'modal-add-product',
+      'modal-add-user'
+    ];
+    for (const id of openModals) {
+      const m = document.getElementById(id);
+      if (m && !m.classList.contains('hidden')) {
+        e.preventDefault();
+        toggleModal(id, false);
+        return;
+      }
+    }
+    if (appLayout && appLayout.classList.contains('mobile-sidebar-open')) {
+      closeMobileSidebar();
+    }
+  }
+});
+
+// ================= REGISTRASI SERVICE WORKER PWA (FIX #2) =================
+function registerPortalServiceWorker() {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').catch(function(err) {
+        console.warn('Registrasi Service Worker gagal:', err);
+      });
+    });
+  }
+}
+
+// ================= INITIALIZATION, MULTI-TAB SYNC & PROTEKSI =================
+window.addEventListener('DOMContentLoaded', async function() {
+  injectAuditEnhancementStyles();
+  initPasswordToggles();
+  registerPortalServiceWorker();
+
+  // Tambah aksesibilitas keyboard pada header kolom sortir
+  document.querySelectorAll('.sortable-th').forEach(th => {
+    th.setAttribute('tabindex', '0');
+    th.setAttribute('role', 'button');
+    th.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        th.click();
+      }
+    });
+  });
+
   // Update tahun copyright otomatis
   const currentYear = new Date().getFullYear();
   document.querySelectorAll('.current-year').forEach(el => {
     el.textContent = currentYear;
   });
+
+  await loadFromLocalStorage();
 
   // Pulihkan sesi akun langsung dari localStorage
   const savedRole = localStorage.getItem('qc_active_role');
@@ -2044,12 +2937,11 @@ window.addEventListener('DOMContentLoaded', function() {
   if (savedRole && savedUser && savedToken) {
     enterApp(savedRole, savedUser, savedToken);
   } else {
-    // Sinkronisasi data awal untuk tamu jika belum login
     syncFromCloud();
   }
 });
 
-// 2. SINKRONISASI SESI LINTAS TAB (MULTI-TAB SYNCHRONIZATION)
+// SINKRONISASI SESI LINTAS TAB (MULTI-TAB SYNCHRONIZATION)
 window.addEventListener('storage', function(e) {
   if (e.key === 'qc_active_token' || e.key === 'qc_active_user') {
     const token = localStorage.getItem('qc_active_token');
@@ -2069,18 +2961,15 @@ window.addEventListener('storage', function(e) {
   }
 });
 
-// 3. PROTEKSI PENCEGAHAN TAB TERTUTUP TIDAK SENGAJA
+// PROTEKSI PENCEGAHAN TAB TERTUTUP TIDAK SENGAJA
 window.addEventListener('beforeunload', function(e) {
-  let queue = [];
-  try {
-    queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-  } catch (err) {}
+  const queueCount = Number(localStorage.getItem(OFFLINE_QUEUE_KEY + '_count') || '0');
 
   const isAddNcrOpen = !document.getElementById('modal-add-ncr').classList.contains('hidden');
   const isUploadOpen = !document.getElementById('modal-upload-foto').classList.contains('hidden');
   const isEditNcrOpen = !document.getElementById('modal-edit-ncr').classList.contains('hidden');
 
-  const hasUnsavedWork = isAddNcrOpen || isUploadOpen || isEditNcrOpen || queue.length > 0;
+  const hasUnsavedWork = isAddNcrOpen || isUploadOpen || isEditNcrOpen || queueCount > 0;
 
   if (hasUnsavedWork) {
     e.preventDefault();
