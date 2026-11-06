@@ -49,15 +49,20 @@ self.addEventListener('fetch', function(event) {
 
   // Jika permintaan mengarah ke Google Apps Script API, selalu ambil dari jaringan (Network First)
   if (url.origin.includes('script.google.com')) {
-    event.respondWith(
-      fetch(event.request).catch(function() {
-        return new Response(JSON.stringify({ status: 'offline', message: 'Mode offline aktif.' }), {
+  event.respondWith(
+    fetch(event.request).catch(function() {
+      return new Response(
+        JSON.stringify({ status: 'offline', message: 'Mode offline aktif.' }),
+        {
+          status: 503,
+          statusText: 'Service Unavailable',
           headers: { 'Content-Type': 'application/json' }
-        });
-      })
-    );
-    return;
-  }
+        }
+      );
+    })
+  );
+  return;
+}
 
   // Untuk aset lokal, gunakan Cache First, fallback ke Network
   event.respondWith(
