@@ -3012,7 +3012,7 @@ function switchTab(tab) {
     secNcr.classList.remove('hidden');
     navNcr.classList.add('active');
     if (bnavNcr) bnavNcr.classList.add('active');
-    pageTitle.textContent = 'Monitoring per Unit';
+    pageTitle.textContent = 'Monitoring';
     renderNcrTable();
   } else {
     secUsers.classList.remove('hidden');
