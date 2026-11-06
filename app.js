@@ -1801,16 +1801,23 @@ function getProductIndex(prodName) {
 // THUMBNAIL DENGAN DUKUNGAN KEYBOARD ACCESSIBILITY & DETEKSI FOTO GDRIVE TERHAPUS
 function buildThumbnailsHtml(photos, prodIdx, ncrId) {
   if (!photos || photos.length === 0) return '';
-  const maxVisible = 3;
-  let html = '<div class="multi-thumb-group">';
-  photos.slice(0, maxVisible).forEach((src, idx) => {
-    const displaySrc = getDriveImageSrc(src);
-    html += `<img src="${escapeHtml(displaySrc)}" class="thumb-img" role="button" tabindex="0" alt="Bukti Foto ${idx + 1}" onclick="openLightboxByIndex(${prodIdx}, ${ncrId}, ${idx})" onerror="handleFollowUpPhotoError(${prodIdx}, ${ncrId}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightboxByIndex(${prodIdx}, ${ncrId}, ${idx});}">`;
-  });
-  if (photos.length > maxVisible) {
-    const extra = photos.length - maxVisible;
-    html += `<div class="thumb-more-badge" role="button" tabindex="0" onclick="openLightboxByIndex(${prodIdx}, ${ncrId}, ${maxVisible})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLightboxByIndex(${prodIdx}, ${ncrId}, ${maxVisible});}">+${extra}</div>`;
+  const displaySrc = getDriveImageSrc(photos[0]);
+  const totalPhotos = photos.length;
+
+  let html = '<div class="stacked-thumb-container" role="button" tabindex="0" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', 0)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', 0);}">';
+  
+  // Efek tumpukan kartu (background stack jika foto lebih dari 1)
+  if (totalPhotos > 1) {
+    html += '<div class="thumb-card-back thumb-card-back-2"></div>';
+    html += '<div class="thumb-card-back thumb-card-back-1"></div>';
   }
+
+  // Foto utama di depan
+  html += '<img src="' + escapeHtml(displaySrc) + '" class="thumb-card-main" alt="Bukti Foto" onerror="handleFollowUpPhotoError(' + prodIdx + ', ' + ncrId + ', 0)">';
+  
+  // Badge jumlah foto di sudut
+  html += '<span class="thumb-count-badge">' + totalPhotos + '</span>';
+  
   html += '</div>';
   return html;
 }
