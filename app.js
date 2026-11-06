@@ -938,7 +938,7 @@ window.addEventListener('offline', function() {
 window.addEventListener('online', function() {
   updateNetworkStatusUI(true);
   showToast('Koneksi kembali terhubung. Menyinkronkan data...', 'info');
-  syncFromCloud();
+  syncFromCloud(true);
 });
 
 // Deteksi ketika pengguna mengeklik link folder/file GDrive lalu kembali ke tab aplikasi
@@ -1330,7 +1330,7 @@ async function sendActionToBackend(payload, loadingText) {
       document.getElementById('btn-logout').click();
     } else if (json.status === 'error') {
       await showAlert('Error Server: ' + json.message, 'Gagal Menyimpan');
-      await syncFromCloud();
+      await syncFromCloud(true);
     }
   } catch (err) {
     updateNetworkStatusUI(false);
@@ -1599,7 +1599,7 @@ function enterApp(role, username, token) {
   renderProductDropdown();
   renderAllViews();
 
-  syncFromCloud();
+  syncFromCloud(true);
 }
 
 function renderAllViews() {
@@ -3332,7 +3332,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (savedRole && savedUser && savedToken) {
     enterApp(savedRole, savedUser, savedToken);
   } else {
-    syncFromCloud();
+    syncFromCloud(true);
   }
 });
 
