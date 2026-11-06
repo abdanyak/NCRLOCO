@@ -190,14 +190,15 @@ th.sortable-th:focus-visible {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  box-shadow: none; /* Pastikan defaultnya tidak ada bayangan */
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+  visibility: hidden; /* Sembunyikan total agar shadow tidak ikut tampil */
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
   z-index: 50;
 }
 
-/* Berikan bayangan hanya saat sidebar benar-benar terbuka di mode mobile */
 .admin-layout.mobile-sidebar-open .sidebar {
   transform: translateX(0);
+  visibility: visible; /* Munculkan kembali hanya saat dibuka */
   box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5);
 }
 
