@@ -190,6 +190,10 @@ th.sortable-th:focus-visible {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  position: sticky; /* Mengunci posisi sidebar agar tetap stay saat discroll */
+  top: 0;           /* Menempel di bagian atas layar desktop */
+  height: 100vh;    /* Tinggi penuh mengikuti layar */
+  box-shadow: none;
   transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
@@ -1701,14 +1705,36 @@ tbody tr:last-child td { border-bottom: none; }
     top: 0;
     left: 0;
     bottom: 0;
+    height: 100vh;
     margin-left: 0 !important;
     transform: translateX(-100%);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    pointer-events: none; /* Mencegah elemen bisa diklik saat tertutup */
+    clip-path: inset(0 100% 0 0); /* Memotong total area agar shadow ikut hilang */
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease, clip-path 0.25s ease;
+    box-shadow: none;
   }
-  .admin-layout.mobile-sidebar-open .sidebar { transform: translateX(0); }
-  .admin-layout.mobile-sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
-  .sidebar-close-mobile { display: inline-flex; }
-  .mobile-bottom-nav { display: flex; }
+  
+  .admin-layout.mobile-sidebar-open .sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0);
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .admin-layout.mobile-sidebar-open .sidebar-backdrop { 
+    opacity: 1; 
+    pointer-events: auto; 
+  }
+  
+  .sidebar-close-mobile { 
+    display: inline-flex; 
+  }
+  
+  .mobile-bottom-nav { 
+    display: flex; 
+  }
 
   /* FIX #5: Padding bawah mengakomodasi tinggi bottom-nav + safe-area gesture bar */
   .content-wrapper {
