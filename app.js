@@ -2033,27 +2033,28 @@ function renderHistoryView() {
         const auditBtnHtml = buildAuditHistoryButtonHtml(prodIdx, item.id, followUp);
 
         if (isTrulyClosed) {
-          closedCount++;
-          const driveLinkHtml = followUp.folderUrl
-            ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
-            : '';
+            closedCount++;
+            // Membuat tombol GDrive lebih ringkas dan pas di ruang kosong
+            const driveLinkHtml = followUp.folderUrl
+              ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link" style="margin-top:4px; padding:2px 6px; font-size:10.5px;">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
+              : '';
 
-          unitCardsHtml +=
-            '<div class="history-unit-card is-closed">' +
-              '<div style="min-width:0; flex:1;">' +
-                '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
-                  '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
-                  prodStateBadge +
-                  '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
+            unitCardsHtml +=
+              '<div class="history-unit-card is-closed">' +
+                '<div style="min-width:0; flex:1;">' +
+                  '<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">' +
+                    '<span style="font-weight:700; font-size:13px; color:var(--slate-900);">' + escapeHtml(prodName) + '</span>' +
+                    prodStateBadge +
+                    '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
+                  '</div>' +
+                  '<div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">' +
+                    '<span style="font-size:12px; color:var(--slate-600);">Sudah dicek</span>' +
+                    driveLinkHtml +
+                  '</div>' +
+                  (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
                 '</div>' +
-                '<div style="font-size:12px; color:var(--slate-600); margin-top:3px;">' +
-                'Sudah dicek' +
-                '</div>' +
-                driveLinkHtml +
-                (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
-              '</div>' +
-              buildThumbnailsHtml(photos, prodIdx, item.id) +
-            '</div>';
+                buildThumbnailsHtml(photos, prodIdx, item.id) +
+              '</div>';
         } else {
           const reopenNotice = followUp.reopenReason
             ? `<div class="reopen-audit-box"><b>Re-Open:</b> ${escapeHtml(followUp.reopenReason)}</div>`
