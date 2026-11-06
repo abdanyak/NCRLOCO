@@ -916,14 +916,16 @@ function updateNetworkStatusUI(isOnline) {
   if (!modeBadge) return;
 
   const pendingCount = Number(localStorage.getItem(OFFLINE_QUEUE_KEY + '_count') || '0');
-  const pendingSuffix = pendingCount > 0 ? ` (${pendingCount} Antrean)` : '';
+  const pendingSuffix = pendingCount > 0 ? ` (${pendingCount})` : '';
 
   if (!isCloudConfigured() || !isOnline) {
-    modeBadge.innerHTML = `<span class="dot" style="background:var(--slate-400)"></span> Offline${pendingSuffix}`;
-    modeBadge.className = 'badge badge-archived hide-on-small-mobile';
+    modeBadge.innerHTML = `<span class="dot" style="background:var(--slate-400)"></span><span class="network-text">Offline${pendingSuffix}</span>`;
+    modeBadge.className = 'badge badge-archived network-indicator-badge';
+    modeBadge.title = `Status: Offline${pendingCount > 0 ? ' • ' + pendingCount + ' antrean tertunda' : ''}`;
   } else {
-    modeBadge.innerHTML = `<span class="dot"></span> Cloud${pendingSuffix}`;
-    modeBadge.className = 'badge badge-closed hide-on-small-mobile';
+    modeBadge.innerHTML = `<span class="dot" style="background:var(--emerald-500)"></span><span class="network-text">Cloud${pendingSuffix}</span>`;
+    modeBadge.className = 'badge badge-closed network-indicator-badge';
+    modeBadge.title = `Status: Terhubung ke Cloud${pendingCount > 0 ? ' • ' + pendingCount + ' antrean' : ''}`;
     if (btnRefresh) btnRefresh.classList.remove('hidden');
   }
 }
