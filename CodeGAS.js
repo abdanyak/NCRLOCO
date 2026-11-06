@@ -1,7 +1,8 @@
 /**
  * ============================================================================
- * BACKEND SISTEM MONITORING & INDEKS HISTORY NCR (VERSI AUDIT & SECURITY FIX)
- * File: CodeGAS.js (Password Hashing SHA-256, Re-Open Audit Trail, Drive Opt)
+ * BACKEND SISTEM MONITORING & INDEKS HISTORY NCR (VERSI AUDIT & GDRIVE SYNC)
+ * File: CodeGAS.js (Password Hashing SHA-256, Re-Open Audit Trail, Drive Opt,
+ *       Idempotency Anti-Duplicate, & Auto-Reopen on Deleted GDrive Photos)
  * ============================================================================
  */
 
@@ -218,7 +219,10 @@ function getRootDriveFolder_() {
 function getOrCreateSubFolder_(parentFolder, folderName) {
     const cleanName = String(folderName || "Folder").replace(/[\/\\:*?"<>|]/g, "-").trim();
     const iter = parentFolder.getFoldersByName(cleanName);
-    if (iter.hasNext()) return iter.next();
+    while (iter.hasNext()) {
+        const candidate = iter.next();
+        if (!candidate.isTrashed()) return candidate;
+    }
     return parentFolder.createFolder(cleanName);
 }
 
@@ -264,8 +268,77 @@ function savePhotosArrayToDrive_(folder, base64List, prefixName) {
     return savedPhotoUrls;
 }
 
+// ================= VALIDASI KEBERADAAN FILE & FOLDER GOOGLE DRIVE =================
+function extractDriveIdFromUrl_(url) {
+    if (!url) return "";
+    const str = String(url).trim();
+    if (!str || str.indexOf("data:") === 0) return "";
+    const idParamMatch = str.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (idParamMatch && idParamMatch[1]) return idParamMatch[1];
+    const pathMatch = str.match(/\/(?:d|folders)\/([a-zA-Z0-9_-]{10,})/);
+    if (pathMatch && pathMatch[1]) return pathMatch[1];
+    return "";
+}
+
+function isDriveFolderAlive_(folderUrl, cacheMap) {
+    if (!folderUrl) return true;
+    const folderId = extractDriveIdFromUrl_(folderUrl);
+    if (!folderId) return true;
+    const cacheKey = "folder_" + folderId;
+    if (cacheMap && cacheMap[cacheKey] !== undefined) return cacheMap[cacheKey];
+
+    let alive = false;
+    try {
+        const folder = DriveApp.getFolderById(folderId);
+        alive = Boolean(folder && !folder.isTrashed());
+    } catch (e) {
+        alive = false;
+    }
+    if (cacheMap) cacheMap[cacheKey] = alive;
+    return alive;
+}
+
+function isDriveFileAlive_(fileUrl, cacheMap) {
+    if (!fileUrl) return false;
+    const str = String(fileUrl).trim();
+    if (!str) return false;
+    if (str.indexOf("data:") === 0) return true;
+
+    const fileId = extractDriveIdFromUrl_(str);
+    if (!fileId) return true; // URL eksternal non-GDrive dianggap valid
+
+    const cacheKey = "file_" + fileId;
+    if (cacheMap && cacheMap[cacheKey] !== undefined) return cacheMap[cacheKey];
+
+    let alive = false;
+    try {
+        const file = DriveApp.getFileById(fileId);
+        alive = Boolean(file && !file.isTrashed());
+    } catch (e) {
+        alive = false;
+    }
+    if (cacheMap) cacheMap[cacheKey] = alive;
+    return alive;
+}
+
+function filterAliveDrivePhotos_(photosArray, folderUrl, cacheMap) {
+    const list = Array.isArray(photosArray) ? photosArray : [];
+    if (list.length === 0) return [];
+
+    // Jika folder unit di GDrive sudah dihapus/masuk Trash, maka seluruh foto di dalamnya dianggap tidak ada
+    if (folderUrl && !isDriveFolderAlive_(folderUrl, cacheMap)) {
+        return [];
+    }
+
+    return list.filter(function(photoUrl) {
+        return isDriveFileAlive_(photoUrl, cacheMap);
+    });
+}
+
 // ================= ENDPOINT GET & POST =================
 function doGet() {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
     try {
         const data = getAllPortalData_();
         return ContentService.createTextOutput(JSON.stringify({ status: "success", data: data }))
@@ -273,6 +346,8 @@ function doGet() {
     } catch (err) {
         return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
             .setMimeType(ContentService.MimeType.JSON);
+    } finally {
+        lock.releaseLock();
     }
 }
 
@@ -310,7 +385,6 @@ function doPost(e) {
                         : (dbPass === inputPass);
 
                     if (isPasswordValid) {
-                        // Auto-migrasi jika password lama di Sheet masih plaintext
                         let finalStoredHash = dbPass;
                         if (!isHashedInDb) {
                             finalStoredHash = expectedHash;
@@ -340,6 +414,7 @@ function doPost(e) {
         }
 
         // VALIDASI OTORISASI
+        // Catatan: REOPEN_NCR diizinkan untuk non-admin HANYA jika dipicu oleh foto GDrive yang terhapus
         const adminOnlyActions = [
             "ADD_PRODUCT",
             "TOGGLE_PRODUCT_STATUS",
@@ -347,20 +422,26 @@ function doPost(e) {
             "ADD_NCR",
             "EDIT_NCR",
             "DELETE_NCR",
-            "REOPEN_NCR",
             "ADD_USER",
             "DELETE_USER"
         ];
         const isAdminRequired = adminOnlyActions.indexOf(action) !== -1;
         const verifiedActor = verifyActor_(ss, payload, isAdminRequired);
 
-        // 1. TAMBAH UNIT PRODUK (BATCH UPDATE TEROPTIMASI)
+        // 1. TAMBAH UNIT PRODUK (DENGAN CEK ANTI-DUPLIKAT & BATCH UPDATE)
         if (action === "ADD_PRODUCT") {
             const cleanName = String(payload.name || "").replace(/,/g, " ").trim();
             const shProd = ss.getSheetByName(SHEETS.PRODUCTS);
-            shProd.appendRow([cleanName, "active", nowStr]);
+            const existingProds = shProd.getLastRow() > 1
+                ? shProd.getRange(2, 1, shProd.getLastRow() - 1, 1).getValues()
+                : [];
+            const isProdExist = existingProds.some(r => String(r[0]).trim().toLowerCase() === cleanName.toLowerCase());
 
-            if (payload.inherit) {
+            if (!isProdExist && cleanName) {
+                shProd.appendRow([cleanName, "active", nowStr]);
+            }
+
+            if (payload.inherit && !isProdExist && cleanName) {
                 const shNcr = ss.getSheetByName(SHEETS.NCR);
                 ensureSheetHeaders_(shNcr, MASTER_NCR_HEADERS, MASTER_NCR_WIDTHS);
                 const lastRow = shNcr.getLastRow();
@@ -435,55 +516,62 @@ function doPost(e) {
             }
         }
 
-        // 4. TAMBAH MASTER NCR BARU
+        // 4. TAMBAH MASTER NCR BARU (DENGAN CEK IDEMPOTENSI ANTI-DUPLIKAT)
         else if (action === "ADD_NCR") {
             const shNcr = ss.getSheetByName(SHEETS.NCR);
             ensureSheetHeaders_(shNcr, MASTER_NCR_HEADERS, MASTER_NCR_WIDTHS);
 
-            const dateDisplay = payload.date || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy");
-            const rawDate = payload.rawDate || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-            const units = Array.isArray(payload.assignedProducts) ? payload.assignedProducts : [];
-            const platform = String(payload.platform || "").trim();
-            const title = String(payload.title || "").trim();
-            const partCombined = payload.part || (platform && title ? (platform + " — " + title) : (platform || title || "-"));
+            const existingIds = shNcr.getLastRow() > 1
+                ? shNcr.getRange(2, 1, shNcr.getLastRow() - 1, 1).getValues()
+                : [];
+            const isNcrAlreadySaved = existingIds.some(r => String(r[0]) === String(payload.id));
 
-            let gdriveLink = String(payload.gdriveLink || "").trim();
-            const gdriveFileName = String(payload.gdriveFileName || "").trim();
-            const incomingPhotos = Array.isArray(payload.masterPhotos) ? payload.masterPhotos : [];
-            let savedMasterPhotos = incomingPhotos;
+            if (!isNcrAlreadySaved) {
+                const dateDisplay = payload.date || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy");
+                const rawDate = payload.rawDate || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+                const units = Array.isArray(payload.assignedProducts) ? payload.assignedProducts : [];
+                const platform = String(payload.platform || "").trim();
+                const title = String(payload.title || "").trim();
+                const partCombined = payload.part || (platform && title ? (platform + " — " + title) : (platform || title || "-"));
 
-            const hasDocUpload = payload.gdriveFileData && String(payload.gdriveFileData).indexOf("data:") === 0;
-            const hasNewBase64Photo = incomingPhotos.some(p => String(p || "").indexOf("data:image") === 0);
+                let gdriveLink = String(payload.gdriveLink || "").trim();
+                const gdriveFileName = String(payload.gdriveFileName || "").trim();
+                const incomingPhotos = Array.isArray(payload.masterPhotos) ? payload.masterPhotos : [];
+                let savedMasterPhotos = incomingPhotos;
 
-            if (hasDocUpload || hasNewBase64Photo) {
-                const rootFolder = getRootDriveFolder_();
-                const masterRoot = getOrCreateSubFolder_(rootFolder, "00_DOKUMEN_MASTER_NCR");
-                const ncrDocFolder = getOrCreateSubFolder_(masterRoot, payload.no || ("NCR_" + payload.id));
+                const hasDocUpload = payload.gdriveFileData && String(payload.gdriveFileData).indexOf("data:") === 0;
+                const hasNewBase64Photo = incomingPhotos.some(p => String(p || "").indexOf("data:image") === 0);
 
-                if (hasDocUpload) {
-                    const uploadedUrl = saveDocFileToDrive_(ncrDocFolder, payload.gdriveFileData, gdriveFileName || (payload.no + "_File_NCR"));
-                    if (uploadedUrl) gdriveLink = uploadedUrl;
+                if (hasDocUpload || hasNewBase64Photo) {
+                    const rootFolder = getRootDriveFolder_();
+                    const masterRoot = getOrCreateSubFolder_(rootFolder, "00_DOKUMEN_MASTER_NCR");
+                    const ncrDocFolder = getOrCreateSubFolder_(masterRoot, payload.no || ("NCR_" + payload.id));
+
+                    if (hasDocUpload) {
+                        const uploadedUrl = saveDocFileToDrive_(ncrDocFolder, payload.gdriveFileData, gdriveFileName || (payload.no + "_File_NCR"));
+                        if (uploadedUrl) gdriveLink = uploadedUrl;
+                    }
+                    if (hasNewBase64Photo) {
+                        savedMasterPhotos = savePhotosArrayToDrive_(ncrDocFolder, incomingPhotos, (payload.no || "NCR") + "_Master");
+                    }
                 }
-                if (hasNewBase64Photo) {
-                    savedMasterPhotos = savePhotosArrayToDrive_(ncrDocFolder, incomingPhotos, (payload.no || "NCR") + "_Master");
-                }
+
+                shNcr.appendRow([
+                    payload.id,
+                    payload.no,
+                    dateDisplay,
+                    partCombined,
+                    payload.desc,
+                    units.length,
+                    units.join(", "),
+                    rawDate,
+                    platform,
+                    title,
+                    gdriveLink,
+                    gdriveFileName,
+                    JSON.stringify(savedMasterPhotos)
+                ]);
             }
-
-            shNcr.appendRow([
-                payload.id,
-                payload.no,
-                dateDisplay,
-                partCombined,
-                payload.desc,
-                units.length,
-                units.join(", "),
-                rawDate,
-                platform,
-                title,
-                gdriveLink,
-                gdriveFileName,
-                JSON.stringify(savedMasterPhotos)
-            ]);
         }
 
         // 5. UBAH MASTER NCR & CAKUPAN UNIT (TERMASUK AKSI LEPAS UNIT)
@@ -544,7 +632,6 @@ function doPost(e) {
 
                     shNcr.getRange(i + 1, 1, 1, updatedRow.length).setValues([updatedRow]);
 
-                    // Jika ada unit yang dilepas dari NCR ini, bersihkan status unit tersebut di Verifikasi_Unit
                     const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
                     oldUnits.forEach(uName => {
                         if (units.indexOf(uName) === -1) {
@@ -592,7 +679,7 @@ function doPost(e) {
                 }
             }
 
-            if ( existingHistory.length === 0 && Array.isArray(payload.history) && payload.history.length > 0 ) {
+            if (existingHistory.length === 0 && Array.isArray(payload.history) && payload.history.length > 0) {
                 existingHistory = payload.history;
             }
 
@@ -621,13 +708,14 @@ function doPost(e) {
             }
         }
 
-        // 8. RE-OPEN STATUS NCR UNIT (FIX #12: SIMPAN RIWAYAT SEBELUMNYA KE AUDIT TRAIL)
+        // 8. RE-OPEN STATUS NCR UNIT (MANUAL ADMIN ATAU OTOMATIS SAAT FOTO GDRIVE TERHAPUS)
         else if (action === "REOPEN_NCR") {
             const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
             ensureSheetHeaders_(shFollow, FOLLOWUP_HEADERS, FOLLOWUP_WIDTHS);
             const key = payload.productName + "_" + payload.ncrId;
             const reopenReason = String(payload.reopenReason || "Perlu verifikasi ulang oleh Inspector").trim();
             const reopenedAt = String(payload.reopenedAt || nowStr).trim();
+            const driveCache = {};
 
             if (shFollow.getLastRow() > 1) {
                 const rows = shFollow.getDataRange().getValues();
@@ -639,17 +727,27 @@ function doPost(e) {
                         const prevUpdatedAt = String(rows[i][7] || "");
                         const prevFolderUrl = String(rows[i][9] || "");
                         const prevPhotos = parseJsonArraySafe_(rows[i][10]);
+                        const alivePhotos = filterAliveDrivePhotos_(prevPhotos, prevFolderUrl, driveCache);
                         const historyList = parseJsonArraySafe_(rows[i][11]);
+
+                        // Jika dipicu oleh non-admin (Inspector), pastikan memang karena foto di GDrive sudah kosong/terhapus
+                        if (verifiedActor.role !== "admin" && alivePhotos.length > 0) {
+                            throw new Error("FORBIDDEN: Re-Open manual hanya diizinkan untuk Admin QC.");
+                        }
+
+                        const actorLabel = (verifiedActor.role !== "admin" || reopenReason.indexOf("Otomatis OPEN") === 0)
+                            ? "Sistem Otomatis (GDrive)"
+                            : verifiedActor.username;
 
                         if (prevStatus === "CLOSED" || prevPhotos.length > 0 || prevNote) {
                             historyList.push({
                                 status: "CLOSED",
-                                photos: prevPhotos,
+                                photos: alivePhotos,
                                 note: prevNote,
                                 inspector: prevInspector,
                                 updatedAt: prevUpdatedAt,
-                                folderUrl: prevFolderUrl,
-                                reopenedBy: verifiedActor.username,
+                                folderUrl: isDriveFolderAlive_(prevFolderUrl, driveCache) ? prevFolderUrl : "",
+                                reopenedBy: actorLabel,
                                 reopenedAt: reopenedAt,
                                 reopenReason: reopenReason
                             });
@@ -665,10 +763,10 @@ function doPost(e) {
                             "",
                             reopenedAt,
                             0,
-                            prevFolderUrl,
+                            isDriveFolderAlive_(prevFolderUrl, driveCache) ? prevFolderUrl : "",
                             "[]",
                             JSON.stringify(historyList),
-                            verifiedActor.username,
+                            actorLabel,
                             reopenedAt,
                             reopenReason
                         ];
@@ -680,12 +778,20 @@ function doPost(e) {
             }
         }
 
-        // 9. TAMBAH & HAPUS USER (FIX #3: SIMPAN PASSWORD DALAM BENTUK HASH SHA-256)
+        // 9. TAMBAH & HAPUS USER (FIX #3: HASH SHA-256 & CEK ANTI-DUPLIKAT)
         else if (action === "ADD_USER") {
             const shUsers = ss.getSheetByName(SHEETS.USERS);
             const cleanUsername = String(payload.username || "").trim();
-            const hashedPassword = hashUserPassword_(cleanUsername, payload.password);
-            shUsers.appendRow([payload.id, cleanUsername, hashedPassword, payload.role]);
+            const userRowsCheck = shUsers.getDataRange().getValues();
+            const isUserExist = userRowsCheck.slice(1).some(r =>
+                String(r[1]).trim().toLowerCase() === cleanUsername.toLowerCase() ||
+                String(r[0]) === String(payload.id)
+            );
+
+            if (!isUserExist && cleanUsername) {
+                const hashedPassword = hashUserPassword_(cleanUsername, payload.password);
+                shUsers.appendRow([payload.id, cleanUsername, hashedPassword, payload.role]);
+            }
         }
 
         else if (action === "DELETE_USER") {
@@ -707,8 +813,11 @@ function doPost(e) {
     }
 }
 
+// ================= PEMBACAAN DATA & SINKRONISASI REAL-TIME GOOGLE DRIVE =================
 function getAllPortalData_() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy, HH:mm");
+    const driveCache = {};
 
     const shProd = ss.getSheetByName(SHEETS.PRODUCTS);
     const prodRows = shProd ? shProd.getDataRange().getValues() : [];
@@ -731,8 +840,12 @@ function getAllPortalData_() {
     }
 
     const shNcr = ss.getSheetByName(SHEETS.NCR);
+    if (shNcr && shNcr.getLastRow() > 0) {
+        ensureSheetHeaders_(shNcr, MASTER_NCR_HEADERS, MASTER_NCR_WIDTHS);
+    }
     const ncrRows = shNcr ? shNcr.getDataRange().getValues() : [];
     const masterNcrList = [];
+
     for (let i = ncrRows.length - 1; i >= 1; i--) {
         if (!ncrRows[i][0]) continue;
         const assigned = parseUnitsCell_(ncrRows[i][6]);
@@ -751,7 +864,11 @@ function getAllPortalData_() {
             }
         }
 
-        const masterPhotos = parseJsonArraySafe_(ncrRows[i][12]);
+        const rawMasterPhotos = parseJsonArraySafe_(ncrRows[i][12]);
+        const validMasterPhotos = filterAliveDrivePhotos_(rawMasterPhotos, "", driveCache);
+        if (validMasterPhotos.length !== rawMasterPhotos.length && shNcr) {
+            shNcr.getRange(i + 1, 13).setValue(JSON.stringify(validMasterPhotos));
+        }
 
         masterNcrList.push({
             id: Number(ncrRows[i][0]),
@@ -765,30 +882,103 @@ function getAllPortalData_() {
             title: title || "-",
             gdriveLink: String(ncrRows[i][10] || ""),
             gdriveFileName: String(ncrRows[i][11] || ""),
-            masterPhotos: masterPhotos
+            masterPhotos: validMasterPhotos
         });
     }
 
     const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
+    if (shFollow && shFollow.getLastRow() > 0) {
+        ensureSheetHeaders_(shFollow, FOLLOWUP_HEADERS, FOLLOWUP_WIDTHS);
+    }
     const followRows = shFollow ? shFollow.getDataRange().getValues() : [];
     const productFollowUps = {};
+
     for (let i = 1; i < followRows.length; i++) {
-        const key = String(followRows[i][0]);
+        const key = String(followRows[i][0] || "");
         if (!key) continue;
-        const photos = parseJsonArraySafe_(followRows[i][10]);
+
+        const prodName = String(followRows[i][1] || "");
+        const ncrId = followRows[i][2];
+        const ncrNo = String(followRows[i][3] || ("NCR-" + ncrId));
+        let status = String(followRows[i][4] || "CLOSED");
+        let note = String(followRows[i][5] || "");
+        let inspector = String(followRows[i][6] || "");
+        let updatedAt = String(followRows[i][7] || "");
+        let folderUrl = String(followRows[i][9] || "");
+        const rawPhotos = parseJsonArraySafe_(followRows[i][10]);
         const history = parseJsonArraySafe_(followRows[i][11]);
+        let reopenedBy = String(followRows[i][12] || "");
+        let reopenedAt = String(followRows[i][13] || "");
+        let reopenReason = String(followRows[i][14] || "");
+
+        // Validasi ke Google Drive apakah folder & file foto masih ada (tidak di-Trash / dihapus)
+        const folderAlive = isDriveFolderAlive_(folderUrl, driveCache);
+        if (!folderAlive) {
+            folderUrl = "";
+        }
+        const validPhotos = filterAliveDrivePhotos_(rawPhotos, folderUrl, driveCache);
+
+        // KASUS 1: Status CLOSED tetapi semua foto di Google Drive telah dihapus -> Otomatis kembalikan ke OPEN (Merah)!
+        if (status === "CLOSED" && validPhotos.length === 0) {
+            const autoReason = "Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan";
+            if (note || inspector) {
+                history.push({
+                    status: "CLOSED",
+                    photos: [],
+                    note: note,
+                    inspector: inspector,
+                    updatedAt: updatedAt,
+                    folderUrl: folderUrl,
+                    reopenedBy: "Sistem Otomatis (GDrive)",
+                    reopenedAt: nowStr,
+                    reopenReason: autoReason
+                });
+            }
+
+            status = "OPEN";
+            note = "";
+            inspector = "";
+            updatedAt = nowStr;
+            reopenedBy = "Sistem Otomatis (GDrive)";
+            reopenedAt = nowStr;
+            reopenReason = autoReason;
+
+            const revertedRow = [
+                key,
+                prodName,
+                ncrId,
+                ncrNo,
+                "OPEN",
+                "",
+                "",
+                nowStr,
+                0,
+                folderUrl,
+                "[]",
+                JSON.stringify(history),
+                reopenedBy,
+                reopenedAt,
+                reopenReason
+            ];
+            shFollow.getRange(i + 1, 1, 1, revertedRow.length).setValues([revertedRow]);
+        }
+        // KASUS 2: Sebagian foto dihapus di GDrive (misal dari 3 foto sisa 1 foto) -> Update jumlah & daftar foto
+        else if (validPhotos.length !== rawPhotos.length) {
+            shFollow.getRange(i + 1, 9).setValue(validPhotos.length);
+            shFollow.getRange(i + 1, 11).setValue(JSON.stringify(validPhotos));
+        }
 
         productFollowUps[key] = {
-            status: String(followRows[i][4] || "CLOSED"),
-            note: String(followRows[i][5] || ""),
-            inspector: String(followRows[i][6] || ""),
-            updatedAt: String(followRows[i][7] || ""),
-            folderUrl: String(followRows[i][9] || ""),
-            photos: photos,
+            status: status,
+            note: note,
+            inspector: inspector,
+            updatedAt: updatedAt,
+            folderUrl: folderUrl,
+            photos: validPhotos,
             history: history,
-            reopenedBy: String(followRows[i][12] || ""),
-            reopenedAt: String(followRows[i][13] || ""),
-            reopenReason: String(followRows[i][14] || "")
+            reopenedBy: reopenedBy,
+            reopenedAt: reopenedAt,
+            reopenReason: reopenReason
         };
     }
 
