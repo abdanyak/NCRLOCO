@@ -1934,3 +1934,82 @@ tbody tr:last-child td { border-bottom: none; }
   font-size: 11.5px;
   color: var(--slate-400);
 }
+
+/* ================= EFEK TUMPUKAN FOTO (STACKED CARDS) ================= */
+.stacked-thumb-container {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.thumb-card-main {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.18);
+  background: #fff;
+  z-index: 3;
+  transition: transform 0.2s ease;
+}
+
+.stacked-thumb-container:hover .thumb-card-main {
+  transform: translateY(-3px);
+}
+
+.thumb-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: #e2e8f0;
+  border: 1.5px solid #ffffff;
+}
+
+.thumb-card-back-1 {
+  top: -3px;
+  right: -3px;
+  z-index: 2;
+  opacity: 0.8;
+  transform: rotate(3deg);
+}
+
+.thumb-card-back-2 {
+  top: -6px;
+  right: -6px;
+  z-index: 1;
+  opacity: 0.5;
+  transform: rotate(6deg);
+}
+
+.thumb-count-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: var(--indigo-600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 999px;
+  z-index: 4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Memastikan nama produk tampil penuh dan jelas tanpa terpotong / hide */
+.history-unit-card .unit-title-text {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--slate-900);
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
