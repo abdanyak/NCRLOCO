@@ -1,13 +1,11 @@
 /**
  * ============================================================================
- * SERVICE WORKER — QC NCR PORTAL PWA (OFFLINE-FIRST)
- * File: sw.js
+ * QC PORTAL — SERVICE WORKER (PWA OFFLINE CACHE)
  * ============================================================================
  */
 
-const CACHE_NAME = 'qc-ncr-portal-v2';
-const STATIC_ASSETS = [
-  './',
+const CACHE_NAME = 'qc-ncr-portal-cache-v1';
+const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',
   './app.js',
@@ -17,73 +15,73 @@ const STATIC_ASSETS = [
   './UGL2.jpg'
 ];
 
-self.addEventListener('install', event => {
+// 1. INSTALL SERVICE WORKER & CACHE ASET STATIS
+self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return Promise.allSettled(
-        STATIC_ASSETS.map(url => cache.add(url).catch(() => null))
-      );
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(ASSETS_TO_CACHE);
+    }).then(function() {
+      return self.skipWaiting();
+    })
   );
 });
 
-self.addEventListener('activate', event => {
+// 2. ACTIVATE & BERSIHKAN CACHE LAMA
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(keys => {
+    caches.keys().then(function(cacheNames) {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        cacheNames.map(function(cacheName) {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
       );
-    }).then(() => self.clients.claim())
+    }).then(function() {
+      return self.clients.claim();
+    })
   );
 });
 
-self.addEventListener('fetch', event => {
-  const req = event.request;
+// 3. FETCH STRATEGY: STALE-WHILE-REVALIDATE / NETWORK FIRST
+self.addEventListener('fetch', function(event) {
+  const url = new URL(event.request.url);
 
-  // Abaikan request non-GET atau API Google Apps Script (ditangani IndexedDB Queue di app.js)
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.hostname.includes('script.google.com') || url.hostname.includes('script.googleusercontent.com')) {
-    return;
-  }
-
-  // Strategi Cache-First untuk font dan gambar thumbnail GDrive
-  if (
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    url.hostname.includes('drive.google.com')
-  ) {
+  // Jika permintaan mengarah ke Google Apps Script API, selalu ambil dari jaringan (Network First)
+  if (url.origin.includes('script.google.com')) {
     event.respondWith(
-      caches.match(req).then(cached => {
-        const networkFetch = fetch(req).then(res => {
-          if (res && (res.status === 200 || res.type === 'opaque')) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-          }
-          return res;
-        }).catch(() => cached);
-        return cached || networkFetch;
+      fetch(event.request).catch(function() {
+        return new Response(JSON.stringify({ status: 'offline', message: 'Mode offline aktif.' }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
       })
     );
     return;
   }
 
-  // Strategi Stale-While-Revalidate untuk file aplikasi lokal
+  // Untuk aset lokal, gunakan Cache First, fallback ke Network
   event.respondWith(
-    caches.match(req).then(cached => {
-      const fetchPromise = fetch(req).then(networkRes => {
-        if (networkRes && networkRes.status === 200) {
-          const copy = networkRes.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-        }
-        return networkRes;
-      }).catch(() => {
-        if (req.mode === 'navigate') {
+    caches.match(event.request).then(function(cachedResponse) {
+      if (cachedResponse) {
+        // Ambil pembaruan di latar belakang jika online
+        fetch(event.request).then(function(networkResponse) {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(event.request, networkResponse);
+            });
+          }
+        }).catch(function() {/* Mengabaikan error saat offline */});
+        
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then(function(networkResponse) {
+        return networkResponse;
+      }).catch(function() {
+        if (event.request.headers.get('accept').includes('text/html')) {
           return caches.match('./index.html');
         }
-        return cached;
       });
-      return cached || fetchPromise;
     })
   );
 });
