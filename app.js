@@ -3098,7 +3098,12 @@ function renderUserTable() {
       '<td data-label="Username" style="font-weight:800; color:var(--slate-900);">' + escapeHtml(u.username) + '</td>' +
       '<td data-label="Password" style="font-family:monospace; color:var(--slate-500); letter-spacing:2px;">' + maskedPass + '</td>' +
       '<td data-label="Role"><span class="badge ' + (u.role === 'admin' ? 'badge-indigo' : 'badge-closed') + '">' + escapeHtml(u.role.toUpperCase()) + '</span></td>' +
-      '<td data-label="Aksi" class="text-right"><div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;"><button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button></div></td>';
+      '<td data-label="Aksi" class="text-right">' +
+        '<div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end; gap:6px;">' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="openEditUserModal(' + u.id + ')">' + HEROICONS.pencil + ' <span>Edit Pass</span></button>' +
+          '<button type="button" class="btn btn-rose-soft btn-sm" onclick="deleteUser(' + u.id + ')">' + HEROICONS.trash + ' <span>Hapus</span></button>' +
+        '</div>' +
+      '</td>';
     tbody.appendChild(tr);
   });
 }
@@ -3304,4 +3309,48 @@ window.addEventListener('beforeunload', function(e) {
     e.returnValue = '';
     return '';
   }
+});
+
+window.openEditUserModal = function(userId) {
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+
+  document.getElementById('edit-user-id').value = user.id;
+  document.getElementById('edit-username-display').value = user.username;
+  document.getElementById('edit-password').value = '';
+  document.getElementById('edit-password').type = 'password';
+
+  toggleModal('modal-edit-user', true);
+};
+
+window.toggleEditPasswordVisibility = function() {
+  const input = document.getElementById('edit-password');
+  const btn = input.nextElementSibling;
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  if (btn) {
+    btn.innerHTML = isPass ? HEROICONS.eyeSlash : HEROICONS.eye;
+  }
+  input.focus();
+};
+
+//tambahkan fungsi pengendali modal Edit User dan Toggle Password
+document.getElementById('form-edit-user').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const userId = Number(document.getElementById('edit-user-id').value);
+  const newPassword = document.getElementById('edit-password').value.trim();
+
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+
+  toggleModal('modal-edit-user', false);
+  showToast(`Password untuk user "${user.username}" berhasil diperbarui.`, 'success');
+
+  await sendActionToBackend({
+    action: 'EDIT_USER_PASSWORD',
+    id: userId,
+    username: user.username,
+    password: newPassword
+  }, 'Memperbarui password user...');
 });
