@@ -2222,25 +2222,24 @@ function renderNcrTable() {
     let actionBtn = '';
     if (currentRole === 'admin') {
       actionBtn =
-        '<div class="mobile-action-group" style="display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
+        '<div class="unit-action-group mobile-action-group">' +
           (isClosed
-            ? '<button type="button" class="btn btn-emerald-soft btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' + HEROICONS.eye + ' <span>Bukti</span></button>' +
-              '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
-            : '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' + HEROICONS.camera + ' <span>Verifikasi</span></button>') +
+            ? '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')" title="Kembalikan ke status OPEN">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
+            : '') +
           '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')" title="Edit Master NCR">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
           '<button type="button" class="btn btn-rose-soft btn-sm" onclick="unassignNcrFromUnit(' + item.id + ')" title="Lepas NCR hanya dari unit ini">' + HEROICONS.unlink + ' <span>Lepas Unit</span></button>' +
         '</div>';
     } else {
       if (!isClosed) {
         actionBtn =
-          '<div class="mobile-action-group" style="display:inline-flex; justify-content:flex-end;">' +
+          '<div class="unit-action-group mobile-action-group">' +
             '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' +
-              HEROICONS.camera + ' <span>Upload Foto</span>' +
+              HEROICONS.camera + ' <span>Verifikasi</span>' +
             '</button>' +
           '</div>';
       } else {
         actionBtn =
-          '<div class="mobile-action-group" style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">' +
+          '<div class="unit-action-group mobile-action-group">' +
             '<button type="button" class="btn btn-outline btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' +
               HEROICONS.eye + ' <span>Lihat Foto (' + photos.length + ')</span>' +
             '</button>' +
