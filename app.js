@@ -2,7 +2,8 @@
  * ============================================================================
  * QC PORTAL — MONITORING & HISTORY NCR
  * File: app.js (Audited & Fixed: IndexedDB, Sequential Image Processing,
- *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security)
+ *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security,
+ *       Mutex Offline Queue Sync & Smart Queue Compaction)
  * ============================================================================
  */
 
@@ -21,6 +22,7 @@ const IDB_STORE_STATE = 'portal_state';
 const IDB_STORE_QUEUE = 'offline_queue';
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const MAX_QUEUE_RETRIES = 3;
 
 const HEROICONS = {
   calendar: '<svg class="icon-sm" style="display:inline-block; vertical-align:text-bottom; margin-right:3px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>',
@@ -45,6 +47,7 @@ const HEROICONS = {
 let currentRole = null;
 let currentUsername = '';
 let currentToken = '';
+let isSyncingOfflineQueue = false;
 
 let tempImageList = [];
 let tempMasterPhotosAdd = [];
@@ -135,7 +138,11 @@ async function idbGetOfflineQueue() {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(IDB_STORE_QUEUE, 'readonly');
       const req = tx.objectStore(IDB_STORE_QUEUE).getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => {
+        const list = Array.isArray(req.result) ? req.result : [];
+        list.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+        resolve(list);
+      };
       req.onerror = () => reject(req.error);
     });
   } catch (err) {
@@ -148,23 +155,26 @@ async function idbGetOfflineQueue() {
 }
 
 async function idbReplaceOfflineQueue(items) {
+  const safeItems = Array.isArray(items) ? items : [];
   try {
     const db = await openPortalIndexedDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(IDB_STORE_QUEUE, 'readwrite');
       const store = tx.objectStore(IDB_STORE_QUEUE);
       store.clear();
-      (items || []).forEach(item => store.put(item));
+      safeItems.forEach(item => store.put(item));
       tx.oncomplete = () => {
-        localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String((items || []).length));
+        localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String(safeItems.length));
+        updateNetworkStatusUI(navigator.onLine);
         resolve(true);
       };
       tx.onerror = () => reject(tx.error);
     });
   } catch (err) {
     try {
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(items || []));
-      localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String((items || []).length));
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(safeItems));
+      localStorage.setItem(OFFLINE_QUEUE_KEY + '_count', String(safeItems.length));
+      updateNetworkStatusUI(navigator.onLine);
     } catch (e) {
       console.error('Gagal menyimpan antrean offline:', e);
     }
@@ -750,17 +760,20 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= STATUS JARINGAN REAL-TIME =================
+// ================= STATUS JARINGAN REAL-TIME & INDIKATOR ANTREAN =================
 function updateNetworkStatusUI(isOnline) {
   const modeBadge = document.getElementById('storage-mode-badge');
   const btnRefresh = document.getElementById('btn-refresh-cloud');
   if (!modeBadge) return;
 
+  const pendingCount = Number(localStorage.getItem(OFFLINE_QUEUE_KEY + '_count') || '0');
+  const pendingSuffix = pendingCount > 0 ? ` (${pendingCount} Antrean)` : '';
+
   if (!isCloudConfigured() || !isOnline) {
-    modeBadge.innerHTML = '<span class="dot" style="background:var(--slate-400)"></span> Offline (Lokal)';
+    modeBadge.innerHTML = `<span class="dot" style="background:var(--slate-400)"></span> Offline${pendingSuffix}`;
     modeBadge.className = 'badge badge-archived hide-on-small-mobile';
   } else {
-    modeBadge.innerHTML = '<span class="dot"></span> Cloud';
+    modeBadge.innerHTML = `<span class="dot"></span> Cloud${pendingSuffix}`;
     modeBadge.className = 'badge badge-closed hide-on-small-mobile';
     if (btnRefresh) btnRefresh.classList.remove('hidden');
   }
@@ -866,55 +879,149 @@ async function loadFromLocalStorage() {
 
 async function saveToOfflineQueue(payload) {
   const queue = await idbGetOfflineQueue();
-  queue.push({
-    id: Date.now() + Math.floor(Math.random() * 1000),
-    payload: payload,
-    timestamp: new Date().toISOString()
+  const cleanPayload = { ...payload };
+  delete cleanPayload.actorToken; // Token akan diisi ulang dengan token terbaru saat sinkronisasi
+
+  // Smart Compaction: Gabungkan jika ada aksi berulang pada objek yang sama di dalam antrean
+  const existingIdx = queue.findIndex(item => {
+    const p = item.payload;
+    if (!p) return false;
+    if (cleanPayload.action === 'TOGGLE_PRODUCT_STATUS' && p.action === 'TOGGLE_PRODUCT_STATUS') {
+      return p.name === cleanPayload.name;
+    }
+    if (cleanPayload.action === 'EDIT_NCR' && (p.action === 'EDIT_NCR' || p.action === 'ADD_NCR')) {
+      return Number(p.id) === Number(cleanPayload.id);
+    }
+    if (cleanPayload.action === 'UPLOAD_FOLLOWUP' && p.action === 'UPLOAD_FOLLOWUP') {
+      return p.productName === cleanPayload.productName && Number(p.ncrId) === Number(cleanPayload.ncrId);
+    }
+    return false;
   });
+
+  if (existingIdx !== -1) {
+    const prevAction = queue[existingIdx].payload.action;
+    queue[existingIdx].payload = {
+      ...queue[existingIdx].payload,
+      ...cleanPayload,
+      // Jika sebelumnya ADD_NCR lalu di-edit saat masih offline, pertahankan sebagai ADD_NCR dengan data terbaru
+      action: prevAction === 'ADD_NCR' ? 'ADD_NCR' : cleanPayload.action
+    };
+    queue[existingIdx].timestamp = new Date().toISOString();
+  } else {
+    const queueId = Date.now() + Math.floor(Math.random() * 1000);
+    cleanPayload.clientMutationId = `mut_${queueId}`;
+    queue.push({
+      id: queueId,
+      payload: cleanPayload,
+      retryCount: 0,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   await idbReplaceOfflineQueue(queue);
 }
 
 async function processOfflineQueue() {
-  if (!isCloudConfigured()) return;
+  if (!isCloudConfigured() || !navigator.onLine || isSyncingOfflineQueue) return false;
 
   const queue = await idbGetOfflineQueue();
-  if (!queue || queue.length === 0) return;
+  if (!queue || queue.length === 0) return false;
 
-  showCloudLoading(true, `Menyinkronkan ${queue.length} data tertunda...`);
+  isSyncingOfflineQueue = true;
+  const initialCount = queue.length;
+  let syncedCount = 0;
+  let latestServerData = null;
+  let remainingQueue = [...queue];
 
-  let remainingQueue = [];
+  showCloudLoading(true, `Menyinkronkan ${initialCount} data tertunda...`);
 
-  for (let i = 0; i < queue.length; i++) {
-    const item = queue[i];
-    try {
-      item.payload.actorToken = currentToken;
+  try {
+    while (remainingQueue.length > 0) {
+      const item = remainingQueue[0];
+      showCloudLoading(true, `Menyinkronkan (${syncedCount + 1}/${initialCount})...`);
 
-      const res = await fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(item.payload)
-      });
-      const json = await res.json();
+      try {
+        const requestPayload = {
+          ...item.payload,
+          actorUser: currentUsername || item.payload.actorUser,
+          actorRole: currentRole || item.payload.actorRole,
+          actorToken: currentToken
+        };
 
-      if (json.status === 'success') {
-        // Berhasil dikirim
-      } else if (json.status === 'auth_error') {
-        remainingQueue = remainingQueue.concat(queue.slice(i));
-        showToast(json.message || 'Sesi Anda telah berakhir. Sinkronisasi tertunda.', 'error');
-        document.getElementById('btn-logout').click();
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(requestPayload)
+        });
+
+        const json = await res.json();
+
+        // Jika diintersepsi Service Worker saat offline
+        if (!res.ok || json.status === 'offline') {
+          throw new Error('NETWORK_OFFLINE');
+        }
+
+        if (json.status === 'success') {
+          syncedCount++;
+          if (json.data) latestServerData = json.data;
+          // Hapus item yang berhasil secara langsung dari IndexedDB (mencegah duplikasi jika terputus di tengah jalan)
+          remainingQueue.shift();
+          await idbReplaceOfflineQueue(remainingQueue);
+        } else if (json.status === 'auth_error') {
+          showToast(json.message || 'Sesi berakhir. Silakan login kembali untuk melanjutkan sinkronisasi.', 'error');
+          document.getElementById('btn-logout').click();
+          break;
+        } else {
+          // Error validasi/logika dari server (Poison Pill Handling)
+          item.retryCount = (item.retryCount || 0) + 1;
+          if (item.retryCount >= MAX_QUEUE_RETRIES) {
+            console.error('Melewati item antrean karena gagal berulang kali:', item, json.message);
+            showToast(`1 item antrean (${item.payload.action}) dilewati: ${json.message || 'Error Server'}`, 'error', 5000);
+            remainingQueue.shift();
+          } else {
+            // Pindahkan ke urutan belakang agar tidak memblokir antrean lain
+            remainingQueue.push(remainingQueue.shift());
+          }
+          await idbReplaceOfflineQueue(remainingQueue);
+          if (remainingQueue.every(q => (q.retryCount || 0) > 0)) break;
+        }
+      } catch (networkErr) {
+        // Koneksi terputus di tengah proses: hentikan loop, sisa antrean tetap aman di IndexedDB
+        updateNetworkStatusUI(false);
         break;
-      } else {
-        remainingQueue.push(item);
       }
-    } catch (err) {
-      remainingQueue = remainingQueue.concat(queue.slice(i));
-      break;
     }
-  }
 
-  await idbReplaceOfflineQueue(remainingQueue);
-  if (remainingQueue.length === 0 && queue.length > 0) {
-    showToast(`${queue.length} data offline berhasil disinkronkan ke Cloud.`, 'success');
+    if (latestServerData) {
+      updateNetworkStatusUI(true);
+      products = latestServerData.products || [];
+      users = (latestServerData.users && latestServerData.users.length > 0)
+        ? sanitizeUsersList(latestServerData.users)
+        : users;
+      masterNcrList = mergeCloudMasterWithLocalExtras(latestServerData.masterNcrList || []);
+      productFollowUps = mergeCloudFollowUpsWithLocalAudit(latestServerData.productFollowUps || {});
+
+      if (products.length > 0 && !products.some(p => p.name === selectedProduct)) {
+        selectedProduct = products[products.length - 1].name;
+      } else if (products.length === 0) {
+        selectedProduct = '';
+      }
+
+      await saveToLocalStorage();
+      renderProductDropdown();
+      renderAllViews();
+    }
+
+    if (syncedCount > 0 && remainingQueue.length === 0) {
+      showToast(`${syncedCount} data offline berhasil disinkronkan ke Cloud.`, 'success');
+    } else if (syncedCount > 0 && remainingQueue.length > 0) {
+      showToast(`${syncedCount} data tersinkron, ${remainingQueue.length} masih tertunda.`, 'warning');
+    }
+
+    return latestServerData !== null;
+  } finally {
+    isSyncingOfflineQueue = false;
+    showCloudLoading(false);
   }
 }
 
@@ -953,17 +1060,24 @@ function mergeCloudFollowUpsWithLocalAudit(cloudFollowUps) {
 async function syncFromCloud() {
   await loadFromLocalStorage();
 
-  if (!isCloudConfigured()) {
+  if (!isCloudConfigured() || !navigator.onLine) {
     updateNetworkStatusUI(false);
     return;
   }
 
-  await processOfflineQueue();
+  // Jika processOfflineQueue sudah memperbarui state dari respons terakhir, tidak perlu fetch GET ganda
+  const alreadyUpdatedFromQueue = await processOfflineQueue();
+  if (alreadyUpdatedFromQueue) return;
 
   showCloudLoading(true, 'Memuat data dari Cloud...');
   try {
     const res = await fetch(GAS_API_URL);
     const json = await res.json();
+
+    if (!res.ok || json.status === 'offline') {
+      throw new Error('NETWORK_OFFLINE');
+    }
+
     if (json.status === 'success' && json.data) {
       updateNetworkStatusUI(true);
       products = json.data.products || [];
@@ -999,6 +1113,14 @@ async function sendActionToBackend(payload, loadingText) {
     actorToken: currentToken
   };
 
+  // Jika browser sudah terdeteksi offline, langsung masukkan ke antrean tanpa menunggu timeout fetch
+  if (!navigator.onLine) {
+    updateNetworkStatusUI(false);
+    await saveToOfflineQueue(fullPayload);
+    showToast('Mode Offline: Data disimpan di perangkat & akan disinkronkan otomatis saat online.', 'warning', 4000);
+    return;
+  }
+
   showCloudLoading(true, loadingText || 'Menyimpan data...');
   try {
     const res = await fetch(GAS_API_URL, {
@@ -1007,6 +1129,12 @@ async function sendActionToBackend(payload, loadingText) {
       body: JSON.stringify(fullPayload)
     });
     const json = await res.json();
+
+    // Tangkap respons fallback dari Service Worker saat jaringan terputus tiba-tiba
+    if (!res.ok || json.status === 'offline') {
+      throw new Error('NETWORK_OFFLINE');
+    }
+
     if (json.status === 'success' && json.data) {
       updateNetworkStatusUI(true);
       products = json.data.products || [];
@@ -1067,7 +1195,7 @@ btnHamburger.addEventListener('click', toggleSidebar);
 sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
 
-// ================= FUNGSI LOGIN (FIX #3: TANPA HARDCODED BACKDOOR) =================
+// ================= FUNGSI LOGIN (FIX #3: TANPA HARDCODED BACKDOOR & DETEKSI SW OFFLINE) =================
 document.getElementById('form-login').addEventListener('submit', async function(e) {
   e.preventDefault();
   const u = document.getElementById('username').value.trim();
@@ -1080,6 +1208,10 @@ document.getElementById('form-login').addEventListener('submit', async function(
 
   showCloudLoading(true, 'Memverifikasi akun...');
   try {
+    if (!navigator.onLine) {
+      throw new Error('NETWORK_OFFLINE');
+    }
+
     const res = await fetch(GAS_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1090,6 +1222,10 @@ document.getElementById('form-login').addEventListener('submit', async function(
       })
     });
     const json = await res.json();
+
+    if (!res.ok || json.status === 'offline') {
+      throw new Error('NETWORK_OFFLINE');
+    }
 
     // Deteksi jika Google Apps Script belum di-deploy sebagai New Version
     if (json.status === 'success' && !json.user) {
@@ -2958,6 +3094,8 @@ window.addEventListener('storage', function(e) {
     } else if (token !== currentToken || user !== currentUsername) {
       enterApp(role, user, token);
     }
+  } else if (e.key === OFFLINE_QUEUE_KEY + '_count') {
+    updateNetworkStatusUI(navigator.onLine);
   }
 });
 
