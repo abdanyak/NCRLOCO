@@ -155,7 +155,11 @@
         </div>
 
         <div class="topbar-right">
-          <span id="storage-mode-badge" class="badge badge-archived hide-on-small-mobile">Lokal</span>
+          <span id="storage-mode-badge" class="badge badge-archived network-indicator-badge" title="Status Koneksi: Lokal/Offline">
+          <span class="dot" style="background:var(--slate-400)"></span>
+          <span class="network-text">Lokal</span>
+          </span>
+          
           <button type="button" id="btn-refresh-cloud" class="btn btn-outline btn-sm hidden" title="Sync Data" aria-label="Sinkronkan data dari Cloud">
             <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
