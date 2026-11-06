@@ -11,8 +11,8 @@
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec";
 
 // KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE
-const IMAGE_MAX_WIDTH = 1280;
-const IMAGE_JPEG_QUALITY = 0.75;
+const IMAGE_MAX_WIDTH = 2048;
+const IMAGE_JPEG_QUALITY = 0.85;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
 const OFFLINE_AUTH_CACHE_KEY = 'qc_ncr_offline_auth_v1';
