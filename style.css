@@ -191,8 +191,7 @@ th.sortable-th:focus-visible {
   flex-direction: column;
   flex-shrink: 0;
   box-shadow: none;
-  visibility: hidden; /* Sembunyikan total agar shadow tidak ikut tampil */
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
 
@@ -1704,6 +1703,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 768px) {
+  @media (max-width: 768px) {
   .sidebar {
     position: fixed;
     top: 0;
@@ -1711,8 +1711,17 @@ tbody tr:last-child td { border-bottom: none; }
     bottom: 0;
     margin-left: 0 !important;
     transform: translateX(-100%);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    visibility: hidden; /* Sembunyikan total di HP agar shadow kiri tidak mengintip */
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
+    box-shadow: none;
   }
+  
+  .admin-layout.mobile-sidebar-open .sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5);
+  }
+}
   .admin-layout.mobile-sidebar-open .sidebar { transform: translateX(0); }
   .admin-layout.mobile-sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .sidebar-close-mobile { display: inline-flex; }
