@@ -190,8 +190,15 @@ th.sortable-th:focus-visible {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  box-shadow: none; /* Pastikan defaultnya tidak ada bayangan */
   transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
+}
+
+/* Berikan bayangan hanya saat sidebar benar-benar terbuka di mode mobile */
+.admin-layout.mobile-sidebar-open .sidebar {
+  transform: translateX(0);
+  box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5);
 }
 
 .admin-layout.sidebar-collapsed .sidebar {
