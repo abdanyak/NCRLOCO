@@ -2014,7 +2014,12 @@ function renderHistoryView() {
         '</div>';
     } else {
       unitCardsHtml = '<div class="history-unit-scroll-box"><div class="history-unit-list">';
-      item.assignedProducts.forEach(prodName => {
+      // Diurutkan secara numerik agar unit tampil rapi (022, 023, dst)
+        const sortedAssignedProds = [...item.assignedProducts].sort((a, b) => 
+        String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' })
+      );
+
+        sortedAssignedProds.forEach(prodName => {
         const prodIdx = getProductIndex(prodName);
         const prodObj = products[prodIdx];
         const prodStateBadge = (prodObj && prodObj.status === 'archived')
