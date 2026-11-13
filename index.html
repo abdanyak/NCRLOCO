@@ -24,11 +24,21 @@
 </head>
 <body>
 
-  <!-- OVERLAY LOADING -->
+
+<!-- OVERLAY LOADING DENGAN PROGRESS PERSENTASE -->
   <div id="cloud-loading" class="cloud-loading hidden" role="status" aria-live="polite" aria-busy="true">
     <div class="cloud-loading-box">
-      <div class="spinner" aria-hidden="true"></div>
-      <div id="cloud-loading-text" class="cloud-loading-text">Menyimpan data...</div>
+      <div class="cloud-loading-top">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="cloud-loading-info">
+          <div id="cloud-loading-text" class="cloud-loading-text">Menyimpan data...</div>
+          <div id="cloud-loading-sub" class="cloud-loading-sub hidden">Menyiapkan koneksi...</div>
+        </div>
+        <div id="cloud-loading-pct" class="cloud-loading-pct hidden">0%</div>
+      </div>
+      <div id="cloud-progress-wrap" class="cloud-progress-wrap hidden">
+        <div id="cloud-progress-fill" class="cloud-progress-fill" style="width: 0%;"></div>
+      </div>
     </div>
   </div>
 
