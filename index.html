@@ -718,17 +718,37 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 4: UPLOAD BUKTI INSPECTOR ================= -->
+<!-- ================= MODAL 4: UPLOAD BUKTI INSPECTOR ================= -->
   <div id="modal-upload-foto" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-upload-foto">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="title-modal-upload-foto" class="modal-title">Upload Bukti Foto</h3>
+        <h3 id="title-modal-upload-foto" class="modal-title">Verifikasi & Upload Bukti Foto</h3>
         <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-upload-foto', false)">✕</button>
       </div>
       <form id="form-upload-foto">
         <div class="modal-body">
           <p id="upload-ncr-title" class="upload-ncr-subtitle"></p>
           <input type="hidden" id="upload-ncr-id">
+
+          <div class="form-group">
+            <label>Keputusan Status Poin NCR</label>
+            <div class="inspector-status-grid">
+              <label class="status-choice-card choice-closed">
+                <input type="radio" name="inspector-status-choice" id="status-choice-closed" value="CLOSED" checked>
+                <div class="status-choice-content">
+                  <span class="status-choice-title">CLOSED (Selesai)</span>
+                  <span class="status-choice-desc">Perbaikan selesai & OK</span>
+                </div>
+              </label>
+              <label class="status-choice-card choice-open">
+                <input type="radio" name="inspector-status-choice" id="status-choice-open" value="OPEN">
+                <div class="status-choice-content">
+                  <span class="status-choice-title">STILL OPEN</span>
+                  <span class="status-choice-desc">Masih progres / belum OK</span>
+                </div>
+              </label>
+            </div>
+          </div>
 
           <div class="form-group">
             <div class="checklist-header-row">
@@ -756,12 +776,12 @@
 
           <div class="form-group mb-0">
             <label for="foto-note">Catatan Inspector</label>
-            <input type="text" id="foto-note" required placeholder="Tulis hasil pengecekan...">
+            <input type="text" id="foto-note" required placeholder="Tulis hasil pengecekan / progres perbaikan...">
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" onclick="toggleModal('modal-upload-foto', false)">Batal</button>
-          <button type="submit" class="btn btn-emerald">Simpan & CLOSED</button>
+          <button type="submit" id="btn-submit-upload-foto" class="btn btn-emerald">Simpan & CLOSED</button>
         </div>
       </form>
     </div>
@@ -851,6 +871,56 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" onclick="toggleModal('modal-edit-user', false)">Batal</button>
           <button type="submit" class="btn btn-indigo">Simpan Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<!-- ================= MODAL 8: KOREKSI / BATALKAN UPLOAD INSPECTOR ================= -->
+  <div id="modal-cancel-upload" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="title-modal-cancel-upload">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="title-modal-cancel-upload" class="modal-title">Koreksi / Batalkan Upload</h3>
+        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup modal" onclick="toggleModal('modal-cancel-upload', false)">✕</button>
+      </div>
+      <form id="form-cancel-upload">
+        <div class="modal-body">
+          <p id="cancel-upload-subtitle" class="upload-ncr-subtitle"></p>
+          <input type="hidden" id="cancel-upload-ncr-id">
+          <input type="hidden" id="cancel-upload-source-unit">
+
+          <div class="form-group">
+            <label>Pilih Jenis Koreksi</label>
+            <div class="inspector-status-grid">
+              <label class="status-choice-card choice-open">
+                <input type="radio" name="cancel-upload-mode" id="cancel-mode-reset" value="CANCEL" checked>
+                <div class="status-choice-content">
+                  <span class="status-choice-title">Batalkan Upload</span>
+                  <span class="status-choice-desc">Hapus & beri label [BATAL] pada file foto di GDrive, status kembali OPEN</span>
+                </div>
+              </label>
+              <label class="status-choice-card choice-closed">
+                <input type="radio" name="cancel-upload-mode" id="cancel-mode-move" value="MOVE_UNIT">
+                <div class="status-choice-content">
+                  <span class="status-choice-title">Pindah ke Unit Lain</span>
+                  <span class="status-choice-desc">Pindahkan folder & otomatis ubah nama file foto di GDrive ke unit baru</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div id="move-target-unit-group" class="form-group hidden">
+            <label for="cancel-target-unit-select">Pilih Unit Tujuan yang Benar</label>
+            <select id="cancel-target-unit-select"></select>
+          </div>
+
+          <div class="form-group mb-0">
+            <label for="cancel-upload-reason">Alasan Pembatalan / Pemindahan</label>
+            <input type="text" id="cancel-upload-reason" required placeholder="Contoh: Salah pilih unit (seharusnya LOCO 024)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="toggleModal('modal-cancel-upload', false)">Tutup</button>
+          <button type="submit" id="btn-submit-cancel-upload" class="btn btn-rose-soft">Proses Koreksi</button>
         </div>
       </form>
     </div>
