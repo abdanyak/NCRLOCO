@@ -4,7 +4,7 @@
  * File: app.js (Audited & Fixed: IndexedDB, Sequential Image Processing,
  *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security,
  *       Mutex Offline Queue Sync, Auto-Reopen on Missing GDrive Photos,
- *       Background Sync Rotating Indicator, Upload Progress %, STILL OPEN Mode,
+ *       Background Sync Rotating Indicator, Upload Progress %, OPEN/CLOSED Mode,
  *       & Inspector Cancel/Move Upload with Auto-Rename GDrive)
  * ============================================================================
  */
@@ -512,7 +512,7 @@ function injectAuditEnhancementStyles() {
       transition: width 0.2s ease-out;
     }
 
-    /* Kartu Pilihan Status Inspector (CLOSED vs STILL OPEN) */
+    /* Kartu Pilihan Status Inspector (CLOSED vs OPEN) */
     .inspector-status-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1023,7 +1023,7 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= 5. DETEKSI FOTO GDRIVE HILANG & AUTO RE-OPEN (SUPPORT STILL OPEN) =================
+// ================= 5. DETEKSI FOTO GDRIVE HILANG & AUTO RE-OPEN (SUPPORT OPEN PROGRES) =================
 function normalizeFollowUpRecord(entry, fallbackPrev) {
   if (!entry) return null;
   const photos = getPhotosArray(entry).filter(Boolean);
@@ -1725,7 +1725,6 @@ function getPhotosArray(followUp) {
   if (followUp.photo) return [followUp.photo];
   return [];
 }
-
 // ================= SIDEBAR & NAVIGASI =================
 const appLayout = document.getElementById('app-view');
 const btnHamburger = document.getElementById('btn-hamburger');
@@ -2409,7 +2408,7 @@ function renderHistoryView() {
         const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '', history: [] };
         const photos = getPhotosArray(followUp);
         const isTrulyClosed = followUp.status === 'CLOSED' && photos.length > 0;
-        const isStillOpenWithPhotos = followUp.status === 'OPEN' && photos.length > 0;
+        const isOpenWithPhotos = followUp.status === 'OPEN' && photos.length > 0;
         const auditBtnHtml = buildAuditHistoryButtonHtml(prodIdx, item.id, followUp);
 
         if (isTrulyClosed) {
@@ -2430,7 +2429,7 @@ function renderHistoryView() {
                 buildThumbnailsHtml(photos, prodIdx, item.id) +
               '</div>' +
             '</div>';
-        } else if (isStillOpenWithPhotos) {
+        } else if (isOpenWithPhotos) {
           const driveLinkHtml = followUp.folderUrl
             ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
             : '';
@@ -2440,7 +2439,7 @@ function renderHistoryView() {
               '<div class="unit-title-text">' + escapeHtml(prodName) + ' ' + prodStateBadge + '</div>' +
               '<div class="unit-card-bottom-row">' +
                 '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0;">' +
-                  '<span class="badge badge-still-open">STILL OPEN (' + photos.length + ')</span>' +
+                  '<span class="badge badge-open">OPEN (' + photos.length + ')</span>' +
                   '<div style="font-size:11.5px; color:var(--slate-700);">' + escapeHtml(followUp.note || '-') + '</div>' +
                   driveLinkHtml +
                   (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
@@ -2589,7 +2588,7 @@ function renderNcrTable() {
     const photos = getPhotosArray(followUp);
     const hasUploadedPhotos = photos.length > 0;
     const isClosed = followUp.status === 'CLOSED' && hasUploadedPhotos;
-    const isStillOpenWithPhotos = followUp.status === 'OPEN' && hasUploadedPhotos;
+    const isOpenWithPhotos = followUp.status === 'OPEN' && hasUploadedPhotos;
     const auditBtnHtml = buildAuditHistoryButtonHtml(currentProdIdx, item.id, followUp);
 
     const reopenInfoHtml = (!isClosed && followUp.reopenReason)
@@ -2601,8 +2600,8 @@ function renderNcrTable() {
       statusBadge = '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
         (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + escapeHtml(followUp.updatedAt) + '</div>' : '') +
         (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
-    } else if (isStillOpenWithPhotos) {
-      statusBadge = '<span class="badge badge-still-open">STILL OPEN (' + photos.length + ')</span>' +
+    } else if (isOpenWithPhotos) {
+      statusBadge = '<span class="badge badge-open">OPEN (' + photos.length + ')</span>' +
         (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-500); margin-top:3px;">Update: ' + escapeHtml(followUp.updatedAt) + '</div>' : '') +
         reopenInfoHtml +
         (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
@@ -2646,9 +2645,9 @@ function renderNcrTable() {
         actionBtn =
           '<div class="unit-action-group mobile-action-group">' +
             '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' +
-              HEROICONS.camera + ' <span>' + (isStillOpenWithPhotos ? 'Update Status' : 'Verifikasi') + '</span>' +
+              HEROICONS.camera + ' <span>' + (isOpenWithPhotos ? 'Update Status' : 'Verifikasi') + '</span>' +
             '</button>' +
-            (isStillOpenWithPhotos
+            (isOpenWithPhotos
               ? '<button type="button" class="btn btn-rose-soft btn-sm" onclick="openCancelOrMoveUploadModal(' + item.id + ')">' + HEROICONS.arrowPath + ' <span>Batal / Pindah</span></button>'
               : '') +
           '</div>';
@@ -2687,6 +2686,7 @@ function renderNcrTable() {
     tbody.appendChild(tr);
   });
 }
+
 // LEPAS NCR DARI UNIT SAAT INI TANPA MENGHAPUS MASTER NCR GLOBAL
 window.unassignNcrFromUnit = async function(ncrId) {
   const ncr = masterNcrList.find(item => item.id === ncrId);
@@ -2791,7 +2791,7 @@ window.openLightboxByIndex = function(prodIdx, ncrId, startPhotoIndex) {
   activeLightboxIndex = startPhotoIndex || 0;
   activeLightboxContext = { type: 'followup', prodIdx, ncrId };
 
-  const statusTag = (followUp && followUp.status === 'OPEN') ? '[STILL OPEN] ' : '';
+  const statusTag = (followUp && followUp.status === 'OPEN') ? '[OPEN] ' : '';
   document.getElementById('lightbox-title').textContent = statusTag + (ncr ? ncr.no : '') + ' — ' + prodName;
   document.getElementById('lightbox-note').textContent = 'Catatan: "' + (followUp.note || '-') + '"';
   document.getElementById('lightbox-meta').textContent =
@@ -3325,7 +3325,7 @@ function switchTab(tab) {
   }
 }
 
-// ================= UPLOAD BUKTI INSPECTOR (MENDUKUNG CLOSED & STILL OPEN) =================
+// ================= UPLOAD BUKTI INSPECTOR (MENDUKUNG CLOSED & OPEN) =================
 function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAGE_JPEG_QUALITY) {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -3405,11 +3405,11 @@ window.openUploadModal = function(id) {
 };
 
 function updateUploadSubmitButtonLabel() {
-  const isStillOpen = document.getElementById('status-choice-open') && document.getElementById('status-choice-open').checked;
+  const isOpenSelected = document.getElementById('status-choice-open') && document.getElementById('status-choice-open').checked;
   const submitBtn = document.getElementById('btn-submit-upload-foto');
   if (!submitBtn) return;
-  if (isStillOpen) {
-    submitBtn.textContent = 'Simpan (STILL OPEN)';
+  if (isOpenSelected) {
+    submitBtn.textContent = 'Simpan & OPEN';
     submitBtn.className = 'btn btn-indigo';
   } else {
     submitBtn.textContent = 'Simpan & CLOSED';
@@ -3517,7 +3517,7 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
       folderUrl: prevFollowUp.folderUrl || '',
       reopenedBy: currentUsername,
       reopenedAt: timeStr,
-      reopenReason: chosenStatus === 'CLOSED' ? 'Update dari STILL OPEN ke CLOSED' : 'Update Progres STILL OPEN'
+      reopenReason: chosenStatus === 'CLOSED' ? 'Update dari OPEN ke CLOSED' : 'Update Progres OPEN'
     });
   }
 
@@ -3549,7 +3549,7 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
     inspector: currentUsername,
     photos: compressedDataUrls,
     history: existingHistory
-  }, `Mengunggah ${compressedDataUrls.length} foto (${chosenStatus === 'CLOSED' ? 'CLOSED' : 'STILL OPEN'})...`);
+  }, `Mengunggah ${compressedDataUrls.length} foto (${chosenStatus})...`);
 });
 
 // ================= FITUR BATALKAN UPLOAD / PINDAH UNIT & AUTO-RENAME GDRIVE =================
