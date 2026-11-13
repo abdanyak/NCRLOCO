@@ -3,7 +3,9 @@
  * QC PORTAL — MONITORING & HISTORY NCR
  * File: app.js (Audited & Fixed: IndexedDB, Sequential Image Processing,
  *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security,
- *       Mutex Offline Queue Sync & Auto-Reopen on Missing GDrive Photos)
+ *       Mutex Offline Queue Sync, Auto-Reopen on Missing GDrive Photos,
+ *       Background Sync Rotating Indicator, Upload Progress %, STILL OPEN Mode,
+ *       & Inspector Cancel/Move Upload with Auto-Rename GDrive)
  * ============================================================================
  */
 
@@ -51,6 +53,7 @@ let isSyncingOfflineQueue = false;
 let isSyncingFromCloud = false;
 let gdriveExternalOpenedAt = 0;
 let cacheBustToken = Date.now();
+let uploadProgressTimer = null;
 const pendingAutoReopenKeys = new Set();
 
 let tempImageList = [];
@@ -441,12 +444,129 @@ function injectAuditEnhancementStyles() {
       margin-top: 2px;
     }
 
-    /* Indikator Cloud/Lokal Responsif */
+    /* Indikator Cloud/Lokal Responsif & Rotating Sync Arrow */
     .network-indicator-badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
       cursor: help;
+    }
+    .spin-icon {
+      animation: spin 0.85s linear infinite !important;
+    }
+    #btn-refresh-cloud.is-syncing svg {
+      animation: spin 0.85s linear infinite;
+      color: var(--indigo-600);
+    }
+    .badge-syncing {
+      background: var(--indigo-50) !important;
+      color: var(--indigo-700) !important;
+      border: 1px solid var(--indigo-100) !important;
+    }
+
+    /* Progress Bar Persentase Upload */
+    .cloud-loading-box {
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 300px;
+      max-width: min(400px, 92vw);
+      gap: 10px;
+    }
+    .cloud-loading-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .cloud-loading-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .cloud-loading-sub {
+      font-size: 11.5px;
+      color: var(--slate-500);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cloud-loading-pct {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--indigo-600);
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .cloud-progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--slate-100);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--slate-200);
+    }
+    .cloud-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--indigo-500), var(--emerald-500));
+      border-radius: 999px;
+      transition: width 0.2s ease-out;
+    }
+
+    /* Kartu Pilihan Status Inspector (CLOSED vs STILL OPEN) */
+    .inspector-status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .status-choice-card {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid var(--slate-200);
+      background: var(--slate-50);
+      cursor: pointer;
+      margin-bottom: 0;
+      transition: all 0.15s ease;
+    }
+    .status-choice-card input[type="radio"] {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .status-choice-card:has(input:checked).choice-closed {
+      background: var(--emerald-50);
+      border-color: var(--emerald-500);
+    }
+    .status-choice-card:has(input:checked).choice-open {
+      background: var(--rose-50);
+      border-color: var(--rose-500);
+    }
+    .status-choice-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .status-choice-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--slate-900);
+    }
+    .status-choice-desc {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--slate-500);
+      line-height: 1.3;
+    }
+    .badge-still-open {
+      background: var(--amber-50);
+      color: var(--amber-700);
+      border: 1px solid var(--amber-500);
     }
 
     @media (max-width: 768px) {
@@ -492,6 +612,11 @@ function injectAuditEnhancementStyles() {
         max-height: 94vh !important;
         max-height: 94dvh !important;
         border-radius: 20px 20px 0 0 !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .inspector-status-grid {
+        grid-template-columns: 1fr;
       }
     }
   `;
@@ -898,7 +1023,7 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= 5. DETEKSI FOTO GDRIVE HILANG & AUTO RE-OPEN KE MERAH (OPEN) =================
+// ================= 5. DETEKSI FOTO GDRIVE HILANG & AUTO RE-OPEN (SUPPORT STILL OPEN) =================
 function normalizeFollowUpRecord(entry, fallbackPrev) {
   if (!entry) return null;
   const photos = getPhotosArray(entry).filter(Boolean);
@@ -907,9 +1032,13 @@ function normalizeFollowUpRecord(entry, fallbackPrev) {
     : (fallbackPrev && Array.isArray(fallbackPrev.history) ? fallbackPrev.history : []);
 
   const hasValidPhotos = photos.length > 0;
-  const effectiveStatus = (entry.status === 'CLOSED' && hasValidPhotos) ? 'CLOSED' : 'OPEN';
+  const rawStatus = String(entry.status || 'OPEN').toUpperCase();
+  const effectiveStatus = (rawStatus === 'CLOSED' && hasValidPhotos) ? 'CLOSED' : 'OPEN';
+
+  // Hanya tandai sebagai foto terhapus otomatis jika status sebelumnya CLOSED namun fotonya kosong
+  const isAutoReopenedByMissingPhoto = (rawStatus === 'CLOSED' && !hasValidPhotos);
   const reopenReason = effectiveStatus === 'OPEN'
-    ? (entry.reopenReason || (fallbackPrev ? fallbackPrev.reopenReason : '') || (entry.status === 'CLOSED' ? 'Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan' : ''))
+    ? (entry.reopenReason || (fallbackPrev ? fallbackPrev.reopenReason : '') || (isAutoReopenedByMissingPhoto ? 'Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan' : ''))
     : '';
 
   return {
@@ -917,7 +1046,7 @@ function normalizeFollowUpRecord(entry, fallbackPrev) {
     status: effectiveStatus,
     photos: photos,
     history: history,
-    reopenedBy: entry.reopenedBy || (fallbackPrev ? fallbackPrev.reopenedBy : '') || (effectiveStatus === 'OPEN' && entry.status === 'CLOSED' ? 'Sistem Otomatis' : ''),
+    reopenedBy: entry.reopenedBy || (fallbackPrev ? fallbackPrev.reopenedBy : '') || (isAutoReopenedByMissingPhoto ? 'Sistem Otomatis' : ''),
     reopenedAt: entry.reopenedAt || (fallbackPrev ? fallbackPrev.reopenedAt : ''),
     reopenReason: reopenReason
   };
@@ -940,7 +1069,7 @@ async function autoReopenMissingDrivePhoto(prodName, ncrId) {
     const prevHistory = Array.isArray(followUp.history) ? [...followUp.history] : [];
     if (followUp.note || followUp.inspector) {
       prevHistory.push({
-        status: 'CLOSED',
+        status: followUp.status || 'CLOSED',
         photos: [],
         note: followUp.note || '-',
         inspector: followUp.inspector || '-',
@@ -1029,11 +1158,33 @@ window.handleMasterPhotoError = function(ncrId, brokenPhotoIdx) {
   }
 };
 
-// ================= STATUS JARINGAN REAL-TIME & INDIKATOR ANTREAN =================
+// ================= STATUS JARINGAN REAL-TIME & ROTATING ARROW SYNC INDICATOR =================
+function setBackgroundSyncIndicator(isSyncing, syncText = 'Syncing...') {
+  const modeBadge = document.getElementById('storage-mode-badge');
+  const btnRefresh = document.getElementById('btn-refresh-cloud');
+  if (btnRefresh && isCloudConfigured()) {
+    btnRefresh.classList.remove('hidden');
+    if (isSyncing) btnRefresh.classList.add('is-syncing');
+    else btnRefresh.classList.remove('is-syncing');
+  }
+
+  if (!modeBadge) return;
+  if (isSyncing) {
+    const rotatingArrowSvg = '<svg class="icon-sm spin-icon" style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>';
+    modeBadge.innerHTML = `${rotatingArrowSvg}<span class="network-text">${escapeHtml(syncText)}</span>`;
+    modeBadge.className = 'badge badge-syncing network-indicator-badge';
+    modeBadge.title = 'Sedang menyinkronkan data dengan Cloud...';
+  } else {
+    updateNetworkStatusUI(navigator.onLine);
+  }
+}
+
 function updateNetworkStatusUI(isOnline) {
   const modeBadge = document.getElementById('storage-mode-badge');
   const btnRefresh = document.getElementById('btn-refresh-cloud');
   if (!modeBadge) return;
+
+  if (btnRefresh) btnRefresh.classList.remove('is-syncing');
 
   const pendingCount = Number(localStorage.getItem(OFFLINE_QUEUE_KEY + '_count') || '0');
   const pendingSuffix = pendingCount > 0 ? ` (${pendingCount})` : '';
@@ -1080,18 +1231,102 @@ window.addEventListener('focus', function() {
   }
 });
 
-// ================= SINKRONISASI CLOUD, INDEXEDDB & ANTREAN OFFLINE =================
+// ================= SINKRONISASI CLOUD, PROGRESS UPLOAD % & ANTREAN OFFLINE =================
 function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
 
-function showCloudLoading(show, text) {
+function showCloudLoading(show, text, options = {}) {
   const el = document.getElementById('cloud-loading');
   const txt = document.getElementById('cloud-loading-text');
+  const sub = document.getElementById('cloud-loading-sub');
+  const pctEl = document.getElementById('cloud-loading-pct');
+  const barWrap = document.getElementById('cloud-progress-wrap');
+  const barFill = document.getElementById('cloud-progress-fill');
+
   if (text && txt) txt.textContent = text;
   if (!el) return;
-  if (show) el.classList.remove('hidden');
-  else el.classList.add('hidden');
+
+  if (!show) {
+    if (uploadProgressTimer) {
+      clearInterval(uploadProgressTimer);
+      uploadProgressTimer = null;
+    }
+    el.classList.add('hidden');
+    if (sub) sub.classList.add('hidden');
+    if (pctEl) pctEl.classList.add('hidden');
+    if (barWrap) barWrap.classList.add('hidden');
+    if (barFill) barFill.style.width = '0%';
+    return;
+  }
+
+  el.classList.remove('hidden');
+
+  if (options.showProgress) {
+    const pct = Math.min(100, Math.max(0, Math.round(options.percent || 0)));
+    if (pctEl) {
+      pctEl.textContent = pct + '%';
+      pctEl.classList.remove('hidden');
+    }
+    if (barWrap) barWrap.classList.remove('hidden');
+    if (barFill) barFill.style.width = pct + '%';
+    if (sub && options.subText) {
+      sub.textContent = options.subText;
+      sub.classList.remove('hidden');
+    }
+  } else {
+    if (sub) sub.classList.add('hidden');
+    if (pctEl) pctEl.classList.add('hidden');
+    if (barWrap) barWrap.classList.add('hidden');
+  }
+}
+
+function startUploadProgressSimulation(photoCount, baseLabel) {
+  if (uploadProgressTimer) clearInterval(uploadProgressTimer);
+  const totalPhotos = Math.max(1, photoCount || 1);
+  let currentPct = 4;
+
+  const estimatedMs = 1800 + (totalPhotos * 1700);
+  const stepMs = 120;
+  const increment = (90 / (estimatedMs / stepMs));
+
+  showCloudLoading(true, baseLabel, {
+    showProgress: true,
+    percent: currentPct,
+    subText: `Menyiapkan pengiriman ${totalPhotos} file ke server...`
+  });
+
+  uploadProgressTimer = setInterval(() => {
+    if (currentPct < 94) {
+      currentPct += increment * (currentPct > 75 ? 0.45 : 1);
+      if (currentPct > 94) currentPct = 94;
+    }
+
+    const currentPhotoIdx = Math.min(totalPhotos, Math.max(1, Math.ceil((currentPct / 88) * totalPhotos)));
+    let stageText = `Mengunggah & menyimpan File ${currentPhotoIdx} dari ${totalPhotos} ke Google Drive...`;
+    if (currentPct >= 88) {
+      stageText = 'Mengatur izin link Google Drive & memperbarui Spreadsheet...';
+    }
+
+    showCloudLoading(true, baseLabel, {
+      showProgress: true,
+      percent: currentPct,
+      subText: stageText
+    });
+  }, stepMs);
+}
+
+async function finishUploadProgressAnimation(baseLabel) {
+  if (uploadProgressTimer) {
+    clearInterval(uploadProgressTimer);
+    uploadProgressTimer = null;
+  }
+  showCloudLoading(true, baseLabel, {
+    showProgress: true,
+    percent: 100,
+    subText: '100% — Seluruh file berhasil disimpan di Google Drive!'
+  });
+  await new Promise(r => setTimeout(r, 320));
 }
 
 async function saveToLocalStorage() {
@@ -1191,6 +1426,9 @@ async function saveToOfflineQueue(payload) {
     if (cleanPayload.action === 'REOPEN_NCR' && p.action === 'REOPEN_NCR') {
       return p.productName === cleanPayload.productName && Number(p.ncrId) === Number(cleanPayload.ncrId);
     }
+    if (cleanPayload.action === 'CANCEL_OR_MOVE_FOLLOWUP' && p.action === 'CANCEL_OR_MOVE_FOLLOWUP') {
+      return p.productName === cleanPayload.productName && Number(p.ncrId) === Number(cleanPayload.ncrId);
+    }
     return false;
   });
 
@@ -1233,7 +1471,12 @@ async function processOfflineQueue() {
   try {
     while (remainingQueue.length > 0) {
       const item = remainingQueue[0];
-      showCloudLoading(true, `Menyinkronkan (${syncedCount + 1}/${initialCount})...`);
+      const pctQueue = Math.round(((syncedCount) / initialCount) * 100);
+      showCloudLoading(true, `Menyinkronkan (${syncedCount + 1}/${initialCount})...`, {
+        showProgress: true,
+        percent: pctQueue,
+        subText: `Mengirim aksi: ${item.payload.action}`
+      });
 
       try {
         const requestPayload = {
@@ -1349,8 +1592,13 @@ async function syncFromCloud(silent = false) {
     return;
   }
 
+  setBackgroundSyncIndicator(true, 'Syncing...');
+
   const alreadyUpdatedFromQueue = await processOfflineQueue();
-  if (alreadyUpdatedFromQueue) return;
+  if (alreadyUpdatedFromQueue) {
+    setBackgroundSyncIndicator(false);
+    return;
+  }
 
   isSyncingFromCloud = true;
 
@@ -1366,7 +1614,6 @@ async function syncFromCloud(silent = false) {
 
     if (json.status === 'success' && json.data) {
       cacheBustToken = Date.now();
-      updateNetworkStatusUI(true);
       products = json.data.products || [];
       users = (json.data.users && json.data.users.length > 0) ? sanitizeUsersList(json.data.users) : users;
       masterNcrList = mergeCloudMasterWithLocalExtras(json.data.masterNcrList || []);
@@ -1380,12 +1627,14 @@ async function syncFromCloud(silent = false) {
       await saveToLocalStorage();
       renderProductDropdown();
       renderAllViews();
+      updateNetworkStatusUI(true);
     }
   } catch (err) {
     console.error('Gagal memuat dari Cloud:', err);
     updateNetworkStatusUI(false);
   } finally {
     isSyncingFromCloud = false;
+    setBackgroundSyncIndicator(false);
     if (!silent) showCloudLoading(false);
   }
 }
@@ -1408,7 +1657,19 @@ async function sendActionToBackend(payload, loadingText) {
     return;
   }
 
-  showCloudLoading(true, loadingText || 'Menyimpan data...');
+  const uploadedPhotosList = payload.photos || payload.masterPhotos || [];
+  const newBase64Count = Array.isArray(uploadedPhotosList)
+    ? uploadedPhotosList.filter(p => String(p || '').startsWith('data:image')).length
+    : 0;
+  const hasDocBase64 = Boolean(payload.gdriveFileData && String(payload.gdriveFileData).startsWith('data:'));
+  const usePercentageProgress = (newBase64Count > 0 || hasDocBase64);
+
+  if (usePercentageProgress) {
+    startUploadProgressSimulation(newBase64Count + (hasDocBase64 ? 1 : 0), loadingText || 'Mengunggah file ke Cloud...');
+  } else {
+    showCloudLoading(true, loadingText || 'Menyimpan data...');
+  }
+
   try {
     const res = await fetch(GAS_API_URL, {
       method: 'POST',
@@ -1422,6 +1683,9 @@ async function sendActionToBackend(payload, loadingText) {
     }
 
     if (json.status === 'success' && json.data) {
+      if (usePercentageProgress) {
+        await finishUploadProgressAnimation(loadingText || 'Upload Selesai!');
+      }
       cacheBustToken = Date.now();
       updateNetworkStatusUI(true);
       products = json.data.products || [];
@@ -1432,7 +1696,7 @@ async function sendActionToBackend(payload, loadingText) {
       renderProductDropdown();
       renderAllViews();
 
-      showToast('Data berhasil disimpan ke Cloud.', 'success');
+      showToast(json.message || 'Data berhasil disimpan ke Cloud.', 'success');
       await processOfflineQueue();
     } else if (json.status === 'auth_error') {
       showToast(json.message || 'Sesi Anda telah berakhir. Silakan login kembali.', 'error');
@@ -1993,7 +2257,7 @@ window.openAuditHistoryModal = function(prodIdx, ncrId) {
           <b>Inspector:</b> ${escapeHtml(entry.inspector || '-')} • <b>Catatan:</b> "${escapeHtml(entry.note || '-')}"
         </div>
         <div style="font-size:11.5px; color:var(--amber-700); margin-top:4px; background:var(--amber-50); padding:4px 7px; border-radius:5px;">
-          <b>Di-Reopen oleh:</b> ${escapeHtml(entry.reopenedBy || 'Admin')} (${escapeHtml(entry.reopenedAt || '-')})<br>
+          <b>Di-Reopen / Koreksi oleh:</b> ${escapeHtml(entry.reopenedBy || 'Admin')} (${escapeHtml(entry.reopenedAt || '-')})<br>
           <b>Alasan:</b> ${escapeHtml(entry.reopenReason || 'Verifikasi ulang')}
         </div>
         ${photoCount > 0 ? `<div style="margin-top:6px;"><button type="button" class="btn btn-outline btn-sm" onclick="openAuditPhotosLightbox(${prodIdx}, ${ncrId}, ${historyList.length - 1 - idx})">${HEROICONS.eye} <span>Lihat ${photoCount} Foto Bukti Lama</span></button></div>` : ''}
@@ -2145,6 +2409,7 @@ function renderHistoryView() {
         const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '', history: [] };
         const photos = getPhotosArray(followUp);
         const isTrulyClosed = followUp.status === 'CLOSED' && photos.length > 0;
+        const isStillOpenWithPhotos = followUp.status === 'OPEN' && photos.length > 0;
         const auditBtnHtml = buildAuditHistoryButtonHtml(prodIdx, item.id, followUp);
 
         if (isTrulyClosed) {
@@ -2165,9 +2430,27 @@ function renderHistoryView() {
                 buildThumbnailsHtml(photos, prodIdx, item.id) +
               '</div>' +
             '</div>';
+        } else if (isStillOpenWithPhotos) {
+          const driveLinkHtml = followUp.folderUrl
+            ? '<a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a>'
+            : '';
+
+          unitCardsHtml +=
+            '<div class="history-unit-card is-open">' +
+              '<div class="unit-title-text">' + escapeHtml(prodName) + ' ' + prodStateBadge + '</div>' +
+              '<div class="unit-card-bottom-row">' +
+                '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0;">' +
+                  '<span class="badge badge-still-open">STILL OPEN (' + photos.length + ')</span>' +
+                  '<div style="font-size:11.5px; color:var(--slate-700);">' + escapeHtml(followUp.note || '-') + '</div>' +
+                  driveLinkHtml +
+                  (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '') +
+                '</div>' +
+                buildThumbnailsHtml(photos, prodIdx, item.id) +
+              '</div>' +
+            '</div>';
         } else {
           const reopenNotice = followUp.reopenReason
-            ? `<div class="reopen-audit-box"><b>Re-Open:</b> ${escapeHtml(followUp.reopenReason)}</div>`
+            ? `<div class="reopen-audit-box"><b>Info:</b> ${escapeHtml(followUp.reopenReason)}</div>`
             : '<div style="font-size:11.5px; color:var(--rose-600); margin-top:2px;">Belum dicek</div>';
 
           unitCardsHtml +=
@@ -2304,28 +2587,39 @@ function renderNcrTable() {
     const key = selectedProduct + '_' + item.id;
     const followUp = productFollowUps[key] || { status: 'OPEN', photos: [], note: '', folderUrl: '', history: [] };
     const photos = getPhotosArray(followUp);
-    const isClosed = followUp.status === 'CLOSED' && photos.length > 0;
+    const hasUploadedPhotos = photos.length > 0;
+    const isClosed = followUp.status === 'CLOSED' && hasUploadedPhotos;
+    const isStillOpenWithPhotos = followUp.status === 'OPEN' && hasUploadedPhotos;
     const auditBtnHtml = buildAuditHistoryButtonHtml(currentProdIdx, item.id, followUp);
 
     const reopenInfoHtml = (!isClosed && followUp.reopenReason)
-      ? `<div class="reopen-audit-box"><b>Di-Reopen:</b> ${escapeHtml(followUp.reopenReason)}</div>`
+      ? `<div class="reopen-audit-box"><b>Info:</b> ${escapeHtml(followUp.reopenReason)}</div>`
       : '';
 
-    const statusBadge = !isClosed
-      ? '<span class="badge badge-open">OPEN</span>' + reopenInfoHtml + (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '')
-      : '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
+    let statusBadge = '';
+    if (isClosed) {
+      statusBadge = '<span class="badge badge-closed">CLOSED (' + photos.length + ')</span>' +
         (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-400); margin-top:3px;">' + escapeHtml(followUp.updatedAt) + '</div>' : '') +
         (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
+    } else if (isStillOpenWithPhotos) {
+      statusBadge = '<span class="badge badge-still-open">STILL OPEN (' + photos.length + ')</span>' +
+        (followUp.updatedAt ? '<div style="font-size:11px; color:var(--slate-500); margin-top:3px;">Update: ' + escapeHtml(followUp.updatedAt) + '</div>' : '') +
+        reopenInfoHtml +
+        (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
+    } else {
+      statusBadge = '<span class="badge badge-open">OPEN</span>' + reopenInfoHtml + (auditBtnHtml ? `<div>${auditBtnHtml}</div>` : '');
+    }
 
-    const driveFolderBtn = (isClosed && followUp.folderUrl)
+    const driveFolderBtn = (hasUploadedPhotos && followUp.folderUrl)
       ? '<div><a href="' + escapeHtml(followUp.folderUrl) + '" target="_blank" rel="noopener" class="gdrive-folder-link">' + HEROICONS.folderOpen + ' <span>GDrive</span></a></div>'
       : '';
 
-    const photoCell = isClosed
+    const photoCell = hasUploadedPhotos
       ? '<div class="thumb-wrapper">' +
           buildThumbnailsHtml(photos, currentProdIdx, item.id) +
           '<div style="flex:1; min-width:110px;">' +
             '<div style="font-size:12.5px; color:var(--slate-700); font-weight:600;">' + escapeHtml(followUp.note) + '</div>' +
+            (followUp.inspector ? '<div style="font-size:11px; color:var(--slate-400);">Oleh: ' + escapeHtml(followUp.inspector) + '</div>' : '') +
             '<div style="font-size:11.5px; color:var(--indigo-600); cursor:pointer; font-weight:700; margin-top:3px;" role="button" tabindex="0" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0);}">Galeri (' + photos.length + ') &rarr;</div>' +
             driveFolderBtn +
           '</div>' +
@@ -2338,8 +2632,11 @@ function renderNcrTable() {
     if (currentRole === 'admin') {
       actionBtn =
         '<div class="unit-action-group mobile-action-group">' +
+          (hasUploadedPhotos
+            ? '<button type="button" class="btn btn-amber-soft btn-sm" onclick="openCancelOrMoveUploadModal(' + item.id + ')" title="Batalkan atau Pindahkan Upload">' + HEROICONS.arrowPath + ' <span>Koreksi/Pindah</span></button>'
+            : '') +
           (isClosed
-            ? '<button type="button" class="btn btn-amber-soft btn-sm" onclick="reopenUnitNcr(' + item.id + ')" title="Kembalikan ke status OPEN">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
+            ? '<button type="button" class="btn btn-outline btn-sm" onclick="reopenUnitNcr(' + item.id + ')" title="Kembalikan ke status OPEN">' + HEROICONS.arrowPath + ' <span>Re-Open</span></button>'
             : '') +
           '<button type="button" class="btn btn-outline btn-sm" onclick="openEditNcrModal(' + item.id + ')" title="Edit Master NCR">' + HEROICONS.pencil + ' <span>Edit</span></button>' +
           '<button type="button" class="btn btn-rose-soft btn-sm" onclick="unassignNcrFromUnit(' + item.id + ')" title="Lepas NCR hanya dari unit ini">' + HEROICONS.unlink + ' <span>Lepas Unit</span></button>' +
@@ -2349,14 +2646,20 @@ function renderNcrTable() {
         actionBtn =
           '<div class="unit-action-group mobile-action-group">' +
             '<button type="button" class="btn btn-emerald btn-sm" onclick="openUploadModal(' + item.id + ')">' +
-              HEROICONS.camera + ' <span>Verifikasi</span>' +
+              HEROICONS.camera + ' <span>' + (isStillOpenWithPhotos ? 'Update Status' : 'Verifikasi') + '</span>' +
             '</button>' +
+            (isStillOpenWithPhotos
+              ? '<button type="button" class="btn btn-rose-soft btn-sm" onclick="openCancelOrMoveUploadModal(' + item.id + ')">' + HEROICONS.arrowPath + ' <span>Batal / Pindah</span></button>'
+              : '') +
           '</div>';
       } else {
         actionBtn =
           '<div class="unit-action-group mobile-action-group">' +
             '<button type="button" class="btn btn-outline btn-sm" onclick="openLightboxByIndex(' + currentProdIdx + ', ' + item.id + ', 0)">' +
               HEROICONS.eye + ' <span>Lihat Foto (' + photos.length + ')</span>' +
+            '</button>' +
+            '<button type="button" class="btn btn-rose-soft btn-sm" onclick="openCancelOrMoveUploadModal(' + item.id + ')" title="Batalkan upload atau pindahkan ke unit lain">' +
+              HEROICONS.arrowPath + ' <span>Batal / Pindah</span>' +
             '</button>' +
           '</div>';
       }
@@ -2384,7 +2687,6 @@ function renderNcrTable() {
     tbody.appendChild(tr);
   });
 }
-
 // LEPAS NCR DARI UNIT SAAT INI TANPA MENGHAPUS MASTER NCR GLOBAL
 window.unassignNcrFromUnit = async function(ncrId) {
   const ncr = masterNcrList.find(item => item.id === ncrId);
@@ -2434,9 +2736,9 @@ window.reopenUnitNcr = async function(ncrId) {
     ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
   const prevHistory = (prevFollowUp && Array.isArray(prevFollowUp.history)) ? [...prevFollowUp.history] : [];
-  if (prevFollowUp && prevFollowUp.status === 'CLOSED') {
+  if (prevFollowUp && (prevFollowUp.status === 'CLOSED' || getPhotosArray(prevFollowUp).length > 0)) {
     prevHistory.push({
-      status: 'CLOSED',
+      status: prevFollowUp.status || 'CLOSED',
       photos: getPhotosArray(prevFollowUp),
       note: prevFollowUp.note || '',
       inspector: prevFollowUp.inspector || '',
@@ -2489,7 +2791,8 @@ window.openLightboxByIndex = function(prodIdx, ncrId, startPhotoIndex) {
   activeLightboxIndex = startPhotoIndex || 0;
   activeLightboxContext = { type: 'followup', prodIdx, ncrId };
 
-  document.getElementById('lightbox-title').textContent = (ncr ? ncr.no : '') + ' — ' + prodName;
+  const statusTag = (followUp && followUp.status === 'OPEN') ? '[STILL OPEN] ' : '';
+  document.getElementById('lightbox-title').textContent = statusTag + (ncr ? ncr.no : '') + ' — ' + prodName;
   document.getElementById('lightbox-note').textContent = 'Catatan: "' + (followUp.note || '-') + '"';
   document.getElementById('lightbox-meta').textContent =
     (followUp.inspector ? 'Inspector: ' + followUp.inspector : '') +
@@ -3022,7 +3325,7 @@ function switchTab(tab) {
   }
 }
 
-// ================= UPLOAD BUKTI INSPECTOR (HEMAT RAM DENGAN OBJECT URL) =================
+// ================= UPLOAD BUKTI INSPECTOR (MENDUKUNG CLOSED & STILL OPEN) =================
 function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAGE_JPEG_QUALITY) {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -3081,15 +3384,42 @@ function compressAndResizeImage(file, maxWidth = IMAGE_MAX_WIDTH, quality = IMAG
 
 window.openUploadModal = function(id) {
   const ncr = masterNcrList.find(item => item.id === id);
+  const key = selectedProduct + '_' + id;
+  const existingFollowUp = productFollowUps[key];
+
   document.getElementById('upload-ncr-id').value = id;
   document.getElementById('upload-ncr-title').textContent = selectedProduct + ' — ' + (ncr ? ncr.no + ' (' + ncr.title + ')' : '');
   document.getElementById('foto-input-camera').value = '';
   document.getElementById('foto-input-gallery').value = '';
-  document.getElementById('foto-note').value = '';
+  document.getElementById('foto-note').value = (existingFollowUp && existingFollowUp.status === 'OPEN' && existingFollowUp.note)
+    ? existingFollowUp.note
+    : '';
+
+  const radioClosed = document.getElementById('status-choice-closed');
+  if (radioClosed) radioClosed.checked = true;
+  updateUploadSubmitButtonLabel();
+
   tempImageList = [];
   renderUploadPreviewGrid();
   toggleModal('modal-upload-foto', true);
 };
+
+function updateUploadSubmitButtonLabel() {
+  const isStillOpen = document.getElementById('status-choice-open') && document.getElementById('status-choice-open').checked;
+  const submitBtn = document.getElementById('btn-submit-upload-foto');
+  if (!submitBtn) return;
+  if (isStillOpen) {
+    submitBtn.textContent = 'Simpan (STILL OPEN)';
+    submitBtn.className = 'btn btn-indigo';
+  } else {
+    submitBtn.textContent = 'Simpan & CLOSED';
+    submitBtn.className = 'btn btn-emerald';
+  }
+}
+
+document.querySelectorAll('input[name="inspector-status-choice"]').forEach(radio => {
+  radio.addEventListener('change', updateUploadSubmitButtonLabel);
+});
 
 async function handleSelectedFiles(fileListElement) {
   const files = Array.from(fileListElement.files || []);
@@ -3164,18 +3494,37 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
   const id = Number(document.getElementById('upload-ncr-id').value);
   const ncr = masterNcrList.find(item => item.id === id);
   const note = document.getElementById('foto-note').value.trim();
+  const chosenStatus = (document.getElementById('status-choice-open') && document.getElementById('status-choice-open').checked)
+    ? 'OPEN'
+    : 'CLOSED';
+
   const key = selectedProduct + '_' + id;
   const prevFollowUp = productFollowUps[key];
-  const existingHistory = (prevFollowUp && Array.isArray(prevFollowUp.history)) ? prevFollowUp.history : [];
+  const existingHistory = (prevFollowUp && Array.isArray(prevFollowUp.history)) ? [...prevFollowUp.history] : [];
 
   const now = new Date();
   const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
     ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
+  // Simpan foto progres sebelumnya ke riwayat audit jika ditimpa dengan update baru
+  if (prevFollowUp && getPhotosArray(prevFollowUp).length > 0) {
+    existingHistory.push({
+      status: prevFollowUp.status || 'OPEN',
+      photos: getPhotosArray(prevFollowUp),
+      note: prevFollowUp.note || '',
+      inspector: prevFollowUp.inspector || '',
+      updatedAt: prevFollowUp.updatedAt || '',
+      folderUrl: prevFollowUp.folderUrl || '',
+      reopenedBy: currentUsername,
+      reopenedAt: timeStr,
+      reopenReason: chosenStatus === 'CLOSED' ? 'Update dari STILL OPEN ke CLOSED' : 'Update Progres STILL OPEN'
+    });
+  }
+
   const compressedDataUrls = tempImageList.map(item => typeof item === 'string' ? item : item.dataUrl);
 
   productFollowUps[key] = {
-    status: 'CLOSED',
+    status: chosenStatus,
     photos: compressedDataUrls,
     note: note,
     inspector: currentUsername,
@@ -3195,12 +3544,147 @@ document.getElementById('form-upload-foto').addEventListener('submit', async fun
     productName: selectedProduct,
     ncrId: id,
     ncrNo: ncr ? ncr.no : ('NCR-' + id),
+    status: chosenStatus,
     note: note,
     inspector: currentUsername,
     photos: compressedDataUrls,
     history: existingHistory
-  }, 'Mengunggah ' + compressedDataUrls.length + ' foto...');
+  }, `Mengunggah ${compressedDataUrls.length} foto (${chosenStatus === 'CLOSED' ? 'CLOSED' : 'STILL OPEN'})...`);
 });
+
+// ================= FITUR BATALKAN UPLOAD / PINDAH UNIT & AUTO-RENAME GDRIVE =================
+window.openCancelOrMoveUploadModal = function(ncrId) {
+  const ncr = masterNcrList.find(item => item.id === ncrId);
+  if (!ncr || !selectedProduct) return;
+
+  const modalEl = document.getElementById('modal-cancel-upload');
+  if (!modalEl) {
+    showToast('Modal koreksi belum dipasang di index.html.', 'error');
+    return;
+  }
+
+  document.getElementById('cancel-upload-ncr-id').value = ncrId;
+  document.getElementById('cancel-upload-source-unit').value = selectedProduct;
+  document.getElementById('cancel-upload-subtitle').textContent = `${selectedProduct} — ${ncr.no} (${ncr.title})`;
+  document.getElementById('cancel-upload-reason').value = '';
+
+  const modeResetRadio = document.getElementById('cancel-mode-reset');
+  if (modeResetRadio) modeResetRadio.checked = true;
+  document.getElementById('move-target-unit-group').classList.add('hidden');
+
+  const targetSelect = document.getElementById('cancel-target-unit-select');
+  targetSelect.innerHTML = '';
+  const candidateUnits = products.filter(p => p.name !== selectedProduct);
+
+  if (candidateUnits.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '-- Tidak ada unit lain --';
+    targetSelect.appendChild(opt);
+  } else {
+    candidateUnits.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name;
+      targetSelect.appendChild(opt);
+    });
+  }
+
+  toggleModal('modal-cancel-upload', true);
+};
+
+document.querySelectorAll('input[name="cancel-upload-mode"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const moveGroup = document.getElementById('move-target-unit-group');
+    if (!moveGroup) return;
+    if (this.value === 'MOVE_UNIT') moveGroup.classList.remove('hidden');
+    else moveGroup.classList.add('hidden');
+  });
+});
+
+const formCancelUploadEl = document.getElementById('form-cancel-upload');
+if (formCancelUploadEl) {
+  formCancelUploadEl.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const ncrId = Number(document.getElementById('cancel-upload-ncr-id').value);
+    const sourceUnit = document.getElementById('cancel-upload-source-unit').value;
+    const checkedModeEl = document.querySelector('input[name="cancel-upload-mode"]:checked');
+    const mode = checkedModeEl ? checkedModeEl.value : 'CANCEL';
+    const targetUnit = document.getElementById('cancel-target-unit-select').value;
+    const reason = document.getElementById('cancel-upload-reason').value.trim();
+    const ncr = masterNcrList.find(item => item.id === ncrId);
+
+    if (mode === 'MOVE_UNIT' && !targetUnit) {
+      showToast('Pilih unit tujuan terlebih dahulu!', 'warning');
+      return;
+    }
+
+    const oldKey = sourceUnit + '_' + ncrId;
+    const oldFollowUp = productFollowUps[oldKey];
+    const now = new Date();
+    const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
+      ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    if (mode === 'MOVE_UNIT' && oldFollowUp) {
+      if (ncr && !ncr.assignedProducts.includes(targetUnit)) {
+        ncr.assignedProducts.push(targetUnit);
+      }
+      const newKey = targetUnit + '_' + ncrId;
+      productFollowUps[newKey] = {
+        ...oldFollowUp,
+        updatedAt: timeStr
+      };
+    }
+
+    const prevHistory = (oldFollowUp && Array.isArray(oldFollowUp.history)) ? [...oldFollowUp.history] : [];
+    if (oldFollowUp) {
+      prevHistory.push({
+        status: oldFollowUp.status || 'CLOSED',
+        photos: [],
+        note: oldFollowUp.note || '',
+        inspector: oldFollowUp.inspector || '',
+        updatedAt: oldFollowUp.updatedAt || '',
+        folderUrl: '',
+        reopenedBy: currentUsername,
+        reopenedAt: timeStr,
+        reopenReason: mode === 'MOVE_UNIT'
+          ? `Dipindahkan ke ${targetUnit}: ${reason}`
+          : `Dibatalkan oleh ${currentUsername}: ${reason}`
+      });
+    }
+
+    productFollowUps[oldKey] = {
+      status: 'OPEN',
+      photos: [],
+      note: '',
+      inspector: '',
+      updatedAt: timeStr,
+      reopenedBy: currentUsername,
+      reopenedAt: timeStr,
+      reopenReason: mode === 'MOVE_UNIT'
+        ? `Dipindahkan ke unit ${targetUnit} (${reason})`
+        : `Upload dibatalkan (${reason})`,
+      folderUrl: '',
+      history: prevHistory
+    };
+
+    toggleModal('modal-cancel-upload', false);
+    renderAllViews();
+
+    await sendActionToBackend({
+      action: 'CANCEL_OR_MOVE_FOLLOWUP',
+      mode: mode,
+      productName: sourceUnit,
+      targetProductName: targetUnit,
+      ncrId: ncrId,
+      ncrNo: ncr ? ncr.no : ('NCR-' + ncrId),
+      reason: reason,
+      reopenedAt: timeStr
+    }, mode === 'MOVE_UNIT'
+      ? `Memindahkan foto & mengubah nama file GDrive ke ${targetUnit}...`
+      : 'Membatalkan upload & mengubah nama file foto di GDrive...');
+  });
+}
 
 // ================= KELOLA USER =================
 function renderUserTable() {
@@ -3359,6 +3843,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     const openModals = [
       'modal-upload-foto',
+      'modal-cancel-upload',
       'modal-edit-ncr',
       'modal-add-ncr',
       'modal-add-product',
@@ -3452,8 +3937,10 @@ window.addEventListener('beforeunload', function(e) {
   const isAddNcrOpen = !document.getElementById('modal-add-ncr').classList.contains('hidden');
   const isUploadOpen = !document.getElementById('modal-upload-foto').classList.contains('hidden');
   const isEditNcrOpen = !document.getElementById('modal-edit-ncr').classList.contains('hidden');
+  const cancelModalEl = document.getElementById('modal-cancel-upload');
+  const isCancelOpen = cancelModalEl && !cancelModalEl.classList.contains('hidden');
 
-  const hasUnsavedWork = isAddNcrOpen || isUploadOpen || isEditNcrOpen || queueCount > 0;
+  const hasUnsavedWork = isAddNcrOpen || isUploadOpen || isEditNcrOpen || isCancelOpen || queueCount > 0;
 
   if (hasUnsavedWork) {
     e.preventDefault();
