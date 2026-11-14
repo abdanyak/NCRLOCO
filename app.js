@@ -1,9 +1,9 @@
 /**
  * ============================================================================
  * QC PORTAL — MONITORING & HISTORY NCR
- * File: app.js (Audited & Fixed: IndexedDB, Sequential Image Processing,
+ * File: app.js (Audited & Fixed: IndexedDB, Fast Sync Optimization,
  *       Custom Non-Blocking Dialogs/Toast, Re-Open Audit Trail, A11y, Security,
- *       Mutex Offline Queue Sync, Auto-Reopen on Missing GDrive Photos,
+ *       Mutex Offline Queue Sync, Safe GDrive Thumbnail Load,
  *       Background Sync Rotating Indicator, Upload Progress %, OPEN/CLOSED Mode,
  *       & Inspector Cancel/Move Upload with Auto-Rename GDrive)
  * ============================================================================
@@ -12,9 +12,9 @@
 // KONFIGURASI API GOOGLE APPS SCRIPT
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76z_EFJfCokvxlTwjUBsAvHXNyAeMVDERNvA5Qa__YQAO3P8Ht/exec";
 
-// KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE
-const IMAGE_MAX_WIDTH = 1600;
-const IMAGE_JPEG_QUALITY = 0.85;
+// KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE (DIOPTIMALKAN UNTUK UPLOAD CEPAT)
+const IMAGE_MAX_WIDTH = 1280;
+const IMAGE_JPEG_QUALITY = 0.78;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
 const OFFLINE_AUTH_CACHE_KEY = 'qc_ncr_offline_auth_v1';
@@ -54,7 +54,6 @@ let isSyncingFromCloud = false;
 let gdriveExternalOpenedAt = 0;
 let cacheBustToken = Date.now();
 let uploadProgressTimer = null;
-const pendingAutoReopenKeys = new Set();
 
 let tempImageList = [];
 let tempMasterPhotosAdd = [];
@@ -81,7 +80,7 @@ let masterNcrList = [];
 let productFollowUps = {};
 let users = [];
 
-// ================= 1. INDEXEDDB ENGINE (FIX #1: BATAS 5MB LOCALSTORAGE) =================
+// ================= 1. INDEXEDDB ENGINE (BATAS 5MB LOCALSTORAGE) =================
 let idbPromise = null;
 
 function openPortalIndexedDB() {
@@ -794,13 +793,10 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// AMAN DARI RATE-LIMIT GOOGLE DRIVE: Jangan tambahkan ?cb= agar cache browser bekerja & tidak memicu HTTP 429
 function getDriveImageSrc(rawUrl) {
   const str = String(rawUrl || '');
   if (!str) return '';
-  if (str.startsWith('data:')) return str;
-  if (str.includes('drive.google.com/thumbnail')) {
-    return `${str}${str.includes('?') ? '&' : '?'}cb=${cacheBustToken}`;
-  }
   return str;
 }
 
@@ -1023,7 +1019,7 @@ function normalizeAllMasterNcr() {
   masterNcrList = (masterNcrList || []).map(normalizeNcrItem);
 }
 
-// ================= 5. DETEKSI FOTO GDRIVE HILANG & AUTO RE-OPEN (SUPPORT OPEN PROGRES) =================
+// ================= 5. NORMALISASI RECORD & PENANGANAN THUMBNAIL AMAN =================
 function normalizeFollowUpRecord(entry, fallbackPrev) {
   if (!entry) return null;
   const photos = getPhotosArray(entry).filter(Boolean);
@@ -1035,7 +1031,6 @@ function normalizeFollowUpRecord(entry, fallbackPrev) {
   const rawStatus = String(entry.status || 'OPEN').toUpperCase();
   const effectiveStatus = (rawStatus === 'CLOSED' && hasValidPhotos) ? 'CLOSED' : 'OPEN';
 
-  // Hanya tandai sebagai foto terhapus otomatis jika status sebelumnya CLOSED namun fotonya kosong
   const isAutoReopenedByMissingPhoto = (rawStatus === 'CLOSED' && !hasValidPhotos);
   const reopenReason = effectiveStatus === 'OPEN'
     ? (entry.reopenReason || (fallbackPrev ? fallbackPrev.reopenReason : '') || (isAutoReopenedByMissingPhoto ? 'Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan' : ''))
@@ -1052,110 +1047,14 @@ function normalizeFollowUpRecord(entry, fallbackPrev) {
   };
 }
 
-async function autoReopenMissingDrivePhoto(prodName, ncrId) {
-  const key = `${prodName}_${ncrId}`;
-  if (pendingAutoReopenKeys.has(key)) return;
-
-  const followUp = productFollowUps[key];
-  if (!followUp) return;
-
-  pendingAutoReopenKeys.add(key);
-  try {
-    const now = new Date();
-    const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
-      ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    const autoReason = 'Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan';
-
-    const prevHistory = Array.isArray(followUp.history) ? [...followUp.history] : [];
-    if (followUp.note || followUp.inspector) {
-      prevHistory.push({
-        status: followUp.status || 'CLOSED',
-        photos: [],
-        note: followUp.note || '-',
-        inspector: followUp.inspector || '-',
-        updatedAt: followUp.updatedAt || '-',
-        folderUrl: followUp.folderUrl || '',
-        reopenedBy: 'Sistem Otomatis (GDrive Sync)',
-        reopenedAt: timeStr,
-        reopenReason: autoReason
-      });
-    }
-
-    productFollowUps[key] = {
-      status: 'OPEN',
-      photos: [],
-      note: '',
-      inspector: '',
-      updatedAt: timeStr,
-      reopenedBy: 'Sistem Otomatis',
-      reopenedAt: timeStr,
-      reopenReason: autoReason,
-      folderUrl: followUp.folderUrl || '',
-      history: prevHistory
-    };
-
-    await saveToLocalStorage();
-    renderAllViews();
-
-    const ncrObj = masterNcrList.find(n => Number(n.id) === Number(ncrId));
-    const ncrLabel = ncrObj ? ncrObj.no : `NCR-${ncrId}`;
-    showToast(`Foto bukti ${ncrLabel} pada unit "${prodName}" tidak ditemukan di Google Drive. Status dikembalikan ke OPEN!`, 'error', 5500);
-
-    const lightboxModal = document.getElementById('modal-lightbox');
-    if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
-      toggleModal('modal-lightbox', false);
-    }
-
-    if (isCloudConfigured() && navigator.onLine && currentToken) {
-      await sendActionToBackend({
-        action: 'REOPEN_NCR',
-        productName: prodName,
-        ncrId: Number(ncrId),
-        reopenReason: autoReason,
-        reopenedBy: currentUsername || 'Sistem Otomatis',
-        reopenedAt: timeStr,
-        history: prevHistory
-      }, 'Mengembalikan status ke OPEN karena foto GDrive terhapus...');
-    }
-  } finally {
-    setTimeout(() => pendingAutoReopenKeys.delete(key), 3000);
-  }
-}
-
+// AMAN: Kegagalan muat thumbnail di sisi browser (misal karena sinyal atau rate-limit GDrive)
+// tidak boleh menghapus foto atau mengubah status CLOSED menjadi OPEN secara sepihak.
 window.handleFollowUpPhotoError = function(prodIdx, ncrId, brokenPhotoIdx) {
-  if (!navigator.onLine) return;
-
-  const prodObj = products[prodIdx];
-  if (!prodObj) return;
-  const prodName = prodObj.name;
-  const key = `${prodName}_${ncrId}`;
-  const followUp = productFollowUps[key];
-  if (!followUp) return;
-
-  const currentPhotos = getPhotosArray(followUp);
-  if (brokenPhotoIdx >= 0 && brokenPhotoIdx < currentPhotos.length) {
-    currentPhotos.splice(brokenPhotoIdx, 1);
-    followUp.photos = currentPhotos;
-  }
-
-  if (currentPhotos.length === 0) {
-    autoReopenMissingDrivePhoto(prodName, ncrId);
-  } else {
-    saveToLocalStorage();
-    renderAllViews();
-  }
+  console.warn(`Thumbnail sementara gagal dimuat di browser (Unit idx: ${prodIdx}, NCR: ${ncrId}, Foto: ${brokenPhotoIdx}). Gunakan tombol Sync untuk verifikasi server GDrive.`);
 };
 
 window.handleMasterPhotoError = function(ncrId, brokenPhotoIdx) {
-  if (!navigator.onLine) return;
-  const ncr = masterNcrList.find(item => Number(item.id) === Number(ncrId));
-  if (!ncr || !Array.isArray(ncr.masterPhotos)) return;
-
-  if (brokenPhotoIdx >= 0 && brokenPhotoIdx < ncr.masterPhotos.length) {
-    ncr.masterPhotos.splice(brokenPhotoIdx, 1);
-    saveToLocalStorage();
-    renderAllViews();
-  }
+  console.warn(`Master thumbnail sementara gagal dimuat di browser (NCR: ${ncrId}, Foto: ${brokenPhotoIdx}).`);
 };
 
 // ================= STATUS JARINGAN REAL-TIME & ROTATING ARROW SYNC INDICATOR =================
@@ -1209,7 +1108,7 @@ window.addEventListener('offline', function() {
 window.addEventListener('online', function() {
   updateNetworkStatusUI(true);
   showToast('Koneksi kembali terhubung. Menyinkronkan data...', 'info');
-  syncFromCloud(true);
+  syncFromCloud(true, false);
 });
 
 document.addEventListener('click', function(e) {
@@ -1221,17 +1120,18 @@ document.addEventListener('click', function(e) {
 
 window.addEventListener('focus', function() {
   if (!currentToken || !navigator.onLine || !isCloudConfigured()) return;
-  if (gdriveExternalOpenedAt > 0 || document.visibilityState === 'visible') {
+  if (gdriveExternalOpenedAt > 0 && document.visibilityState === 'visible') {
     const elapsed = Date.now() - gdriveExternalOpenedAt;
-    if (gdriveExternalOpenedAt > 0 && elapsed > 800) {
+    if (elapsed > 1200) {
       gdriveExternalOpenedAt = 0;
       cacheBustToken = Date.now();
-      syncFromCloud(true);
+      // Verifikasi GDrive di sisi server karena pengguna baru saja kembali dari membuka link GDrive
+      syncFromCloud(true, true);
     }
   }
 });
 
-// ================= SINKRONISASI CLOUD, PROGRESS UPLOAD % & ANTREAN OFFLINE =================
+// ================= SINKRONISASI CLOUD (FAST SYNC), PROGRESS UPLOAD % & ANTREAN OFFLINE =================
 function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
@@ -1284,10 +1184,10 @@ function showCloudLoading(show, text, options = {}) {
 function startUploadProgressSimulation(photoCount, baseLabel) {
   if (uploadProgressTimer) clearInterval(uploadProgressTimer);
   const totalPhotos = Math.max(1, photoCount || 1);
-  let currentPct = 4;
+  let currentPct = 5;
 
-  const estimatedMs = 1800 + (totalPhotos * 1700);
-  const stepMs = 120;
+  const estimatedMs = 1200 + (totalPhotos * 1100);
+  const stepMs = 110;
   const increment = (90 / (estimatedMs / stepMs));
 
   showCloudLoading(true, baseLabel, {
@@ -1305,7 +1205,7 @@ function startUploadProgressSimulation(photoCount, baseLabel) {
     const currentPhotoIdx = Math.min(totalPhotos, Math.max(1, Math.ceil((currentPct / 88) * totalPhotos)));
     let stageText = `Mengunggah & menyimpan File ${currentPhotoIdx} dari ${totalPhotos} ke Google Drive...`;
     if (currentPct >= 88) {
-      stageText = 'Mengatur izin link Google Drive & memperbarui Spreadsheet...';
+      stageText = 'Memperbarui database Spreadsheet...';
     }
 
     showCloudLoading(true, baseLabel, {
@@ -1326,7 +1226,7 @@ async function finishUploadProgressAnimation(baseLabel) {
     percent: 100,
     subText: '100% — Seluruh file berhasil disimpan di Google Drive!'
   });
-  await new Promise(r => setTimeout(r, 320));
+  await new Promise(r => setTimeout(r, 260));
 }
 
 async function saveToLocalStorage() {
@@ -1601,7 +1501,10 @@ async function syncFromCloud(silent = false, verifyDrive = false) {
   }
 
   isSyncingFromCloud = true;
-  if (!silent) showCloudLoading(true, verifyDrive ? 'Memverifikasi file Google Drive & Cloud...' : 'Memuat data Cloud...');
+
+  if (!silent) {
+    showCloudLoading(true, verifyDrive ? 'Memverifikasi file Google Drive & Cloud...' : 'Memuat data Cloud...');
+  }
 
   try {
     const queryParams = `t=${Date.now()}${verifyDrive ? '&verifyDrive=1' : ''}`;
@@ -1703,7 +1606,7 @@ async function sendActionToBackend(payload, loadingText) {
       document.getElementById('btn-logout').click();
     } else if (json.status === 'error') {
       await showAlert('Error Server: ' + json.message, 'Gagal Menyimpan');
-      await syncFromCloud(true);
+      await syncFromCloud(true, false);
     }
   } catch (err) {
     updateNetworkStatusUI(false);
@@ -1714,6 +1617,7 @@ async function sendActionToBackend(payload, loadingText) {
   }
 }
 
+// Klik tombol Sync manual akan melakukan verifikasi penuh ke Google Drive (verifyDrive = true)
 document.getElementById('btn-refresh-cloud').addEventListener('click', () => {
   cacheBustToken = Date.now();
   syncFromCloud(false, true);
@@ -1801,7 +1705,8 @@ document.getElementById('form-login').addEventListener('submit', async function(
 
       document.getElementById('form-login').reset();
       showToast(`Selamat datang, ${json.user.username}!`, 'success');
-      enterApp(json.user.role, json.user.username, json.user.token);
+      // Lewati sync ulang karena respon LOGIN sudah membawa data terbaru
+      enterApp(json.user.role, json.user.username, json.user.token, Boolean(json.data));
     } else {
       showToast(json.message || 'Username atau Password salah!', 'error');
     }
@@ -1812,7 +1717,7 @@ document.getElementById('form-login').addEventListener('submit', async function(
     if (cachedAuth) {
       showToast('Server tidak terjangkau. Masuk ke Mode Offline menggunakan sesi terenkripsi terakhir.', 'warning', 4500);
       document.getElementById('form-login').reset();
-      enterApp(cachedAuth.role, cachedAuth.username, cachedAuth.token);
+      enterApp(cachedAuth.role, cachedAuth.username, cachedAuth.token, true);
     } else {
       await showAlert(
         "Tidak dapat terhubung ke server dan akun belum pernah terverifikasi di perangkat ini.\n\nPastikan koneksi internet aktif dan buka aplikasi melalui HTTP/HTTPS Server (bukan klik 2x file:/// secara langsung).",
@@ -2187,7 +2092,7 @@ function buildThumbnailsHtml(photos, prodIdx, ncrId) {
     html += '<div class="thumb-card-back thumb-card-back-1"></div>';
   }
 
-  html += '<img src="' + escapeHtml(displaySrc) + '" class="thumb-card-main" alt="Bukti Foto" onerror="handleFollowUpPhotoError(' + prodIdx + ', ' + ncrId + ', 0)">';
+  html += '<img src="' + escapeHtml(displaySrc) + '" class="thumb-card-main" alt="Bukti Foto" loading="lazy" onerror="handleFollowUpPhotoError(' + prodIdx + ', ' + ncrId + ', 0)">';
   html += '<span class="thumb-count-badge">' + totalPhotos + '</span>';
   html += '</div>';
 
@@ -2201,7 +2106,7 @@ function buildMasterPhotosHtml(ncr) {
   let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
     const displaySrc = getDriveImageSrc(src);
-    html += `<img src="${escapeHtml(displaySrc)}" class="thumb-img" role="button" tabindex="0" alt="Foto Master ${idx + 1}" onclick="openMasterLightbox(${ncr.id}, ${idx})" onerror="handleMasterPhotoError(${ncr.id}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMasterLightbox(${ncr.id}, ${idx});}">`;
+    html += `<img src="${escapeHtml(displaySrc)}" class="thumb-img" role="button" tabindex="0" loading="lazy" alt="Foto Master ${idx + 1}" onclick="openMasterLightbox(${ncr.id}, ${idx})" onerror="handleMasterPhotoError(${ncr.id}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMasterLightbox(${ncr.id}, ${idx});}">`;
   });
   if (photos.length > maxVisible) {
     const extra = photos.length - maxVisible;
@@ -3909,9 +3814,9 @@ window.addEventListener('DOMContentLoaded', async function() {
   const savedToken = localStorage.getItem('qc_active_token');
 
   if (savedRole && savedUser && savedToken) {
-    enterApp(savedRole, savedUser, savedToken);
+    enterApp(savedRole, savedUser, savedToken, false);
   } else {
-    syncFromCloud(true);
+    syncFromCloud(true, false);
   }
 });
 
@@ -3929,7 +3834,7 @@ window.addEventListener('storage', function(e) {
       document.getElementById('app-view').classList.add('hidden');
       document.getElementById('login-view').classList.remove('hidden');
     } else if (token !== currentToken || user !== currentUsername) {
-      enterApp(role, user, token);
+      enterApp(role, user, token, true);
     }
   } else if (e.key === OFFLINE_QUEUE_KEY + '_count') {
     updateNetworkStatusUI(navigator.onLine);
