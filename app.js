@@ -14,7 +14,7 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbZvfG8L7laLP74G76
 
 // KONSTANTA GAMBAR, STORAGE & PEMBATASAN UKURAN FILE (DIOPTIMALKAN UNTUK UPLOAD CEPAT)
 const IMAGE_MAX_WIDTH = 1280;
-const IMAGE_JPEG_QUALITY = 0.78;
+const IMAGE_JPEG_QUALITY = 0.85;
 const LOCAL_STORAGE_KEY = 'qc_ncr_portal_prod_v1';
 const OFFLINE_QUEUE_KEY = 'qc_ncr_offline_queue';
 const OFFLINE_AUTH_CACHE_KEY = 'qc_ncr_offline_auth_v1';
