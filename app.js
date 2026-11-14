@@ -1583,7 +1583,7 @@ function mergeCloudFollowUpsWithLocalAudit(cloudFollowUps) {
   return merged;
 }
 
-async function syncFromCloud(silent = false) {
+async function syncFromCloud(silent = false, verifyDrive = false) {
   if (isSyncingFromCloud) return;
   await loadFromLocalStorage();
 
@@ -1592,7 +1592,7 @@ async function syncFromCloud(silent = false) {
     return;
   }
 
-  setBackgroundSyncIndicator(true, 'Syncing...');
+  setBackgroundSyncIndicator(true, verifyDrive ? 'Deep Sync...' : 'Syncing...');
 
   const alreadyUpdatedFromQueue = await processOfflineQueue();
   if (alreadyUpdatedFromQueue) {
@@ -1601,11 +1601,11 @@ async function syncFromCloud(silent = false) {
   }
 
   isSyncingFromCloud = true;
-
-  if (!silent) showCloudLoading(true, 'Memuat & memverifikasi data Cloud...');
+  if (!silent) showCloudLoading(true, verifyDrive ? 'Memverifikasi file Google Drive & Cloud...' : 'Memuat data Cloud...');
 
   try {
-    const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
+    const queryParams = `t=${Date.now()}${verifyDrive ? '&verifyDrive=1' : ''}`;
+    const res = await fetch(`${GAS_API_URL}?${queryParams}`);
     const json = await res.json();
 
     if (!res.ok || json.status === 'offline') {
@@ -1716,7 +1716,7 @@ async function sendActionToBackend(payload, loadingText) {
 
 document.getElementById('btn-refresh-cloud').addEventListener('click', () => {
   cacheBustToken = Date.now();
-  syncFromCloud(false);
+  syncFromCloud(false, true);
 });
 
 function getPhotosArray(followUp) {
@@ -1921,7 +1921,7 @@ document.getElementById('btn-edit-select-active').addEventListener('click', () =
 document.getElementById('btn-edit-unselect-all').addEventListener('click', () => setProductChecklist('edit-target-prod', 'NONE'));
 
 // LOGIN MASUK: SIMPAN KE LOCALSTORAGE (PERSISTEN LINTAS TAB)
-function enterApp(role, username, token) {
+function enterApp(role, username, token, skipInitialSync = false) {
   currentRole = role;
   currentUsername = username || role;
   currentToken = token || '';
@@ -1970,7 +1970,12 @@ function enterApp(role, username, token) {
   renderProductDropdown();
   renderAllViews();
 
-  syncFromCloud(true);
+  if (skipInitialSync) {
+    updateNetworkStatusUI(navigator.onLine);
+    processOfflineQueue();
+  } else {
+    syncFromCloud(true, false);
+  }
 }
 
 function renderAllViews() {
