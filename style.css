@@ -681,7 +681,105 @@ th.sortable-th:focus-visible {
 
 .search-input-wrap input {
   padding-left: 36px !important;
+  padding-right: 34px !important;
   height: 38px;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--slate-200);
+  color: var(--slate-600);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.15s ease;
+  z-index: 3;
+}
+
+.search-clear-btn:hover {
+  background: var(--slate-300);
+  color: var(--slate-900);
+}
+
+.search-clear-btn:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+/* ================= TOMBOL GULIR CEPAT (QUICK SCROLL NAV) ================= */
+.quick-scroll-nav {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 30px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  z-index: 850;
+  opacity: 0.88;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.quick-scroll-nav:hover {
+  opacity: 1;
+  box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.45);
+  transform: translateY(-2px);
+}
+
+.quick-scroll-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.quick-scroll-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.quick-scroll-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.quick-scroll-divider {
+  width: 22px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 2px 0;
+}
+
+.quick-scroll-icon {
+  width: 19px;
+  height: 19px;
+  display: block;
 }
 
 /* ================= FORMS, PASSWORD TOGGLE & BUTTONS ================= */
@@ -1410,7 +1508,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .modal-panel-lg { max-width: 580px; }
-.modal-lightbox-panel { max-width: 640px; }
+.modal-lightbox-panel { max-width: 780px; }
 
 .modal-panel > form {
   display: flex;
@@ -1533,9 +1631,10 @@ tbody tr:last-child td { border-bottom: none; }
 
 .lightbox-main-img {
   width: 100%;
-  max-height: 380px;
+  max-height: 480px;
   object-fit: contain;
   user-select: none;
+  cursor: zoom-in;
 }
 
 .swipe-hint-mobile {
@@ -1942,7 +2041,29 @@ tbody tr:last-child td { border-bottom: none; }
     padding: 9px 11px;
   }
 
-  .search-input-wrap input { padding-left: 36px !important; }
+  .search-input-wrap input {
+    padding-left: 36px !important;
+    padding-right: 34px !important;
+  }
+
+  .quick-scroll-nav {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    right: 14px;
+    padding: 3px;
+    border-radius: 26px;
+    opacity: 0.92;
+  }
+  .quick-scroll-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .quick-scroll-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .quick-scroll-divider {
+    width: 20px;
+  }
 
   .panel-toolbar { padding: 12px; gap: 10px; }
   .unit-selector-group, .toolbar-info-group, .toolbar-action-wrap, .btn-mobile-full { width: 100%; min-width: 0; }

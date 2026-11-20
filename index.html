@@ -19,6 +19,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- GOOGLE DRIVE & APPS SCRIPT PRECONNECT (ACCELERATE API & THUMBNAILS) -->
+  <link rel="preconnect" href="https://drive.google.com">
+  <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+
   <!-- MAIN STYLESHEET (SINGLE CLEAN LOAD) -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -285,6 +290,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
                 <input type="text" id="search-history" placeholder="Cari NCR, platform, title, unit..." aria-label="Cari di History NCR">
+                <button type="button" id="btn-clear-search-history" class="search-clear-btn hidden" title="Hapus pencarian (Clear)" aria-label="Bersihkan pencarian">✕</button>
               </div>
             </div>
 
@@ -419,6 +425,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
                 <input type="text" id="search-ncr" placeholder="Cari NCR, platform, title..." aria-label="Cari NCR pada unit ini">
+                <button type="button" id="btn-clear-search-ncr" class="search-clear-btn hidden" title="Hapus pencarian (Clear)" aria-label="Bersihkan pencarian">✕</button>
               </div>
             </div>
 
@@ -517,6 +524,21 @@
           <span>User</span>
         </button>
       </nav>
+    </div>
+
+    <!-- TOMBOL GULIR CEPAT KE ATAS & KE BAWAH (DESKTOP & MOBILE) -->
+    <div id="quick-scroll-nav" class="quick-scroll-nav hidden" role="navigation" aria-label="Tombol Gulir Cepat">
+      <button type="button" id="btn-scroll-top" class="quick-scroll-btn" title="Gulir Cepat ke Paling Atas" aria-label="Gulir ke Paling Atas">
+        <svg class="quick-scroll-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+        </svg>
+      </button>
+      <div class="quick-scroll-divider" aria-hidden="true"></div>
+      <button type="button" id="btn-scroll-bottom" class="quick-scroll-btn" title="Gulir Cepat ke Paling Bawah" aria-label="Gulir ke Paling Bawah">
+        <svg class="quick-scroll-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -828,7 +850,13 @@
           <h3 id="lightbox-title" class="modal-title">Detail Foto</h3>
           <div id="lightbox-counter" class="lightbox-counter-text" aria-live="polite"></div>
         </div>
-        <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup galeri foto" onclick="toggleModal('modal-lightbox', false)">✕</button>
+        <div style="display:inline-flex; gap:6px; align-items:center;">
+          <a id="lightbox-zoom-btn" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="Buka foto resolusi penuh di tab baru untuk zoom detail meteran" style="text-decoration:none; display:none;">
+            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg>
+            <span>Zoom Penuh</span>
+          </a>
+          <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup galeri foto" onclick="toggleModal('modal-lightbox', false)">✕</button>
+        </div>
       </div>
       <div class="modal-body text-center">
         <div id="lightbox-stage" class="lightbox-stage">

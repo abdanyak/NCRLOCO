@@ -793,10 +793,22 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// AMAN DARI RATE-LIMIT GOOGLE DRIVE: Jangan tambahkan ?cb= agar cache browser bekerja & tidak memicu HTTP 429
-function getDriveImageSrc(rawUrl) {
+// AMAN DARI RATE-LIMIT GOOGLE DRIVE & DINAMIS UNTUK KECEPATAN:
+// - Untuk kartu/tabel: minta ukuran thumbnail ringan (misal w280/w320) agar loading daftar instan & hemat kuota
+// - Untuk Lightbox/Detail: minta resolusi tinggi (w1600/w2048) agar foto meteran tetap sangat tajam & jelas
+function getDriveImageSrc(rawUrl, targetSize = 'w1600') {
   const str = String(rawUrl || '');
   if (!str) return '';
+  if (str.startsWith('data:')) return str;
+
+  // Jika URL mengarah ke thumbnail Google Drive, sesuaikan parameter sz secara dinamis
+  if (str.includes('drive.google.com/thumbnail')) {
+    if (/[?&]sz=w\d+/.test(str)) {
+      return str.replace(/([?&]sz=)w\d+/, `$1${targetSize}`);
+    }
+    const sep = str.includes('?') ? '&' : '?';
+    return `${str}${sep}sz=${targetSize}`;
+  }
   return str;
 }
 
@@ -1742,6 +1754,7 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   closeMobileSidebar();
   document.getElementById('app-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
+  updateQuickScrollNavVisibility();
   showToast('Anda telah keluar dari sesi.', 'info');
 });
 
@@ -1783,10 +1796,33 @@ document.getElementById('sort-unit').addEventListener('change', function(e) {
   renderNcrTable();
 });
 
-document.getElementById('search-ncr').addEventListener('input', debounce(function(e) {
-  searchQuery = e.target.value.toLowerCase().trim();
-  renderNcrTable();
-}, 250));
+// ================= PENCARIAN DENGAN TOMBOL CLEAR CEPAT =================
+const inputSearchNcr = document.getElementById('search-ncr');
+const btnClearSearchNcr = document.getElementById('btn-clear-search-ncr');
+if (inputSearchNcr && btnClearSearchNcr) {
+  inputSearchNcr.addEventListener('input', function() {
+    btnClearSearchNcr.classList.toggle('hidden', !this.value.trim());
+  });
+  inputSearchNcr.addEventListener('input', debounce(function(e) {
+    searchQuery = e.target.value.toLowerCase().trim();
+    renderNcrTable();
+    updateQuickScrollNavVisibility();
+  }, 250));
+  inputSearchNcr.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && this.value) {
+      e.preventDefault();
+      btnClearSearchNcr.click();
+    }
+  });
+  btnClearSearchNcr.addEventListener('click', function() {
+    inputSearchNcr.value = '';
+    searchQuery = '';
+    btnClearSearchNcr.classList.add('hidden');
+    renderNcrTable();
+    inputSearchNcr.focus();
+    updateQuickScrollNavVisibility();
+  });
+}
 
 document.querySelectorAll('#history-filter-pills .pill-btn').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -1794,6 +1830,7 @@ document.querySelectorAll('#history-filter-pills .pill-btn').forEach(btn => {
     this.classList.add('active');
     historyFilter = this.getAttribute('data-hfilter');
     renderHistoryView();
+    updateQuickScrollNavVisibility();
   });
 });
 
@@ -1802,10 +1839,91 @@ document.getElementById('sort-history').addEventListener('change', function(e) {
   renderHistoryView();
 });
 
-document.getElementById('search-history').addEventListener('input', debounce(function(e) {
-  historySearchQuery = e.target.value.toLowerCase().trim();
-  renderHistoryView();
-}, 250));
+const inputSearchHistory = document.getElementById('search-history');
+const btnClearSearchHistory = document.getElementById('btn-clear-search-history');
+if (inputSearchHistory && btnClearSearchHistory) {
+  inputSearchHistory.addEventListener('input', function() {
+    btnClearSearchHistory.classList.toggle('hidden', !this.value.trim());
+  });
+  inputSearchHistory.addEventListener('input', debounce(function(e) {
+    historySearchQuery = e.target.value.toLowerCase().trim();
+    renderHistoryView();
+    updateQuickScrollNavVisibility();
+  }, 250));
+  inputSearchHistory.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && this.value) {
+      e.preventDefault();
+      btnClearSearchHistory.click();
+    }
+  });
+  btnClearSearchHistory.addEventListener('click', function() {
+    inputSearchHistory.value = '';
+    historySearchQuery = '';
+    btnClearSearchHistory.classList.add('hidden');
+    renderHistoryView();
+    inputSearchHistory.focus();
+    updateQuickScrollNavVisibility();
+  });
+}
+
+// ================= FITUR GULIR CEPAT KE ATAS & KE BAWAH (DESKTOP & MOBILE) =================
+function updateQuickScrollNavVisibility() {
+  const nav = document.getElementById('quick-scroll-nav');
+  if (!nav) return;
+  const appView = document.getElementById('app-view');
+  if (!appView || appView.classList.contains('hidden')) {
+    nav.classList.add('hidden');
+    nav.style.display = 'none';
+    return;
+  }
+
+  const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  const clientHeight = window.innerHeight;
+  const canScroll = scrollHeight > clientHeight + 80;
+
+  if (canScroll) {
+    nav.classList.remove('hidden');
+    nav.style.display = 'flex';
+  } else {
+    nav.classList.add('hidden');
+    nav.style.display = 'none';
+  }
+}
+
+function initQuickScrollNav() {
+  const btnTop = document.getElementById('btn-scroll-top');
+  const btnBottom = document.getElementById('btn-scroll-bottom');
+
+  if (btnTop) {
+    btnTop.addEventListener('click', function() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  }
+
+  if (btnBottom) {
+    btnBottom.addEventListener('click', function() {
+      const targetY = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight
+      );
+      window.scrollTo({
+        top: targetY,
+        behavior: 'smooth'
+      });
+    });
+  }
+
+  window.addEventListener('scroll', updateQuickScrollNavVisibility, { passive: true });
+  window.addEventListener('resize', updateQuickScrollNavVisibility, { passive: true });
+  setTimeout(updateQuickScrollNavVisibility, 300);
+}
+
+initQuickScrollNav();
 
 document.getElementById('btn-toggle-archive').addEventListener('click', toggleProductStatus);
 document.getElementById('btn-delete-product').addEventListener('click', deleteSelectedProduct);
@@ -1890,6 +2008,7 @@ function renderAllViews() {
   renderUserTable();
   document.getElementById('nav-history-badge').textContent = masterNcrList.length;
   document.getElementById('bnav-history-badge').textContent = masterNcrList.length;
+  setTimeout(updateQuickScrollNavVisibility, 80);
 }
 
 // RENDER DROPDOWN PRODUK DENGAN URUTAN A-Z (NATURAL ALPHANUMERIC)
@@ -2082,7 +2201,7 @@ function getProductIndex(prodName) {
 // THUMBNAIL TUMPUKAN KARTU (STACKED CARDS) DENGAN DUKUNGAN KEYBOARD ACCESSIBILITY
 function buildThumbnailsHtml(photos, prodIdx, ncrId) {
   if (!photos || photos.length === 0) return '';
-  const displaySrc = getDriveImageSrc(photos[0]);
+  const displaySrc = getDriveImageSrc(photos[0], 'w280');
   const totalPhotos = photos.length;
 
   let html = '<div class="stacked-thumb-container" role="button" tabindex="0" onclick="openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', 0)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openLightboxByIndex(' + prodIdx + ', ' + ncrId + ', 0);}">';
@@ -2105,7 +2224,7 @@ function buildMasterPhotosHtml(ncr) {
   const maxVisible = 3;
   let html = '<div style="margin-top:6px;"><div style="font-size:11px; font-weight:700; color:var(--slate-400); margin-bottom:3px;">Foto NCR (' + photos.length + '):</div><div class="multi-thumb-group">';
   photos.slice(0, maxVisible).forEach((src, idx) => {
-    const displaySrc = getDriveImageSrc(src);
+    const displaySrc = getDriveImageSrc(src, 'w280');
     html += `<img src="${escapeHtml(displaySrc)}" class="thumb-img" role="button" tabindex="0" loading="lazy" alt="Foto Master ${idx + 1}" onclick="openMasterLightbox(${ncr.id}, ${idx})" onerror="handleMasterPhotoError(${ncr.id}, ${idx})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMasterLightbox(${ncr.id}, ${idx});}">`;
   });
   if (photos.length > maxVisible) {
@@ -2749,7 +2868,29 @@ function updateLightboxSlide() {
       handleMasterPhotoError(activeLightboxContext.ncrId, activeLightboxIndex);
     }
   };
-  mainImg.src = getDriveImageSrc(activeLightboxPhotos[activeLightboxIndex]);
+
+  const currentPhoto = activeLightboxPhotos[activeLightboxIndex] || '';
+  // Tampilkan gambar utama dengan resolusi tinggi (w1600) agar angka/jarum meteran tajam & jelas
+  mainImg.src = getDriveImageSrc(currentPhoto, 'w1600');
+  mainImg.style.cursor = 'zoom-in';
+  mainImg.title = 'Klik foto untuk melihat resolusi penuh / zoom detail meteran di tab baru';
+  mainImg.onclick = function() {
+    if (currentPhoto) {
+      window.open(getDriveImageSrc(currentPhoto, 'w2048'), '_blank');
+    }
+  };
+
+  // Tombol Zoom Penuh di header galeri
+  const zoomBtn = document.getElementById('lightbox-zoom-btn');
+  if (zoomBtn) {
+    if (currentPhoto) {
+      zoomBtn.href = getDriveImageSrc(currentPhoto, 'w2048');
+      zoomBtn.style.display = 'inline-flex';
+    } else {
+      zoomBtn.style.display = 'none';
+    }
+  }
+
   document.getElementById('lightbox-counter').textContent = 'Foto ' + (activeLightboxIndex + 1) + ' / ' + total;
 
   const btnPrev = document.getElementById('lightbox-prev');
@@ -2767,7 +2908,7 @@ function updateLightboxSlide() {
   if (total > 1) {
     activeLightboxPhotos.forEach((src, idx) => {
       const img = document.createElement('img');
-      img.src = getDriveImageSrc(src);
+      img.src = getDriveImageSrc(src, 'w160');
       img.alt = `Thumbnail ${idx + 1}`;
       img.tabIndex = 0;
       img.setAttribute('role', 'button');
@@ -3035,7 +3176,7 @@ function renderMasterPhotoPreview(mode) {
     const div = document.createElement('div');
     div.className = 'preview-item';
     div.innerHTML =
-      '<img src="' + escapeHtml(getDriveImageSrc(src)) + '" alt="Foto ' + (idx + 1) + '">' +
+      '<img src="' + escapeHtml(getDriveImageSrc(src, 'w280')) + '" alt="Foto ' + (idx + 1) + '">' +
       '<button type="button" class="preview-remove-btn" aria-label="Hapus foto" onclick="removeMasterTempPhoto(\'' + mode + '\', ' + idx + ')">✕</button>';
     grid.appendChild(div);
   });
@@ -3233,6 +3374,7 @@ function switchTab(tab) {
     if (bnavUsers) bnavUsers.classList.add('active');
     pageTitle.textContent = 'Kelola User';
   }
+  setTimeout(updateQuickScrollNavVisibility, 80);
 }
 
 // ================= UPLOAD BUKTI INSPECTOR (MENDUKUNG CLOSED & OPEN) =================

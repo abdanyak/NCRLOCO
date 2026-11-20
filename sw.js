@@ -4,13 +4,14 @@
  * ============================================================================
  */
 
-const CACHE_NAME = 'qc-ncr-portal-cache-v2';
+const CACHE_NAME = 'qc-ncr-portal-cache-v4';
 const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
   './icon-192.png',
+  './icon-512.png',
   './icon-512.jpg',
   './UGL2.jpg'
 ];
