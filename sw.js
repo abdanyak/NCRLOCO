@@ -11,7 +11,6 @@ const ASSETS_TO_CACHE = [
   './app.js',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png',
   './icon-512.jpg',
   './UGL2.jpg'
 ];
