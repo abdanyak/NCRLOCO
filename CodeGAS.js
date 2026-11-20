@@ -1,8 +1,9 @@
 /**
  * ============================================================================
- * BACKEND SISTEM MONITORING & INDEKS HISTORY NCR (VERSI AUDIT & GDRIVE SYNC)
+ * BACKEND SISTEM MONITORING & INDEKS HISTORY NCR (VERSI CEPAT & GDRIVE SYNC)
  * File: CodeGAS.js (Password Hashing SHA-256, Re-Open Audit Trail, Drive Opt,
- *       Idempotency Anti-Duplicate, & Auto-Reopen on Deleted GDrive Photos)
+ *       Idempotency Anti-Duplicate, Fast Sync vs Deep Drive Verify,
+ *       OPEN/CLOSED Inspector Mode, & Cancel/Move Upload with Auto-Rename GDrive)
  * ============================================================================
  */
 
@@ -81,7 +82,11 @@ function setupDatabase() {
         ss.deleteSheet(defaultSheet);
     }
 
-    getRootDriveFolder_();
+    // Set izin berbagi 1 kali saja pada folder induk agar seluruh sub-folder & foto otomatis mewarisinya
+    const rootFolder = getRootDriveFolder_();
+    try {
+        rootFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) {}
 }
 
 // ================= KEAMANAN: HASH PASSWORD & TOKEN OTORISASI =================
@@ -258,7 +263,7 @@ function savePhotosArrayToDrive_(folder, base64List, prefixName) {
             const blob = Utilities.newBlob(bytes, mimeType, fileName);
             const file = folder.createFile(blob);
 
-            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            // Izin berbagi otomatis diwarisi dari folder induk sehingga upload jauh lebih cepat
             savedPhotoUrls.push("https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1200");
         } else {
             savedPhotoUrls.push(str);
@@ -305,7 +310,7 @@ function isDriveFileAlive_(fileUrl, cacheMap) {
     if (str.indexOf("data:") === 0) return true;
 
     const fileId = extractDriveIdFromUrl_(str);
-    if (!fileId) return true; // URL eksternal non-GDrive dianggap valid
+    if (!fileId) return true;
 
     const cacheKey = "file_" + fileId;
     if (cacheMap && cacheMap[cacheKey] !== undefined) return cacheMap[cacheKey];
@@ -325,7 +330,6 @@ function filterAliveDrivePhotos_(photosArray, folderUrl, cacheMap) {
     const list = Array.isArray(photosArray) ? photosArray : [];
     if (list.length === 0) return [];
 
-    // Jika folder unit di GDrive sudah dihapus/masuk Trash, maka seluruh foto di dalamnya dianggap tidak ada
     if (folderUrl && !isDriveFolderAlive_(folderUrl, cacheMap)) {
         return [];
     }
@@ -336,11 +340,12 @@ function filterAliveDrivePhotos_(photosArray, folderUrl, cacheMap) {
 }
 
 // ================= ENDPOINT GET & POST =================
-function doGet() {
+function doGet(e) {
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
-        const data = getAllPortalData_();
+        const verifyDrive = Boolean(e && e.parameter && String(e.parameter.verifyDrive) === "1");
+        const data = getAllPortalData_(verifyDrive);
         return ContentService.createTextOutput(JSON.stringify({ status: "success", data: data }))
             .setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
@@ -360,7 +365,7 @@ function doPost(e) {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy, HH:mm");
 
-        // 0. AUTENTIKASI LOGIN SERVER-SIDE (DENGAN HASH SHA-256 & AUTO-MIGRASI PLAINTEXT)
+        // 0. AUTENTIKASI LOGIN SERVER-SIDE (DENGAN HASH SHA-256 & FAST SYNC)
         if (action === "LOGIN") {
             let shUsers = ss.getSheetByName(SHEETS.USERS);
             if (!shUsers || shUsers.getLastRow() <= 1) {
@@ -392,7 +397,7 @@ function doPost(e) {
                         }
 
                         const token = generateAuthToken_(dbUser, dbRole, finalStoredHash);
-                        const portalData = getAllPortalData_();
+                        const portalData = getAllPortalData_(false);
                         return ContentService.createTextOutput(JSON.stringify({
                             status: "success",
                             user: {
@@ -414,7 +419,6 @@ function doPost(e) {
         }
 
         // VALIDASI OTORISASI
-        // Catatan: REOPEN_NCR diizinkan untuk non-admin HANYA jika dipicu oleh foto GDrive yang terhapus
         const adminOnlyActions = [
             "ADD_PRODUCT",
             "TOGGLE_PRODUCT_STATUS",
@@ -423,7 +427,8 @@ function doPost(e) {
             "EDIT_NCR",
             "DELETE_NCR",
             "ADD_USER",
-            "DELETE_USER"
+            "DELETE_USER",
+            "EDIT_USER_PASSWORD"
         ];
         const isAdminRequired = adminOnlyActions.indexOf(action) !== -1;
         const verifiedActor = verifyActor_(ss, payload, isAdminRequired);
@@ -649,16 +654,19 @@ function doPost(e) {
             deleteRowByValue_(ss.getSheetByName(SHEETS.FOLLOWUP), 2, payload.id);
         }
 
-        // 7. UPLOAD BUKTI FOTO INSPECTOR (MEMPERTAHANKAN RIWAYAT AUDIT RE-OPEN)
+        // 7. UPLOAD BUKTI FOTO INSPECTOR (MENDUKUNG STATUS CLOSED MAUPUN OPEN)
         else if (action === "UPLOAD_FOLLOWUP") {
             const rootFolder = getRootDriveFolder_();
             const productFolder = getOrCreateSubFolder_(rootFolder, payload.productName);
             const ncrFolder = getOrCreateSubFolder_(productFolder, payload.ncrNo);
 
+            const targetStatus = (String(payload.status || "CLOSED").toUpperCase() === "OPEN") ? "OPEN" : "CLOSED";
+            const statusPrefix = targetStatus === "OPEN" ? "OPEN_" : "";
+
             const savedPhotoUrls = savePhotosArrayToDrive_(
                 ncrFolder,
                 payload.photos || [],
-                payload.ncrNo + "_" + payload.productName
+                statusPrefix + payload.ncrNo + "_" + payload.productName
             );
 
             const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
@@ -679,7 +687,7 @@ function doPost(e) {
                 }
             }
 
-            if (existingHistory.length === 0 && Array.isArray(payload.history) && payload.history.length > 0) {
+            if (Array.isArray(payload.history) && payload.history.length > existingHistory.length) {
                 existingHistory = payload.history;
             }
 
@@ -688,7 +696,7 @@ function doPost(e) {
                 payload.productName,
                 payload.ncrId,
                 payload.ncrNo,
-                "CLOSED",
+                targetStatus,
                 payload.note,
                 verifiedActor.username,
                 nowStr,
@@ -705,6 +713,189 @@ function doPost(e) {
                 shFollow.getRange(existingRowIndex, 1, 1, newFollowRow.length).setValues([newFollowRow]);
             } else {
                 shFollow.appendRow(newFollowRow);
+            }
+        }
+
+        // 7B. BATALKAN UPLOAD SALAH INPUT ATAU PINDAHKAN UNIT + AUTO-RENAME FILE FOTO DI GDRIVE
+        else if (action === "CANCEL_OR_MOVE_FOLLOWUP") {
+            const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
+            ensureSheetHeaders_(shFollow, FOLLOWUP_HEADERS, FOLLOWUP_WIDTHS);
+            const mode = String(payload.mode || "CANCEL").toUpperCase();
+            const sourceUnit = String(payload.productName || "").trim();
+            const targetUnit = String(payload.targetProductName || "").trim();
+            const ncrId = payload.ncrId;
+            const ncrNo = String(payload.ncrNo || ("NCR-" + ncrId)).trim();
+            const reason = String(payload.reason || "Koreksi input oleh Inspector").trim();
+            const reopenedAt = String(payload.reopenedAt || nowStr).trim();
+            const sourceKey = sourceUnit + "_" + ncrId;
+
+            if (shFollow.getLastRow() > 1) {
+                const rows = shFollow.getDataRange().getValues();
+                let sourceRowIndex = -1;
+                let sourceRowData = null;
+
+                for (let i = 1; i < rows.length; i++) {
+                    if (String(rows[i][0]) === sourceKey) {
+                        sourceRowIndex = i + 1;
+                        sourceRowData = rows[i];
+                        break;
+                    }
+                }
+
+                if (sourceRowIndex !== -1 && sourceRowData) {
+                    const prevStatus = String(sourceRowData[4] || "CLOSED");
+                    const prevNote = String(sourceRowData[5] || "");
+                    const prevInspector = String(sourceRowData[6] || "");
+                    const prevUpdatedAt = String(sourceRowData[7] || "");
+                    const prevFolderUrl = String(sourceRowData[9] || "");
+                    const prevPhotos = parseJsonArraySafe_(sourceRowData[10]);
+                    const historyList = parseJsonArraySafe_(sourceRowData[11]);
+
+                    // MODE 1: PINDAHKAN KE UNIT LAIN & OTOMATIS RENAME FILE FOTO DI GOOGLE DRIVE
+                    if (mode === "MOVE_UNIT" && targetUnit && targetUnit !== sourceUnit) {
+                        const rootFolder = getRootDriveFolder_();
+                        const targetProdFolder = getOrCreateSubFolder_(rootFolder, targetUnit);
+                        const targetNcrFolder = getOrCreateSubFolder_(targetProdFolder, ncrNo);
+                        const movedPhotoUrls = [];
+                        const timeStampMove = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
+
+                        prevPhotos.forEach(function(photoUrl, idx) {
+                            const fileId = extractDriveIdFromUrl_(photoUrl);
+                            if (fileId) {
+                                try {
+                                    const file = DriveApp.getFileById(fileId);
+                                    if (file && !file.isTrashed()) {
+                                        const oldName = file.getName();
+                                        let newFileName = "";
+                                        if (oldName.indexOf(sourceUnit) !== -1) {
+                                            newFileName = oldName.split(sourceUnit).join(targetUnit);
+                                        } else {
+                                            const extMatch = oldName.match(/\.(jpg|jpeg|png|webp)$/i);
+                                            const ext = extMatch ? extMatch[1] : "jpg";
+                                            newFileName = ncrNo + "_" + targetUnit + "_Foto" + (idx + 1) + "_" + timeStampMove + "." + ext;
+                                        }
+                                        file.setName(newFileName);
+                                        file.moveTo(targetNcrFolder);
+                                        movedPhotoUrls.push("https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1200");
+                                    }
+                                } catch (e) {}
+                            }
+                        });
+
+                        const shNcr = ss.getSheetByName(SHEETS.NCR);
+                        if (shNcr && shNcr.getLastRow() > 1) {
+                            const ncrRows = shNcr.getDataRange().getValues();
+                            for (let r = 1; r < ncrRows.length; r++) {
+                                if (String(ncrRows[r][0]) === String(ncrId)) {
+                                    const units = parseUnitsCell_(ncrRows[r][6]);
+                                    if (units.indexOf(targetUnit) === -1) {
+                                        units.push(targetUnit);
+                                        shNcr.getRange(r + 1, 6, 1, 2).setValues([[units.length, units.join(", ")]]);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        const targetKey = targetUnit + "_" + ncrId;
+                        let targetRowIdx = -1;
+                        let targetExistingHistory = [];
+                        for (let j = 1; j < rows.length; j++) {
+                            if (String(rows[j][0]) === targetKey) {
+                                targetRowIdx = j + 1;
+                                targetExistingHistory = parseJsonArraySafe_(rows[j][11]);
+                                break;
+                            }
+                        }
+
+                        const targetRowValues = [
+                            targetKey,
+                            targetUnit,
+                            ncrId,
+                            ncrNo,
+                            prevStatus,
+                            prevNote,
+                            prevInspector || verifiedActor.username,
+                            nowStr,
+                            movedPhotoUrls.length,
+                            targetNcrFolder.getUrl(),
+                            JSON.stringify(movedPhotoUrls),
+                            JSON.stringify(targetExistingHistory),
+                            "",
+                            "",
+                            ""
+                        ];
+
+                        if (targetRowIdx !== -1) {
+                            shFollow.getRange(targetRowIdx, 1, 1, targetRowValues.length).setValues([targetRowValues]);
+                        } else {
+                            shFollow.appendRow(targetRowValues);
+                        }
+
+                        historyList.push({
+                            status: prevStatus,
+                            photos: [],
+                            note: prevNote,
+                            inspector: prevInspector,
+                            updatedAt: prevUpdatedAt,
+                            folderUrl: "",
+                            reopenedBy: verifiedActor.username,
+                            reopenedAt: reopenedAt,
+                            reopenReason: "Dipindahkan ke unit " + targetUnit + ": " + reason
+                        });
+                    }
+                    // MODE 2: BATALKAN UPLOAD (AUTO-RENAME FILE JADI [BATAL] & MASUKKAN TRASH GDRIVE)
+                    else {
+                        prevPhotos.forEach(function(photoUrl) {
+                            const fileId = extractDriveIdFromUrl_(photoUrl);
+                            if (fileId) {
+                                try {
+                                    const file = DriveApp.getFileById(fileId);
+                                    if (file && !file.isTrashed()) {
+                                        const oldName = file.getName();
+                                        if (oldName.indexOf("[BATAL") !== 0) {
+                                            file.setName("[BATAL_" + verifiedActor.username + "]_" + oldName);
+                                        }
+                                        file.setTrashed(true);
+                                    }
+                                } catch (e) {}
+                            }
+                        });
+
+                        historyList.push({
+                            status: prevStatus,
+                            photos: [],
+                            note: prevNote,
+                            inspector: prevInspector,
+                            updatedAt: prevUpdatedAt,
+                            folderUrl: "",
+                            reopenedBy: verifiedActor.username,
+                            reopenedAt: reopenedAt,
+                            reopenReason: "Upload dibatalkan (" + reason + ")"
+                        });
+                    }
+
+                    const resetSourceRow = [
+                        sourceKey,
+                        sourceUnit,
+                        ncrId,
+                        ncrNo,
+                        "OPEN",
+                        "",
+                        "",
+                        reopenedAt,
+                        0,
+                        prevFolderUrl,
+                        "[]",
+                        JSON.stringify(historyList),
+                        verifiedActor.username,
+                        reopenedAt,
+                        mode === "MOVE_UNIT"
+                            ? ("Dipindahkan ke " + targetUnit + ": " + reason)
+                            : ("Dibatalkan oleh " + verifiedActor.username + ": " + reason)
+                    ];
+                    shFollow.getRange(sourceRowIndex, 1, 1, resetSourceRow.length).setValues([resetSourceRow]);
+                }
             }
         }
 
@@ -730,7 +921,6 @@ function doPost(e) {
                         const alivePhotos = filterAliveDrivePhotos_(prevPhotos, prevFolderUrl, driveCache);
                         const historyList = parseJsonArraySafe_(rows[i][11]);
 
-                        // Jika dipicu oleh non-admin (Inspector), pastikan memang karena foto di GDrive sudah kosong/terhapus
                         if (verifiedActor.role !== "admin" && alivePhotos.length > 0) {
                             throw new Error("FORBIDDEN: Re-Open manual hanya diizinkan untuk Admin QC.");
                         }
@@ -741,7 +931,7 @@ function doPost(e) {
 
                         if (prevStatus === "CLOSED" || prevPhotos.length > 0 || prevNote) {
                             historyList.push({
-                                status: "CLOSED",
+                                status: prevStatus || "CLOSED",
                                 photos: alivePhotos,
                                 note: prevNote,
                                 inspector: prevInspector,
@@ -778,7 +968,7 @@ function doPost(e) {
             }
         }
 
-        // 9. TAMBAH & HAPUS USER (FIX #3: HASH SHA-256 & CEK ANTI-DUPLIKAT)
+        // 9. TAMBAH & HAPUS USER (HASH SHA-256 & CEK ANTI-DUPLIKAT)
         else if (action === "ADD_USER") {
             const shUsers = ss.getSheetByName(SHEETS.USERS);
             const cleanUsername = String(payload.username || "").trim();
@@ -797,7 +987,7 @@ function doPost(e) {
         else if (action === "DELETE_USER") {
             deleteRowByValue_(ss.getSheetByName(SHEETS.USERS), 0, payload.id);
         }
-        
+
         // 10. EDIT PASSWORD USER
         else if (action === "EDIT_USER_PASSWORD") {
             const shUsers = ss.getSheetByName(SHEETS.USERS);
@@ -815,7 +1005,8 @@ function doPost(e) {
             }
         }
 
-        const updatedData = getAllPortalData_();
+        // Gunakan Fast Sync (false) setelah operasi simpan/upload agar respon instan
+        const updatedData = getAllPortalData_(false);
         return ContentService.createTextOutput(JSON.stringify({ status: "success", data: updatedData }))
             .setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
@@ -830,10 +1021,9 @@ function doPost(e) {
     }
 }
 
-
-
-// ================= PEMBACAAN DATA & SINKRONISASI REAL-TIME GOOGLE DRIVE =================
-function getAllPortalData_() {
+// ================= PEMBACAAN DATA (FAST SYNC VS DEEP GDRIVE AUDIT) =================
+function getAllPortalData_(verifyDrive) {
+    const shouldVerifyDrive = Boolean(verifyDrive);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy, HH:mm");
     const driveCache = {};
@@ -884,9 +1074,13 @@ function getAllPortalData_() {
         }
 
         const rawMasterPhotos = parseJsonArraySafe_(ncrRows[i][12]);
-        const validMasterPhotos = filterAliveDrivePhotos_(rawMasterPhotos, "", driveCache);
-        if (validMasterPhotos.length !== rawMasterPhotos.length && shNcr) {
-            shNcr.getRange(i + 1, 13).setValue(JSON.stringify(validMasterPhotos));
+        let validMasterPhotos = rawMasterPhotos;
+
+        if (shouldVerifyDrive && rawMasterPhotos.length > 0) {
+            validMasterPhotos = filterAliveDrivePhotos_(rawMasterPhotos, "", driveCache);
+            if (validMasterPhotos.length !== rawMasterPhotos.length && shNcr) {
+                shNcr.getRange(i + 1, 13).setValue(JSON.stringify(validMasterPhotos));
+            }
         }
 
         masterNcrList.push({
@@ -929,62 +1123,62 @@ function getAllPortalData_() {
         let reopenedBy = String(followRows[i][12] || "");
         let reopenedAt = String(followRows[i][13] || "");
         let reopenReason = String(followRows[i][14] || "");
+        let validPhotos = rawPhotos;
 
-        // Validasi ke Google Drive apakah folder & file foto masih ada (tidak di-Trash / dihapus)
-        const folderAlive = isDriveFolderAlive_(folderUrl, driveCache);
-        if (!folderAlive) {
-            folderUrl = "";
-        }
-        const validPhotos = filterAliveDrivePhotos_(rawPhotos, folderUrl, driveCache);
-
-        // KASUS 1: Status CLOSED tetapi semua foto di Google Drive telah dihapus -> Otomatis kembalikan ke OPEN (Merah)!
-        if (status === "CLOSED" && validPhotos.length === 0) {
-            const autoReason = "Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan";
-            if (note || inspector) {
-                history.push({
-                    status: "CLOSED",
-                    photos: [],
-                    note: note,
-                    inspector: inspector,
-                    updatedAt: updatedAt,
-                    folderUrl: folderUrl,
-                    reopenedBy: "Sistem Otomatis (GDrive)",
-                    reopenedAt: nowStr,
-                    reopenReason: autoReason
-                });
+        // Pengecekan mendalam ke API Google Drive hanya dijalankan jika verifyDrive=1 (Sync manual)
+        if (shouldVerifyDrive && (rawPhotos.length > 0 || folderUrl)) {
+            const folderAlive = isDriveFolderAlive_(folderUrl, driveCache);
+            if (!folderAlive) {
+                folderUrl = "";
             }
+            validPhotos = filterAliveDrivePhotos_(rawPhotos, folderUrl, driveCache);
 
-            status = "OPEN";
-            note = "";
-            inspector = "";
-            updatedAt = nowStr;
-            reopenedBy = "Sistem Otomatis (GDrive)";
-            reopenedAt = nowStr;
-            reopenReason = autoReason;
+            if ((status === "CLOSED" || rawPhotos.length > 0) && validPhotos.length === 0) {
+                const autoReason = "Otomatis OPEN: Bukti foto di Google Drive telah dihapus / tidak ditemukan";
+                if (note || inspector) {
+                    history.push({
+                        status: status,
+                        photos: [],
+                        note: note,
+                        inspector: inspector,
+                        updatedAt: updatedAt,
+                        folderUrl: folderUrl,
+                        reopenedBy: "Sistem Otomatis (GDrive)",
+                        reopenedAt: nowStr,
+                        reopenReason: autoReason
+                    });
+                }
 
-            const revertedRow = [
-                key,
-                prodName,
-                ncrId,
-                ncrNo,
-                "OPEN",
-                "",
-                "",
-                nowStr,
-                0,
-                folderUrl,
-                "[]",
-                JSON.stringify(history),
-                reopenedBy,
-                reopenedAt,
-                reopenReason
-            ];
-            shFollow.getRange(i + 1, 1, 1, revertedRow.length).setValues([revertedRow]);
-        }
-        // KASUS 2: Sebagian foto dihapus di GDrive (misal dari 3 foto sisa 1 foto) -> Update jumlah & daftar foto
-        else if (validPhotos.length !== rawPhotos.length) {
-            shFollow.getRange(i + 1, 9).setValue(validPhotos.length);
-            shFollow.getRange(i + 1, 11).setValue(JSON.stringify(validPhotos));
+                status = "OPEN";
+                note = "";
+                inspector = "";
+                updatedAt = nowStr;
+                reopenedBy = "Sistem Otomatis (GDrive)";
+                reopenedAt = nowStr;
+                reopenReason = autoReason;
+
+                const revertedRow = [
+                    key,
+                    prodName,
+                    ncrId,
+                    ncrNo,
+                    "OPEN",
+                    "",
+                    "",
+                    nowStr,
+                    0,
+                    folderUrl,
+                    "[]",
+                    JSON.stringify(history),
+                    reopenedBy,
+                    reopenedAt,
+                    reopenReason
+                ];
+                shFollow.getRange(i + 1, 1, 1, revertedRow.length).setValues([revertedRow]);
+            } else if (validPhotos.length !== rawPhotos.length) {
+                shFollow.getRange(i + 1, 9).setValue(validPhotos.length);
+                shFollow.getRange(i + 1, 11).setValue(JSON.stringify(validPhotos));
+            }
         }
 
         productFollowUps[key] = {
@@ -1012,4 +1206,138 @@ function deleteRowByValue_(sheet, colIndexZeroBased, targetValue) {
             sheet.deleteRow(i + 1);
         }
     }
+}
+
+
+function pulihkanSemuaFotoDariGDrive() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const shFollow = ss.getSheetByName(SHEETS.FOLLOWUP);
+  const shNcr = ss.getSheetByName(SHEETS.NCR);
+  if (!shFollow || !shNcr) return;
+
+  const rootFolder = getRootDriveFolder_();
+  const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMM yyyy, HH:mm");
+
+  // Buat peta No_NCR -> ID_NCR dari sheet Master_NCR
+  const ncrNoToIdMap = {};
+  if (shNcr.getLastRow() > 1) {
+    const ncrRows = shNcr.getDataRange().getValues();
+    for (let i = 1; i < ncrRows.length; i++) {
+      const id = ncrRows[i][0];
+      const no = String(ncrRows[i][1] || "").trim();
+      if (id && no) ncrNoToIdMap[no] = id;
+    }
+  }
+
+  // Baca seluruh baris yang ada di Verifikasi_Unit
+  const existingRows = shFollow.getLastRow() > 1 ? shFollow.getDataRange().getValues() : [];
+  const keyToRowIndex = {};
+  for (let i = 1; i < existingRows.length; i++) {
+    const key = String(existingRows[i][0] || "").trim();
+    if (key) keyToRowIndex[key] = i + 1;
+  }
+
+  let restoredCount = 0;
+
+  // Telusuri semua folder Unit di dalam Google Drive utama
+  const unitFolders = rootFolder.getFolders();
+  while (unitFolders.hasNext()) {
+    const unitFolder = unitFolders.next();
+    if (unitFolder.isTrashed()) continue;
+    const unitName = unitFolder.getName();
+    if (unitName === "00_DOKUMEN_MASTER_NCR") continue;
+
+    // Telusuri semua sub-folder No_NCR di dalam folder Unit tersebut
+    const ncrFolders = unitFolder.getFolders();
+    while (ncrFolders.hasNext()) {
+      const ncrFolder = ncrFolders.next();
+      if (ncrFolder.isTrashed()) continue;
+      const ncrNo = ncrFolder.getName();
+      const ncrId = ncrNoToIdMap[ncrNo];
+      if (!ncrId) continue;
+
+      // Ambil semua file foto yang masih aktif (tidak di-Trash) di dalam folder NCR ini
+      const files = ncrFolder.getFiles();
+      const fileList = [];
+      while (files.hasNext()) {
+        const file = files.next();
+        if (!file.isTrashed()) {
+          fileList.push({
+            id: file.getId(),
+            name: file.getName(),
+            dateStr: Utilities.formatDate(file.getDateCreated(), Session.getScriptTimeZone(), "dd MMM yyyy, HH:mm")
+          });
+        }
+      }
+
+      if (fileList.length === 0) continue;
+
+      fileList.sort((a, b) => a.name.localeCompare(b.name));
+      const photoUrls = fileList.map(f => "https://drive.google.com/thumbnail?id=" + f.id + "&sz=w1200");
+      const folderUrl = ncrFolder.getUrl();
+      const key = unitName + "_" + ncrId;
+      const rowIndex = keyToRowIndex[key];
+
+      if (rowIndex) {
+        const oldRow = existingRows[rowIndex - 1];
+        const prevHistory = parseJsonArraySafe_(oldRow[11]);
+
+        // Cari catatan & nama inspector lama jika sempat tersimpan di history sebelum dihapus
+        let oldNote = String(oldRow[5] || "").trim();
+        let oldInspector = String(oldRow[6] || "").trim();
+        let oldTime = String(oldRow[7] || "").trim();
+
+        if ((!oldNote || !oldInspector) && prevHistory.length > 0) {
+          const lastHist = prevHistory[prevHistory.length - 1];
+          if (!oldNote && lastHist.note && lastHist.note !== "-") oldNote = lastHist.note;
+          if (!oldInspector && lastHist.inspector && lastHist.inspector !== "-") oldInspector = lastHist.inspector;
+          if (lastHist.updatedAt && lastHist.updatedAt !== "-") oldTime = lastHist.updatedAt;
+        }
+
+        const fixedRow = [
+          key,
+          unitName,
+          ncrId,
+          ncrNo,
+          "CLOSED",
+          oldNote || "Sudah diperbaiki / OK",
+          oldInspector || "inspector",
+          oldTime || fileList[fileList.length - 1].dateStr || nowStr,
+          photoUrls.length,
+          folderUrl,
+          JSON.stringify(photoUrls),
+          "[]", // Kosongkan Riwayat_Audit_JSON
+          "",   // Kosongkan Reopen_Oleh
+          "",   // Kosongkan Waktu_Reopen
+          ""    // Kosongkan Alasan_Reopen
+        ];
+
+        shFollow.getRange(rowIndex, 1, 1, fixedRow.length).setValues([fixedRow]);
+        restoredCount++;
+      } else {
+        // Jika baris di Verifikasi_Unit sempat terhapus tapi fotonya ada di GDrive, buat kembali sebagai CLOSED
+        const newRow = [
+          key,
+          unitName,
+          ncrId,
+          ncrNo,
+          "CLOSED",
+          "Sudah diperbaiki / OK",
+          "inspector",
+          fileList[fileList.length - 1].dateStr || nowStr,
+          photoUrls.length,
+          folderUrl,
+          JSON.stringify(photoUrls),
+          "[]",
+          "",
+          "",
+          ""
+        ];
+        shFollow.appendRow(newRow);
+        restoredCount++;
+      }
+    }
+  }
+
+  Logger.log("Selesai! Berhasil memulihkan " + restoredCount + " item menjadi CLOSED beserta link fotonya.");
 }
