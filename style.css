@@ -1617,6 +1617,81 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 /* ================= LIGHTBOX ================= */
+/* ================= LIGHTBOX ZOOM, LOUPE & GESTURE SYSTEM ================= */
+.lightbox-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lightbox-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.lightbox-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: var(--slate-700);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.lightbox-ctrl-btn:hover {
+  background: var(--slate-200);
+  color: var(--slate-900);
+}
+
+.lightbox-ctrl-btn:active {
+  transform: scale(0.94);
+}
+
+.lightbox-ctrl-btn.active {
+  background: var(--indigo-600);
+  color: #ffffff;
+}
+
+.lightbox-ctrl-btn.active:hover {
+  background: var(--indigo-700);
+}
+
+.lightbox-zoom-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  background: #ffffff;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--indigo-600);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 48px;
+  transition: all 0.15s ease;
+}
+
+.lightbox-zoom-badge:hover {
+  background: var(--indigo-50);
+}
+
 .lightbox-stage {
   position: relative;
   background: var(--slate-900);
@@ -1626,22 +1701,85 @@ tbody tr:last-child td { border-bottom: none; }
   align-items: center;
   justify-content: center;
   min-height: 240px;
-  touch-action: pan-y;
+  touch-action: none;
+  user-select: none;
+}
+
+.lightbox-canvas-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
 }
 
 .lightbox-main-img {
   width: 100%;
-  max-height: 480px;
+  max-height: 490px;
   object-fit: contain;
   user-select: none;
-  cursor: zoom-in;
+  -webkit-user-drag: none;
+  transform-origin: center center;
+  cursor: grab;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
-.swipe-hint-mobile {
+.lightbox-main-img.is-zoomed {
+  cursor: grab;
+}
+
+.lightbox-main-img.is-dragging {
+  cursor: grabbing !important;
+  transition: none !important;
+}
+
+/* KACA PEMBESAR (MAGNIFYING LOUPE) */
+.lightbox-loupe {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 3.5px solid var(--indigo-500);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), inset 0 0 14px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  background-repeat: no-repeat;
+  z-index: 25;
+  transform: translate(-50%, -50%);
   display: none;
+  background-color: #0f172a;
+}
+
+.lightbox-loupe::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.lightbox-hints {
+  margin-top: 7px;
   font-size: 11px;
   color: var(--slate-400);
-  margin-top: 5px;
+}
+
+.lightbox-hints .hint-mobile { display: none; }
+.lightbox-hints .hint-desktop { display: inline-block; }
+
+@media (max-width: 768px) {
+  .lightbox-hints .hint-mobile { display: inline-block; }
+  .lightbox-hints .hint-desktop { display: none; }
+  .lightbox-main-img { max-height: 58vh; }
+  .loupe-btn { display: none !important; }
 }
 
 .lightbox-counter-text {

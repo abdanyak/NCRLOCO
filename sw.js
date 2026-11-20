@@ -4,7 +4,7 @@
  * ============================================================================
  */
 
-const CACHE_NAME = 'qc-ncr-portal-cache-v5';
+const CACHE_NAME = 'qc-ncr-portal-cache-v6';
 const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',

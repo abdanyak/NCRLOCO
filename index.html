@@ -850,21 +850,38 @@
           <h3 id="lightbox-title" class="modal-title">Detail Foto</h3>
           <div id="lightbox-counter" class="lightbox-counter-text" aria-live="polite"></div>
         </div>
-        <div style="display:inline-flex; gap:6px; align-items:center;">
-          <a id="lightbox-zoom-btn" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="Buka foto resolusi penuh di tab baru untuk zoom detail meteran" style="text-decoration:none; display:none;">
-            <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg>
-            <span>Zoom Penuh</span>
-          </a>
+        <div class="lightbox-header-actions">
+          <div class="lightbox-zoom-controls" role="group" aria-label="Kontrol Zoom Foto">
+            <button type="button" id="btn-zoom-out" class="lightbox-ctrl-btn" title="Perkecil (-)" aria-label="Perkecil Foto">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.5 12h-15" /></svg>
+            </button>
+            <button type="button" id="btn-zoom-reset" class="lightbox-zoom-badge" title="Klik untuk reset zoom (100%)" aria-label="Reset Zoom">
+              <span id="lightbox-zoom-level">100%</span>
+            </button>
+            <button type="button" id="btn-zoom-in" class="lightbox-ctrl-btn" title="Perbesar (+)" aria-label="Perbesar Foto">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            </button>
+            <button type="button" id="btn-toggle-loupe" class="lightbox-ctrl-btn loupe-btn hide-on-small-mobile" title="Mode Kaca Pembesar (Dekstop)" aria-label="Mode Kaca Pembesar">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg>
+              <span class="loupe-label">Kaca Pembesar</span>
+            </button>
+          </div>
           <button type="button" class="btn btn-outline btn-sm" aria-label="Tutup galeri foto" onclick="toggleModal('modal-lightbox', false)">✕</button>
         </div>
       </div>
       <div class="modal-body text-center">
         <div id="lightbox-stage" class="lightbox-stage">
           <button type="button" id="lightbox-prev" class="lightbox-nav-btn lightbox-nav-prev" aria-label="Foto sebelumnya" onclick="stepLightbox(-1)">&#10094;</button>
-          <img id="lightbox-img" src="" class="lightbox-main-img" alt="Foto Bukti NCR">
+          <div id="lightbox-canvas-area" class="lightbox-canvas-area">
+            <img id="lightbox-img" src="" class="lightbox-main-img" alt="Foto Bukti NCR" draggable="false">
+            <div id="lightbox-loupe" class="lightbox-loupe" aria-hidden="true"></div>
+          </div>
           <button type="button" id="lightbox-next" class="lightbox-nav-btn lightbox-nav-next" aria-label="Foto berikutnya" onclick="stepLightbox(1)">&#10095;</button>
         </div>
-        <div class="swipe-hint-mobile">Geser kiri/kanan atau gunakan tombol panah untuk ganti foto</div>
+        <div class="lightbox-hints">
+          <span class="hint-mobile">💡 Cubit 2 jari untuk zoom • Geser untuk menggeser foto • Ketuk 2x untuk zoom instan</span>
+          <span class="hint-desktop">💡 Scroll mouse / klik untuk zoom • Seret untuk menggeser foto • Klik "Kaca Pembesar" untuk mode lensa</span>
+        </div>
 
         <div id="lightbox-thumbs" class="lightbox-thumbs"></div>
         <p id="lightbox-note" class="lightbox-note-text"></p>

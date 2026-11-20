@@ -2881,6 +2881,76 @@ window.selectLightboxSlide = function(idx) {
   updateLightboxSlide();
 };
 
+// ================= LIGHTBOX IN-PLACE ZOOM & KACA PEMBESAR =================
+let zoomScale = 1;
+let zoomTranslateX = 0;
+let zoomTranslateY = 0;
+let isZoomDragging = false;
+let zoomDragStartX = 0;
+let zoomDragStartY = 0;
+let isPinching = false;
+let initialPinchDist = 0;
+let initialPinchScale = 1;
+let lastTapTime = 0;
+let isLoupeActive = false;
+let isLightboxZoomInit = false;
+
+function applyImageTransform(smooth = false) {
+  const mainImg = document.getElementById('lightbox-img');
+  const badge = document.getElementById('lightbox-zoom-level');
+  if (!mainImg) return;
+
+  if (smooth) {
+    mainImg.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+  } else {
+    mainImg.style.transition = 'none';
+  }
+
+  mainImg.style.transform = `translate3d(${zoomTranslateX}px, ${zoomTranslateY}px, 0) scale(${zoomScale})`;
+
+  if (badge) {
+    badge.textContent = Math.round(zoomScale * 100) + '%';
+  }
+
+  if (zoomScale > 1.05) {
+    mainImg.classList.add('is-zoomed');
+  } else {
+    mainImg.classList.remove('is-zoomed');
+  }
+}
+
+function resetImageZoom(smooth = true) {
+  zoomScale = 1;
+  zoomTranslateX = 0;
+  zoomTranslateY = 0;
+  applyImageTransform(smooth);
+  const loupeEl = document.getElementById('lightbox-loupe');
+  if (loupeEl) loupeEl.style.display = 'none';
+}
+
+function setZoomScale(newScale, smooth = true) {
+  zoomScale = Math.min(4.5, Math.max(1, newScale));
+  if (zoomScale === 1) {
+    zoomTranslateX = 0;
+    zoomTranslateY = 0;
+  }
+  applyImageTransform(smooth);
+}
+
+function toggleLoupeMode() {
+  isLoupeActive = !isLoupeActive;
+  const btn = document.getElementById('btn-toggle-loupe');
+  const loupeEl = document.getElementById('lightbox-loupe');
+  if (btn) btn.classList.toggle('active', isLoupeActive);
+
+  if (!isLoupeActive) {
+    if (loupeEl) loupeEl.style.display = 'none';
+  } else {
+    resetImageZoom(true);
+    showToast('Mode Kaca Pembesar aktif. Arahkan mouse ke foto meteran untuk melihat perbesaran.', 'info', 2800);
+  }
+}
+
 function updateLightboxSlide() {
   const total = activeLightboxPhotos.length;
   const mainImg = document.getElementById('lightbox-img');
@@ -2893,26 +2963,9 @@ function updateLightboxSlide() {
   };
 
   const currentPhoto = activeLightboxPhotos[activeLightboxIndex] || '';
-  // Tampilkan gambar utama dengan resolusi tinggi (w1600) agar angka/jarum meteran tajam & jelas
+  // Gambar resolusi tinggi w1600 agar angka meteran sangat tajam
   mainImg.src = getDriveImageSrc(currentPhoto, 'w1600');
-  mainImg.style.cursor = 'zoom-in';
-  mainImg.title = 'Klik foto untuk melihat resolusi penuh / zoom detail meteran di tab baru';
-  mainImg.onclick = function() {
-    if (currentPhoto) {
-      window.open(getDriveImageSrc(currentPhoto, 'w2048'), '_blank');
-    }
-  };
-
-  // Tombol Zoom Penuh di header galeri
-  const zoomBtn = document.getElementById('lightbox-zoom-btn');
-  if (zoomBtn) {
-    if (currentPhoto) {
-      zoomBtn.href = getDriveImageSrc(currentPhoto, 'w2048');
-      zoomBtn.style.display = 'inline-flex';
-    } else {
-      zoomBtn.style.display = 'none';
-    }
-  }
+  resetImageZoom(false);
 
   document.getElementById('lightbox-counter').textContent = 'Foto ' + (activeLightboxIndex + 1) + ' / ' + total;
 
@@ -2946,21 +2999,205 @@ function updateLightboxSlide() {
       thumbsContainer.appendChild(img);
     });
   }
+
+  initLightboxZoomEvents();
 }
 
-let touchStartX = 0;
-const lightboxStageEl = document.getElementById('lightbox-stage');
-if (lightboxStageEl) {
-  lightboxStageEl.addEventListener('touchstart', function(e) {
-    touchStartX = e.changedTouches[0].screenX;
-  }, { passive: true });
+function initLightboxZoomEvents() {
+  if (isLightboxZoomInit) return;
+  const canvasArea = document.getElementById('lightbox-canvas-area') || document.getElementById('lightbox-stage');
+  const mainImg = document.getElementById('lightbox-img');
+  const loupeEl = document.getElementById('lightbox-loupe');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+  const btnToggleLoupe = document.getElementById('btn-toggle-loupe');
 
-  lightboxStageEl.addEventListener('touchend', function(e) {
-    const touchEndX = e.changedTouches[0].screenX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40) {
-      if (diff > 0) stepLightbox(1);
-      else stepLightbox(-1);
+  if (!canvasArea || !mainImg) return;
+  isLightboxZoomInit = true;
+
+  if (btnZoomIn) {
+    btnZoomIn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setZoomScale(zoomScale + 0.5, true);
+    });
+  }
+
+  if (btnZoomOut) {
+    btnZoomOut.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setZoomScale(zoomScale - 0.5, true);
+    });
+  }
+
+  if (btnZoomReset) {
+    btnZoomReset.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetImageZoom(true);
+    });
+  }
+
+  if (btnToggleLoupe) {
+    btnToggleLoupe.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleLoupeMode();
+    });
+  }
+
+  // 1. MOUSE WHEEL ZOOM (DESKTOP)
+  canvasArea.addEventListener('wheel', function(e) {
+    if (isLoupeActive) return;
+    e.preventDefault();
+    const zoomDelta = e.deltaY < 0 ? 0.35 : -0.35;
+    setZoomScale(zoomScale + zoomDelta, false);
+  }, { passive: false });
+
+  // 2. MOUSE DRAG SAAT ZOOM (DESKTOP PAN)
+  canvasArea.addEventListener('mousedown', function(e) {
+    if (isLoupeActive || e.button !== 0) return;
+    if (zoomScale > 1.05) {
+      isZoomDragging = true;
+      zoomDragStartX = e.clientX - zoomTranslateX;
+      zoomDragStartY = e.clientY - zoomTranslateY;
+      mainImg.classList.add('is-dragging');
+    }
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (isZoomDragging && zoomScale > 1.05) {
+      e.preventDefault();
+      zoomTranslateX = e.clientX - zoomDragStartX;
+      zoomTranslateY = e.clientY - zoomDragStartY;
+      applyImageTransform(false);
+    }
+  });
+
+  window.addEventListener('mouseup', function() {
+    if (isZoomDragging) {
+      isZoomDragging = false;
+      mainImg.classList.remove('is-dragging');
+      applyImageTransform(true);
+    }
+  });
+
+  // 3. KLIK GAMBAR UNTUK TOGGLE ZOOM 1x <-> 2.2x (DESKTOP)
+  mainImg.addEventListener('click', function(e) {
+    if (isLoupeActive) return;
+    if (zoomScale > 1.1) {
+      resetImageZoom(true);
+    } else {
+      setZoomScale(2.2, true);
+    }
+  });
+
+  // 4. KACA PEMBESAR (LOUPE) DESKTOP
+  canvasArea.addEventListener('mousemove', function(e) {
+    if (!isLoupeActive || !loupeEl || !mainImg.src) return;
+    const rect = mainImg.getBoundingClientRect();
+    const canvasRect = canvasArea.getBoundingClientRect();
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (mouseX < 0 || mouseY < 0 || mouseX > rect.width || mouseY > rect.height) {
+      loupeEl.style.display = 'none';
+      return;
+    }
+
+    loupeEl.style.display = 'block';
+    loupeEl.style.left = (e.clientX - canvasRect.left) + 'px';
+    loupeEl.style.top = (e.clientY - canvasRect.top) + 'px';
+
+    const zoomRatio = 2.8;
+    loupeEl.style.backgroundImage = `url("${mainImg.src}")`;
+    loupeEl.style.backgroundSize = `${rect.width * zoomRatio}px ${rect.height * zoomRatio}px`;
+
+    const bgX = (mouseX * zoomRatio) - (loupeEl.offsetWidth / 2);
+    const bgY = (mouseY * zoomRatio) - (loupeEl.offsetHeight / 2);
+    loupeEl.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+  });
+
+  canvasArea.addEventListener('mouseleave', function() {
+    if (loupeEl) loupeEl.style.display = 'none';
+  });
+
+  // 5. MOBILE GESTURE: CUBIT 2 JARI (PINCH TO ZOOM), SERET & KETUK GANDA
+  let touchInitialX = 0;
+
+  canvasArea.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 2) {
+      isPinching = true;
+      initialPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchScale = zoomScale;
+    } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTapTime < 320) {
+        if (zoomScale > 1.1) {
+          resetImageZoom(true);
+        } else {
+          setZoomScale(2.5, true);
+        }
+        lastTapTime = 0;
+        return;
+      }
+      lastTapTime = now;
+
+      if (zoomScale > 1.05) {
+        isZoomDragging = true;
+        zoomDragStartX = e.touches[0].clientX - zoomTranslateX;
+        zoomDragStartY = e.touches[0].clientY - zoomTranslateY;
+        mainImg.classList.add('is-dragging');
+      } else {
+        touchInitialX = e.touches[0].clientX;
+      }
+    }
+  }, { passive: false });
+
+  canvasArea.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 2 && isPinching) {
+      e.preventDefault();
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (initialPinchDist > 0) {
+        const pinchRatio = currentDist / initialPinchDist;
+        zoomScale = Math.min(4.5, Math.max(0.8, initialPinchScale * pinchRatio));
+        applyImageTransform(false);
+      }
+    } else if (e.touches.length === 1 && isZoomDragging && zoomScale > 1.05) {
+      e.preventDefault();
+      zoomTranslateX = e.touches[0].clientX - zoomDragStartX;
+      zoomTranslateY = e.touches[0].clientY - zoomDragStartY;
+      applyImageTransform(false);
+    }
+  }, { passive: false });
+
+  canvasArea.addEventListener('touchend', function(e) {
+    if (isPinching) {
+      isPinching = false;
+      if (zoomScale < 1) {
+        resetImageZoom(true);
+      } else {
+        applyImageTransform(true);
+      }
+    }
+
+    if (isZoomDragging) {
+      isZoomDragging = false;
+      mainImg.classList.remove('is-dragging');
+      applyImageTransform(true);
+    }
+
+    if (zoomScale <= 1.05 && e.changedTouches.length === 1) {
+      const diffX = touchInitialX - e.changedTouches[0].clientX;
+      if (Math.abs(diffX) > 48) {
+        if (diffX > 0) stepLightbox(1);
+        else stepLightbox(-1);
+      }
     }
   }, { passive: true });
 }
@@ -3869,8 +4106,12 @@ window.toggleModal = function(modalId, show) {
   } else {
     el.classList.add('hidden');
 
-    if (modalId === 'modal-lightbox' && window.history.state && window.history.state.lightboxOpen) {
-      window.history.back();
+    if (modalId === 'modal-lightbox') {
+      resetImageZoom(false);
+      if (isLoupeActive) toggleLoupeMode();
+      if (window.history.state && window.history.state.lightboxOpen) {
+        window.history.back();
+      }
     }
 
     if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
@@ -3883,6 +4124,8 @@ window.toggleModal = function(modalId, show) {
 window.addEventListener('popstate', function() {
   const lightboxModal = document.getElementById('modal-lightbox');
   if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+    resetImageZoom(false);
+    if (isLoupeActive) toggleLoupeMode();
     lightboxModal.classList.add('hidden');
     if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
       lastFocusedElement.focus();
