@@ -1148,6 +1148,24 @@ function isCloudConfigured() {
   return Boolean(GAS_API_URL && GAS_API_URL.trim() !== "" && !GAS_API_URL.includes("TEMPEL_URL"));
 }
 
+let isPrewarmingServer = false;
+function prewarmServerBackend() {
+  if (isPrewarmingServer || !isCloudConfigured() || !navigator.onLine) return;
+  isPrewarmingServer = true;
+  fetch(`${GAS_API_URL}?ping=1`, { cache: 'no-store' })
+    .catch(() => {})
+    .finally(() => {
+      setTimeout(() => { isPrewarmingServer = false; }, 45000);
+    });
+}
+
+// Keep-alive berkala saat browser pengguna aktif (setiap 9 menit)
+setInterval(() => {
+  if (document.visibilityState === 'visible' && navigator.onLine) {
+    prewarmServerBackend();
+  }
+}, 9 * 60 * 1000);
+
 function showCloudLoading(show, text, options = {}) {
   const el = document.getElementById('cloud-loading');
   const txt = document.getElementById('cloud-loading-text');
@@ -1664,6 +1682,11 @@ sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 btnCloseSidebarMobile.addEventListener('click', closeMobileSidebar);
 
 // ================= FUNGSI LOGIN =================
+const loginUserEl = document.getElementById('username');
+const loginPassEl = document.getElementById('password');
+if (loginUserEl) loginUserEl.addEventListener('focus', prewarmServerBackend, { once: true });
+if (loginPassEl) loginPassEl.addEventListener('focus', prewarmServerBackend, { once: true });
+
 document.getElementById('form-login').addEventListener('submit', async function(e) {
   e.preventDefault();
   const u = document.getElementById('username').value.trim();
@@ -3958,6 +3981,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (savedRole && savedUser && savedToken) {
     enterApp(savedRole, savedUser, savedToken, false);
   } else {
+    prewarmServerBackend();
     syncFromCloud(true, false);
   }
 });
